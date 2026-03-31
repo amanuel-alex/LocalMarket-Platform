@@ -9,35 +9,21 @@ const testDatabaseUrl =
   process.env.TEST_DATABASE_URL ??
   "postgresql://postgres:postgres@127.0.0.1:5432/localmarket_test?schema=public";
 
+/** Integration / API tests (Postgres + migrate). Excludes pure unit tests. */
 export default defineConfig({
   test: {
     globals: true,
+    environment: "node",
+    include: ["test/**/*.test.ts"],
+    exclude: ["test/unit/**"],
+    setupFiles: [path.join(root, "test", "setup.ts")],
     fileParallelism: false,
     testTimeout: 60_000,
-    projects: [
-      {
-        name: "unit",
-        test: {
-          environment: "node",
-          include: ["test/unit/**/*.test.ts"],
-          setupFiles: [],
-        },
-      },
-      {
-        name: "integration",
-        test: {
-          environment: "node",
-          include: ["test/**/*.test.ts"],
-          exclude: ["test/unit/**"],
-          setupFiles: [path.join(root, "test", "setup.ts")],
-          env: {
-            DATABASE_URL: testDatabaseUrl,
-            JWT_SECRET: "test-jwt-secret-key-minimum-32-characters!",
-            NODE_ENV: "test",
-            MPESA_CALLBACK_SECRET: "",
-          },
-        },
-      },
-    ],
+    env: {
+      DATABASE_URL: testDatabaseUrl,
+      JWT_SECRET: "test-jwt-secret-key-minimum-32-characters!",
+      NODE_ENV: "test",
+      MPESA_CALLBACK_SECRET: "",
+    },
   },
 });
