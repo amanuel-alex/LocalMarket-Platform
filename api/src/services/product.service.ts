@@ -29,7 +29,7 @@ export type NearbyProductJson = ProductJson & {
   locationSource: "seller" | "product";
 };
 
-function toProductJson(row: Product): ProductJson {
+export function toProductJson(row: Product): ProductJson {
   return {
     id: row.id,
     title: row.title,

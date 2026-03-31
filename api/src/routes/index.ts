@@ -1,4 +1,5 @@
 import { Router } from "express";
+import assistantRoutes from "./assistant.routes.js";
 import authRoutes from "./auth.routes.js";
 import orderRoutes from "./order.routes.js";
 import paymentRoutes from "./payment.routes.js";
@@ -14,6 +15,7 @@ router.get("/health", (_req, res) => {
   res.json({ ok: true });
 });
 
+router.use("/assistant", assistantRoutes);
 router.use("/auth", authRoutes);
 router.use("/products", productRoutes);
 router.use("/sellers", sellerRoutes);
