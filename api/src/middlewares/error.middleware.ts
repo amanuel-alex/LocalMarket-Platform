@@ -8,7 +8,7 @@ export const errorMiddleware: ErrorRequestHandler = (err, _req, res, _next) => {
     res.status(400).json({
       error: {
         code: "VALIDATION_ERROR",
-        message: "Invalid request body",
+        message: "Validation failed",
         details: err.flatten(),
       },
     });

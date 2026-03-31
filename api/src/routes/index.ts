@@ -1,5 +1,6 @@
 import { Router } from "express";
 import authRoutes from "./auth.routes.js";
+import productRoutes from "./product.routes.js";
 import { requireAuth } from "../middlewares/auth.middleware.js";
 import { requireRoles } from "../middlewares/role.middleware.js";
 
@@ -10,6 +11,7 @@ router.get("/health", (_req, res) => {
 });
 
 router.use("/auth", authRoutes);
+router.use("/products", productRoutes);
 
 router.get("/admin/health", requireAuth, requireRoles("admin"), (_req, res) => {
   res.json({ ok: true, scope: "admin" });

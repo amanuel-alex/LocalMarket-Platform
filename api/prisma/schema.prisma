@@ -14,11 +14,29 @@ enum Role {
 }
 
 model User {
-  id           String   @id @default(cuid())
+  id           String    @id @default(cuid())
   name         String
-  phone        String   @unique
+  phone        String    @unique
   passwordHash String
-  role         Role     @default(buyer)
-  createdAt    DateTime @default(now())
-  updatedAt    DateTime @updatedAt
+  role         Role      @default(buyer)
+  createdAt    DateTime  @default(now())
+  updatedAt    DateTime  @updatedAt
+  products     Product[]
+}
+
+model Product {
+  id          String   @id @default(cuid())
+  title       String
+  description String
+  price       Decimal
+  category    String
+  lat         Float
+  lng         Float
+  sellerId    String
+  seller      User     @relation(fields: [sellerId], references: [id], onDelete: Restrict)
+  createdAt   DateTime @default(now())
+  updatedAt   DateTime @updatedAt
+
+  @@index([sellerId])
+  @@index([category])
 }
