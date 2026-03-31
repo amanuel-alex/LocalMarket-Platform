@@ -3,8 +3,17 @@ import type { OrderStatus, Payment, PaymentStatus } from "@prisma/client";
 import { prisma } from "../prisma/client.js";
 import { AppError } from "../utils/errors.js";
 import type { InitiatePaymentInput, MpesaCallbackInput } from "../schemas/payment.schemas.js";
-import * as notificationService from "./notification.service.js";
+import * as dispatch from "./notificationDispatch.service.js";
+import type { NotificationPayload } from "./notificationDispatch.service.js";
 import * as walletService from "./wallet.service.js";
+import { getPaymentQueue, isQueueInfrastructureEnabled } from "../queues/queueClient.js";
+
+type MpesaCallbackTxResult = {
+  payment: Payment;
+  orderStatus: OrderStatus;
+  pickupQrToken?: string;
+  notifyItems?: NotificationPayload[];
+};
 
 export type StkPushSimulatedResponse = {
   MerchantRequestID: string;
@@ -61,6 +70,21 @@ export async function initiateStkPush(
     },
   });
 
+  if (isQueueInfrastructureEnabled()) {
+    const q = getPaymentQueue();
+    await q.add(
+      "verify-one",
+      { paymentId: payment.id },
+      {
+        delay: 90_000,
+        attempts: 4,
+        backoff: { type: "exponential", delay: 4000 },
+        jobId: `verify-payment-${payment.id}`,
+        removeOnComplete: { count: 500 },
+      },
+    );
+  }
+
   const stkPush: StkPushSimulatedResponse = {
     MerchantRequestID: merchantRequestId,
     CheckoutRequestID: checkoutRequestId,
@@ -89,7 +113,7 @@ export async function processMpesaCallback(input: MpesaCallbackInput): Promise<{
 }> {
   const success = input.ResultCode === 0;
 
-  return prisma.$transaction(async (tx) => {
+  const result = await prisma.$transaction(async (tx): Promise<MpesaCallbackTxResult> => {
     const payment = await tx.payment.findUnique({
       where: { checkoutRequestId: input.CheckoutRequestID },
     });
@@ -108,6 +132,7 @@ export async function processMpesaCallback(input: MpesaCallbackInput): Promise<{
         data: { status: "completed" },
       });
       let pickupQrToken: string | undefined;
+      let notifyItems: NotificationPayload[] | undefined;
       const orderBefore = await tx.order.findUnique({
         where: { id: payment.orderId },
         include: { product: { select: { title: true } } },
@@ -127,7 +152,7 @@ export async function processMpesaCallback(input: MpesaCallbackInput): Promise<{
           amount: orderBefore.totalPrice,
         });
 
-        await notificationService.createManyInTx(tx, [
+        notifyItems = [
           {
             userId: orderBefore.buyerId,
             type: "payment_success",
@@ -142,10 +167,10 @@ export async function processMpesaCallback(input: MpesaCallbackInput): Promise<{
             body: `The buyer paid for "${orderBefore.product.title}". Prepare for handoff.`,
             orderId: orderBefore.id,
           },
-        ]);
+        ];
       }
       const order = await tx.order.findUniqueOrThrow({ where: { id: payment.orderId } });
-      return { payment: updatedPayment, orderStatus: order.status, pickupQrToken };
+      return { payment: updatedPayment, orderStatus: order.status, pickupQrToken, notifyItems };
     }
 
     const updatedPayment = await tx.payment.update({
@@ -153,6 +178,19 @@ export async function processMpesaCallback(input: MpesaCallbackInput): Promise<{
       data: { status: "failed" },
     });
     const order = await tx.order.findUniqueOrThrow({ where: { id: payment.orderId } });
-    return { payment: updatedPayment, orderStatus: order.status };
+    return {
+      payment: updatedPayment,
+      orderStatus: order.status,
+    };
   });
+
+  if (result.notifyItems?.length) {
+    await dispatch.dispatchNotifications(result.notifyItems);
+  }
+
+  return {
+    payment: result.payment,
+    orderStatus: result.orderStatus,
+    pickupQrToken: result.pickupQrToken,
+  };
 }

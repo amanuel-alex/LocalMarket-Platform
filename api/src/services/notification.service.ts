@@ -1,7 +1,6 @@
 import type { Notification, NotificationType } from "@prisma/client";
 import { prisma } from "../prisma/client.js";
 import { AppError } from "../utils/errors.js";
-import type { DbTx } from "./wallet.service.js";
 
 export type NotificationJson = {
   id: string;
@@ -23,28 +22,6 @@ function toJson(row: Notification): NotificationJson {
     readAt: row.readAt,
     createdAt: row.createdAt,
   };
-}
-
-export async function createManyInTx(
-  tx: DbTx,
-  items: Array<{
-    userId: string;
-    type: NotificationType;
-    title: string;
-    body: string;
-    orderId?: string | null;
-  }>,
-): Promise<void> {
-  if (items.length === 0) return;
-  await tx.notification.createMany({
-    data: items.map((i) => ({
-      userId: i.userId,
-      type: i.type,
-      title: i.title,
-      body: i.body,
-      orderId: i.orderId ?? null,
-    })),
-  });
 }
 
 export async function listForUser(userId: string, limit = 100): Promise<NotificationJson[]> {

@@ -28,6 +28,8 @@ const schema = z.object({
   CLOUDINARY_UPLOAD_FOLDER: z.string().optional().default("localmarket/products"),
   /** Optional: Redis for product list / nearby / related caching (e.g. redis://localhost:6379). */
   REDIS_URL: z.string().optional().default(""),
+  /** Age in days for request/error log retention (background cleanup job). */
+  CLEANUP_LOG_RETENTION_DAYS: z.coerce.number().int().min(1).max(3650).default(90),
 });
 
 export type Env = z.infer<typeof schema>;

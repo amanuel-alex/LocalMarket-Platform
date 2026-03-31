@@ -3,6 +3,7 @@ import { prisma } from "../prisma/client.js";
 import { AppError } from "../utils/errors.js";
 import type { CreateOrderInput } from "../schemas/order.schemas.js";
 import * as auditService from "./audit.service.js";
+import * as dispatch from "./notificationDispatch.service.js";
 import * as walletService from "./wallet.service.js";
 
 type OrderWithProduct = Order & {
@@ -91,7 +92,7 @@ export async function createOrder(buyerId: string, input: CreateOrderInput): Pro
   const totalPrice = product.price.times(input.quantity);
 
   const row = await prisma.$transaction(async (tx) => {
-    const created = await tx.order.create({
+    return tx.order.create({
       data: {
         buyerId,
         sellerId: product.sellerId,
@@ -102,17 +103,17 @@ export async function createOrder(buyerId: string, input: CreateOrderInput): Pro
       },
       include: { product: { select: productSelect } },
     });
-    await tx.notification.create({
-      data: {
-        userId: product.sellerId,
-        type: "order_update",
-        title: "New order",
-        body: `New order: ${input.quantity}× "${product.title}".`,
-        orderId: created.id,
-      },
-    });
-    return created;
   });
+
+  await dispatch.dispatchNotifications([
+    {
+      userId: product.sellerId,
+      type: "order_update",
+      title: "New order",
+      body: `New order: ${input.quantity}× "${product.title}".`,
+      orderId: row.id,
+    },
+  ]);
 
   return toOrderJson(row, { userId: buyerId, role: "buyer" });
 }
@@ -185,15 +186,15 @@ export async function confirmDeliveryBySeller(
     include: { product: { select: productSelect } },
   });
 
-  await prisma.notification.create({
-    data: {
+  await dispatch.dispatchNotifications([
+    {
       userId: updated.buyerId,
       type: "delivery_confirmation",
       title: "Delivery confirmed",
       body: `The seller confirmed delivery for "${updated.product.title}".`,
       orderId: updated.id,
     },
-  });
+  ]);
 
   return toOrderJson(updated, { userId: sellerId, role: "seller" });
 }

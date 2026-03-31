@@ -12,15 +12,32 @@ const testDatabaseUrl =
 export default defineConfig({
   test: {
     globals: true,
-    environment: "node",
-    setupFiles: [path.join(root, "test", "setup.ts")],
     fileParallelism: false,
     testTimeout: 60_000,
-    env: {
-      DATABASE_URL: testDatabaseUrl,
-      JWT_SECRET: "test-jwt-secret-key-minimum-32-characters!",
-      NODE_ENV: "test",
-      MPESA_CALLBACK_SECRET: "",
-    },
+    projects: [
+      {
+        name: "unit",
+        test: {
+          environment: "node",
+          include: ["test/unit/**/*.test.ts"],
+          setupFiles: [],
+        },
+      },
+      {
+        name: "integration",
+        test: {
+          environment: "node",
+          include: ["test/**/*.test.ts"],
+          exclude: ["test/unit/**"],
+          setupFiles: [path.join(root, "test", "setup.ts")],
+          env: {
+            DATABASE_URL: testDatabaseUrl,
+            JWT_SECRET: "test-jwt-secret-key-minimum-32-characters!",
+            NODE_ENV: "test",
+            MPESA_CALLBACK_SECRET: "",
+          },
+        },
+      },
+    ],
   },
 });

@@ -49,3 +49,22 @@ export const otpVerifyRateLimiter = rateLimit({
   legacyHeaders: false,
   message: json429("Too many OTP verification attempts. Try again later."),
 });
+
+/** Broad API protection (per IP). Skipped in `NODE_ENV=test`. */
+export const globalApiRateLimiter = rateLimit({
+  windowMs: 15 * 60 * 1000,
+  max: isTest ? 1_000_000 : 400,
+  standardHeaders: true,
+  legacyHeaders: false,
+  message: json429("Too many requests. Try again later."),
+  skip: () => isTest,
+});
+
+/** Stricter limit for payment callback / webhooks. */
+export const paymentCallbackRateLimiter = rateLimit({
+  windowMs: 60 * 1000,
+  max: isTest ? 50_000 : 120,
+  standardHeaders: true,
+  legacyHeaders: false,
+  message: json429("Too many payment callbacks from this IP."),
+});

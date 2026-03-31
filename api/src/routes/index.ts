@@ -13,6 +13,7 @@ import sellerRoutes from "./seller.routes.js";
 import uploadRoutes from "./upload.routes.js";
 import walletRoutes from "./wallet.routes.js";
 import { requireAuth } from "../middlewares/auth.middleware.js";
+import { globalApiRateLimiter } from "../middlewares/rateLimit.middleware.js";
 import { requireRoles } from "../middlewares/role.middleware.js";
 
 export const router = Router();
@@ -20,6 +21,8 @@ export const router = Router();
 router.get("/health", (_req, res) => {
   res.json({ ok: true });
 });
+
+router.use(globalApiRateLimiter);
 
 router.use("/assistant", assistantRoutes);
 router.use("/auth", authRoutes);
