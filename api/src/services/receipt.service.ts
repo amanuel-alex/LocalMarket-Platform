@@ -1,5 +1,5 @@
 import { createHash } from "node:crypto";
-import { Prisma, type Role } from "@prisma/client";
+import type { Role } from "@prisma/client";
 import { prisma } from "../prisma/client.js";
 import { AppError } from "../utils/errors.js";
 import * as platformSettingsService from "./platformSettings.service.js";

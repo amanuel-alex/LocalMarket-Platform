@@ -141,6 +141,11 @@ describe("Products", () => {
     expect(near.status).toBe(200);
     expect(near.body.products.length).toBeGreaterThanOrEqual(1);
     expect(near.body.products[0].distanceKm).toBeDefined();
+
+    const insights = await api().get("/sellers/insights").set("Authorization", `Bearer ${token}`);
+    expect(insights.status).toBe(200);
+    expect(insights.body.insights.summary).toBeDefined();
+    expect(Array.isArray(insights.body.insights.revenueByDay)).toBe(true);
   });
 
   it("rejects product create for buyer", async () => {
@@ -274,6 +279,14 @@ describe("QR verify", () => {
     const pickupToken = cb.body.pickupQrToken as string;
     expect(pickupToken).toBeTruthy();
 
+    const receiptRes = await api()
+      .get(`/orders/${orderId}/receipt`)
+      .set("Authorization", `Bearer ${bt}`);
+    expect(receiptRes.status).toBe(200);
+    expect(receiptRes.body.receipt.receiptNumber).toMatch(/^R-/);
+    expect(receiptRes.body.receipt.order.total).toBe(15);
+    expect(receiptRes.body.receipt.sellerEconomics).toBeUndefined();
+
     const sellerWalletAfterPay = await prisma.wallet.findUnique({
       where: { userId: sellerUser.id },
     });
@@ -317,9 +330,10 @@ describe("QR verify", () => {
       where: { userId: sellerUser.id },
     });
     expect(sellerWalletFinal!.pendingBalance.toNumber()).toBe(0);
-    expect(sellerWalletFinal!.availableBalance.toNumber()).toBe(15);
+    /** 5% platform commission on 15 → seller net 14.25, platform retains 0.75. */
+    expect(sellerWalletFinal!.availableBalance.toNumber()).toBeCloseTo(14.25, 2);
     const platformFinal = await prisma.wallet.findFirst({ where: { isPlatform: true } });
-    expect(platformFinal!.availableBalance.toNumber()).toBe(0);
+    expect(platformFinal!.availableBalance.toNumber()).toBeCloseTo(0.75, 2);
 
     const again = await api()
       .post("/qr/verify")

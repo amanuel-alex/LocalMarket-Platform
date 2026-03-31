@@ -20,7 +20,7 @@ export async function resetDb(): Promise<void> {
   await prisma.wallet.deleteMany();
   await prisma.user.deleteMany();
   await prisma.platformSettings.create({
-    data: { id: 1, commissionRateBps: 0 },
+    data: { id: 1, commissionRateBps: 500 },
   });
 }
 

@@ -14,6 +14,7 @@ router.post(
   requireRoles("seller"),
   orderController.confirmDelivery,
 );
+router.get("/:id/receipt", orderController.receipt);
 router.get("/:id", orderController.getById);
 
 export default router;
