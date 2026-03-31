@@ -4,6 +4,7 @@ import { nearbyProductsQuerySchema } from "../schemas/location.schemas.js";
 import {
   createProductSchema,
   productIdParamSchema,
+  productListQuerySchema,
   productSearchQuerySchema,
 } from "../schemas/product.schemas.js";
 import * as productService from "../services/product.service.js";
@@ -19,9 +20,15 @@ export const create: RequestHandler = asyncHandler(async (req, res, next) => {
   res.status(201).json({ product });
 });
 
-export const list: RequestHandler = asyncHandler(async (_req, res) => {
-  const products = await productService.listProducts();
-  res.json({ products });
+export const list: RequestHandler = asyncHandler(async (req, res, next) => {
+  const parsed = productListQuerySchema.safeParse(req.query);
+  if (!parsed.success) {
+    next(parsed.error);
+    return;
+  }
+  const { page, limit } = parsed.data;
+  const result = await productService.listProducts({ page, limit });
+  res.json(result);
 });
 
 export const nearby: RequestHandler = asyncHandler(async (req, res, next) => {

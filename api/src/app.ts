@@ -2,7 +2,8 @@ import express from "express";
 import cors from "cors";
 import helmet from "helmet";
 import { getEnv } from "./config/env.js";
-import { router } from "./routes/index.js";
+import { v1Router } from "./api/v1/router.js";
+import { v2Router } from "./api/v2/router.js";
 import { errorMiddleware } from "./middlewares/error.middleware.js";
 import { requestLogMiddleware } from "./middlewares/requestLog.middleware.js";
 import {
@@ -30,5 +31,8 @@ app.use(sanitizeQueryMiddleware);
 app.use(sanitizeBodyMiddleware);
 app.use(localeMiddleware);
 app.use(requestLogMiddleware);
-app.use(router);
+app.use("/api/v1", v1Router);
+app.use("/api/v2", v2Router);
+/** Legacy base path — same as `/api/v1` (deprecate clients gradually). */
+app.use("/", v1Router);
 app.use(errorMiddleware);

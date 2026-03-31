@@ -26,15 +26,25 @@ enum PaymentStatus {
 }
 
 enum WalletTransactionType {
-  /** Buyer payment settled; funds held by platform, seller credited as pending (escrow). */
+  /**
+   * Buyer payment settled; funds held by platform, seller credited as pending (escrow).
+   */
   order_escrow_in
-  /** Pickup verified; seller pending → available, platform releases liability. */
+  /**
+   * Pickup verified; seller pending → available, platform releases liability.
+   */
   order_escrow_release
-  /** Seller requested payout; available debited, payout record created. */
+  /**
+   * Seller requested payout; available debited, payout record created.
+   */
   payout_reserve
-  /** Payout marked paid externally (no further balance change). */
+  /**
+   * Payout marked paid externally (no further balance change).
+   */
   payout_complete
-  /** Payout cancelled / failed; funds returned to seller available. */
+  /**
+   * Payout cancelled / failed; funds returned to seller available.
+   */
   payout_cancel
   adjustment
 }
@@ -60,7 +70,9 @@ enum NotificationType {
   delivery_confirmation
 }
 
-/** UI / API copy: English, አማርኛ (Amharic), Oromoo (Latin script). */
+/**
+ * UI / API copy: English, አማርኛ (Amharic), Oromoo (Latin script).
+ */
 enum Locale {
   en
   am
@@ -68,39 +80,45 @@ enum Locale {
 }
 
 model User {
-  id                   String         @id @default(cuid())
-  name                 String
-  phone                String         @unique
-  passwordHash         String
-  role                 Role           @default(buyer)
-  failedLoginAttempts  Int            @default(0)
-  lockedUntil          DateTime?
-  /** When set, user cannot log in or call authenticated APIs. */
-  bannedAt             DateTime?
-  banReason            String?
-  preferredLocale      Locale         @default(en)
-  /** Shop / pickup coordinates for sellers (optional). Used for nearby product search. */
-  sellerLat            Float?
-  sellerLng            Float?
-  createdAt            DateTime       @default(now())
-  updatedAt            DateTime       @updatedAt
-  products             Product[]
-  ordersAsBuyer        Order[]        @relation("BuyerOrders")
-  ordersAsSeller       Order[]        @relation("SellerOrders")
-  refreshTokens        RefreshToken[]
-  wallet               Wallet?
-  payouts              Payout[]
-  notifications        Notification[]
+  id                  String         @id @default(cuid())
+  name                String
+  phone               String         @unique
+  passwordHash        String
+  role                Role           @default(buyer)
+  failedLoginAttempts Int            @default(0)
+  lockedUntil         DateTime?
+  /**
+   * When set, user cannot log in or call authenticated APIs.
+   */
+  bannedAt            DateTime?
+  banReason           String?
+  preferredLocale     Locale         @default(en)
+  /**
+   * Shop / pickup coordinates for sellers (optional). Used for nearby product search.
+   */
+  sellerLat           Float?
+  sellerLng           Float?
+  createdAt           DateTime       @default(now())
+  updatedAt           DateTime       @updatedAt
+  products            Product[]
+  ordersAsBuyer       Order[]        @relation("BuyerOrders")
+  ordersAsSeller      Order[]        @relation("SellerOrders")
+  refreshTokens       RefreshToken[]
+  wallet              Wallet?
+  payouts             Payout[]
+  notifications       Notification[]
 
   @@index([bannedAt])
 }
 
 /// Singleton financial config (fixed `id = 1`). Commission applied on escrow release to seller.
 model PlatformSettings {
-  id                 Int      @id
-  /** Basis points: 100 = 1%. Taken from order total before crediting seller available balance. */
-  commissionRateBps  Int      @default(0)
-  updatedAt          DateTime @updatedAt
+  id                Int      @id
+  /**
+   * Basis points: 100 = 1%. Taken from order total before crediting seller available balance.
+   */
+  commissionRateBps Int      @default(0)
+  updatedAt         DateTime @updatedAt
 
   @@map("platform_settings")
 }
@@ -121,35 +139,41 @@ model AuditLog {
 }
 
 model Wallet {
-  id                String    @id @default(cuid())
-  /** Set only for user wallets; null for the single platform treasury row. */
-  userId            String?   @unique
-  isPlatform        Boolean   @default(false)
-  /** Funds the platform has collected (escrow float). */
-  availableBalance  Decimal   @default(0) @db.Decimal(14, 2)
-  /** Seller: earnings awaiting pickup / dispute window (mirrors platform liability for that seller). */
-  pendingBalance    Decimal   @default(0) @db.Decimal(14, 2)
-  createdAt         DateTime  @default(now())
-  updatedAt         DateTime  @updatedAt
-  user              User?     @relation(fields: [userId], references: [id], onDelete: Cascade)
-  transactions      WalletTransaction[]
-  payouts           Payout[]
+  id               String              @id @default(cuid())
+  /**
+   * Set only for user wallets; null for the single platform treasury row.
+   */
+  userId           String?             @unique
+  isPlatform       Boolean             @default(false)
+  /**
+   * Funds the platform has collected (escrow float).
+   */
+  availableBalance Decimal             @default(0) @db.Decimal(14, 2)
+  /**
+   * Seller: earnings awaiting pickup / dispute window (mirrors platform liability for that seller).
+   */
+  pendingBalance   Decimal             @default(0) @db.Decimal(14, 2)
+  createdAt        DateTime            @default(now())
+  updatedAt        DateTime            @updatedAt
+  user             User?               @relation(fields: [userId], references: [id], onDelete: Cascade)
+  transactions     WalletTransaction[]
+  payouts          Payout[]
 
   @@index([isPlatform])
   @@map("wallets")
 }
 
 model WalletTransaction {
-  id          String                @id @default(cuid())
-  walletId    String
-  wallet      Wallet                @relation(fields: [walletId], references: [id], onDelete: Restrict)
-  type        WalletTransactionType
-  amount      Decimal                  @db.Decimal(14, 2)
-  orderId     String?
-  paymentId   String?
-  payoutId    String?
-  note        String?
-  createdAt   DateTime              @default(now())
+  id        String                @id @default(cuid())
+  walletId  String
+  wallet    Wallet                @relation(fields: [walletId], references: [id], onDelete: Restrict)
+  type      WalletTransactionType
+  amount    Decimal               @db.Decimal(14, 2)
+  orderId   String?
+  paymentId String?
+  payoutId  String?
+  note      String?
+  createdAt DateTime              @default(now())
 
   @@index([walletId])
   @@index([orderId])
@@ -199,23 +223,27 @@ model ProductGroup {
 }
 
 model Product {
-  id          String   @id @default(cuid())
-  title       String
-  description String
-  price       Decimal    @db.Decimal(14, 2)
-  category    String
-  lat         Float
-  lng         Float
-  /** HTTPS URL from Cloudinary (or other CDN) after upload. */
-  imageUrl    String?
-  /** Optional group for the same catalog item across sellers (price compare + related). */
-  productGroupId String?      @map("product_group_id")
+  id             String        @id @default(cuid())
+  title          String
+  description    String
+  price          Decimal       @db.Decimal(14, 2)
+  category       String
+  lat            Float
+  lng            Float
+  /**
+   * HTTPS URL from Cloudinary (or other CDN) after upload.
+   */
+  imageUrl       String?
+  /**
+   * Optional group for the same catalog item across sellers (price compare + related).
+   */
+  productGroupId String?       @map("product_group_id")
   productGroup   ProductGroup? @relation(fields: [productGroupId], references: [id], onDelete: SetNull)
-  sellerId    String
-  seller      User     @relation(fields: [sellerId], references: [id], onDelete: Restrict)
-  orders      Order[]
-  createdAt   DateTime @default(now())
-  updatedAt   DateTime @updatedAt
+  sellerId       String
+  seller         User          @relation(fields: [sellerId], references: [id], onDelete: Restrict)
+  orders         Order[]
+  createdAt      DateTime      @default(now())
+  updatedAt      DateTime      @updatedAt
 
   @@index([sellerId])
   @@index([category])
@@ -252,35 +280,46 @@ model ErrorLog {
 }
 
 model Order {
-  id            String      @id @default(cuid())
-  status        OrderStatus @default(pending)
-  quantity      Int
-  totalPrice    Decimal     @db.Decimal(14, 2)
-  buyerId       String
-  sellerId      String
-  productId     String
-  /** Secure one-time pickup token (raw); generated when payment succeeds — not the order id. */
-  qrToken       String?     @unique
-  qrConsumedAt  DateTime?
-  /** Seller marked delivery / handover complete → eligible for admin escrow release. */
+  id                  String         @id @default(cuid())
+  status              OrderStatus    @default(pending)
+  quantity            Int
+  totalPrice          Decimal        @db.Decimal(14, 2)
+  buyerId             String
+  sellerId            String
+  productId           String
+  /**
+   * Secure one-time pickup token (raw); generated when payment succeeds — not the order id.
+   */
+  qrToken             String?        @unique
+  qrConsumedAt        DateTime?
+  /**
+   * Seller marked delivery / handover complete → eligible for admin escrow release.
+   */
   deliveryConfirmedAt DateTime?
-  /** Admin (or system) released escrow to seller available balance. */
+  /**
+   * Admin (or system) released escrow to seller available balance.
+   */
   escrowReleasedAt    DateTime?
-  /** Free-form note when an admin overrides order fields. */
-  adminOverrideNote   String?     @db.Text
+  /**
+   * Free-form note when an admin overrides order fields.
+   */
+  adminOverrideNote   String?        @db.Text
   adminOverriddenAt   DateTime?
-  buyer         User        @relation("BuyerOrders", fields: [buyerId], references: [id], onDelete: Restrict)
-  seller        User        @relation("SellerOrders", fields: [sellerId], references: [id], onDelete: Restrict)
-  product       Product     @relation(fields: [productId], references: [id], onDelete: Restrict)
-  payments      Payment[]
-  disputes       Dispute[]
-  notifications  Notification[]
-  createdAt     DateTime    @default(now())
-  updatedAt     DateTime    @updatedAt
+  buyer               User           @relation("BuyerOrders", fields: [buyerId], references: [id], onDelete: Restrict)
+  seller              User           @relation("SellerOrders", fields: [sellerId], references: [id], onDelete: Restrict)
+  product             Product        @relation(fields: [productId], references: [id], onDelete: Restrict)
+  payments            Payment[]
+  disputes            Dispute[]
+  notifications       Notification[]
+  createdAt           DateTime       @default(now())
+  updatedAt           DateTime       @updatedAt
 
-  @@index([buyerId])
   @@index([sellerId])
   @@index([productId])
+  /**
+   * Buyer order history: `WHERE buyerId = ? ORDER BY createdAt DESC` (replaces single-column buyerId index).
+   */
+  @@index([buyerId, createdAt(sort: Desc)])
 }
 
 model Notification {
@@ -305,7 +344,9 @@ model Dispute {
   orderId   String        @map("order_id")
   reason    String
   status    DisputeStatus @default(open)
-  /** Optional admin resolution / internal note (set when updating status). */
+  /**
+   * Optional admin resolution / internal note (set when updating status).
+   */
   note      String?
   createdAt DateTime      @default(now())
   updatedAt DateTime      @updatedAt
@@ -317,16 +358,16 @@ model Dispute {
 }
 
 model Payment {
-  id                  String        @id @default(cuid())
-  status              PaymentStatus @default(pending)
-  amount              Decimal       @db.Decimal(14, 2)
-  phone               String?
-  checkoutRequestId   String        @unique
-  merchantRequestId   String
-  orderId             String
-  order               Order         @relation(fields: [orderId], references: [id], onDelete: Restrict)
-  createdAt           DateTime      @default(now())
-  updatedAt           DateTime      @updatedAt
+  id                String        @id @default(cuid())
+  status            PaymentStatus @default(pending)
+  amount            Decimal       @db.Decimal(14, 2)
+  phone             String?
+  checkoutRequestId String        @unique
+  merchantRequestId String
+  orderId           String
+  order             Order         @relation(fields: [orderId], references: [id], onDelete: Restrict)
+  createdAt         DateTime      @default(now())
+  updatedAt         DateTime      @updatedAt
 
   @@index([orderId])
 }

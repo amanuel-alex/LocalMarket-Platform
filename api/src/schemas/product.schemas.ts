@@ -24,6 +24,14 @@ export const productIdParamSchema = z.object({
 
 export type ProductIdParam = z.infer<typeof productIdParamSchema>;
 
+/** `GET /products` pagination (defaults match common client expectations). */
+export const productListQuerySchema = z.object({
+  page: z.coerce.number().int().positive().optional().default(1),
+  limit: z.coerce.number().int().positive().max(100).optional().default(10),
+});
+
+export type ProductListQuery = z.infer<typeof productListQuerySchema>;
+
 /** Query: search text (title/description), optional price range, optional location radius (lat+lng+radiusKm). */
 export const productSearchQuerySchema = z
   .object({

@@ -1,13 +1,23 @@
+import type { ProductSearchQuery } from "../schemas/product.schemas.js";
 import type { NearbyProductsQuery } from "../schemas/location.schemas.js";
-import type { NearbyProductJson, ProductJson } from "../services/product.service.js";
+import type { NearbyProductJson, ProductJson, SearchProductJson } from "../services/product.service.js";
 import { getRedis } from "./redisClient.js";
 
 const EPOCH_KEY = "productcat:epoch";
 
-const TTL_LIST_SEC = 120;
+const TTL_LIST_PAGE_SEC = 120;
 const TTL_BY_ID_SEC = 300;
 const TTL_NEARBY_SEC = 60;
 const TTL_RELATED_SEC = 180;
+const TTL_SEARCH_SEC = 90;
+
+export type ProductListPageCached = {
+  products: ProductJson[];
+  page: number;
+  limit: number;
+  total: number;
+  totalPages: number;
+};
 
 function keyParts(epoch: string, suffix: string): string {
   return `productcat:${epoch}:${suffix}`;
@@ -48,16 +58,31 @@ function reviveNearby(raw: NearbyProductJson): NearbyProductJson {
   return { ...base, distanceKm: raw.distanceKm, locationSource: raw.locationSource };
 }
 
-export async function cacheGetOrSetProductList(loader: () => Promise<ProductJson[]>): Promise<ProductJson[]> {
+function reviveSearch(raw: SearchProductJson): SearchProductJson {
+  const base = reviveProductJson(raw);
+  const out: SearchProductJson = { ...base };
+  if (raw.distanceKm !== undefined) out.distanceKm = raw.distanceKm;
+  if (raw.locationSource !== undefined) out.locationSource = raw.locationSource;
+  return out;
+}
+
+export async function cacheGetOrSetProductListPage(
+  page: number,
+  limit: number,
+  loader: () => Promise<ProductListPageCached>,
+): Promise<ProductListPageCached> {
   const epoch = await readEpoch();
-  const key = keyParts(epoch, "list");
+  const key = keyParts(epoch, `list:p${page}:l${limit}`);
   const r = getRedis();
   if (r) {
     try {
       const hit = await r.get(key);
       if (hit) {
-        const parsed = JSON.parse(hit) as ProductJson[];
-        return parsed.map(reviveProductJson);
+        const parsed = JSON.parse(hit) as ProductListPageCached;
+        return {
+          ...parsed,
+          products: parsed.products.map(reviveProductJson),
+        };
       }
     } catch {
       /* fall through */
@@ -67,7 +92,7 @@ export async function cacheGetOrSetProductList(loader: () => Promise<ProductJson
   const fresh = await loader();
   if (r) {
     try {
-      await r.set(key, JSON.stringify(fresh), "EX", TTL_LIST_SEC);
+      await r.set(key, JSON.stringify(fresh), "EX", TTL_LIST_PAGE_SEC);
     } catch {
       /* ignore */
     }
@@ -105,8 +130,8 @@ export async function cacheGetOrSetProductById(
 }
 
 function nearbyQueryHash(q: NearbyProductsQuery): string {
-  const r = q.radiusKm != null ? q.radiusKm.toFixed(2) : "all";
-  return `${q.lat.toFixed(5)}:${q.lng.toFixed(5)}:${r}:${q.limit}`;
+  const rad = q.radiusKm != null ? q.radiusKm.toFixed(2) : "all";
+  return `${q.lat.toFixed(5)}:${q.lng.toFixed(5)}:${rad}:${q.limit}`;
 }
 
 export async function cacheGetOrSetNearby(
@@ -162,6 +187,50 @@ export async function cacheGetOrSetRelated(
   if (r) {
     try {
       await r.set(key, JSON.stringify(fresh), "EX", TTL_RELATED_SEC);
+    } catch {
+      /* ignore */
+    }
+  }
+  return fresh;
+}
+
+/** Stable cache key for product search query params. */
+export function productSearchFingerprint(q: ProductSearchQuery): string {
+  const o = {
+    q: q.q ?? null,
+    minPrice: q.minPrice ?? null,
+    maxPrice: q.maxPrice ?? null,
+    lat: q.lat ?? null,
+    lng: q.lng ?? null,
+    radiusKm: q.radiusKm ?? null,
+    limit: q.limit,
+  };
+  return JSON.stringify(o);
+}
+
+export async function cacheGetOrSetSearch(
+  fingerprint: string,
+  loader: () => Promise<SearchProductJson[]>,
+): Promise<SearchProductJson[]> {
+  const epoch = await readEpoch();
+  const key = keyParts(epoch, `search:${fingerprint}`);
+  const r = getRedis();
+  if (r) {
+    try {
+      const hit = await r.get(key);
+      if (hit) {
+        const parsed = JSON.parse(hit) as SearchProductJson[];
+        return parsed.map(reviveSearch);
+      }
+    } catch {
+      /* fall through */
+    }
+  }
+
+  const fresh = await loader();
+  if (r) {
+    try {
+      await r.set(key, JSON.stringify(fresh), "EX", TTL_SEARCH_SEC);
     } catch {
       /* ignore */
     }

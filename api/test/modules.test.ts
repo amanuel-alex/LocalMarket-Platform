@@ -16,7 +16,17 @@ describe("Health", () => {
   it("returns ok", async () => {
     const res = await api().get("/health");
     expect(res.status).toBe(200);
-    expect(res.body).toEqual({ ok: true });
+    expect(res.body.ok).toBe(true);
+    expect(res.body.apiVersion).toBe(1);
+  });
+
+  it("exposes /api/v1 and /api/v2 health", async () => {
+    const v1 = await api().get("/api/v1/health");
+    expect(v1.status).toBe(200);
+    expect(v1.body.apiVersion).toBe(1);
+    const v2 = await api().get("/api/v2/health");
+    expect(v2.status).toBe(200);
+    expect(v2.body.apiVersion).toBe(2);
   });
 });
 
@@ -110,6 +120,14 @@ describe("Products", () => {
     const list = await api().get("/products");
     expect(list.status).toBe(200);
     expect(list.body.products.length).toBeGreaterThanOrEqual(2);
+    expect(list.body.total).toBeGreaterThanOrEqual(2);
+    expect(list.body.page).toBe(1);
+    expect(list.body.limit).toBe(10);
+
+    const v1paged = await api().get("/api/v1/products").query({ page: 1, limit: 1 });
+    expect(v1paged.status).toBe(200);
+    expect(v1paged.body.products.length).toBe(1);
+    expect(v1paged.body.totalPages).toBeGreaterThanOrEqual(2);
 
     const one = await api().get(`/products/${id1}`);
     expect(one.status).toBe(200);

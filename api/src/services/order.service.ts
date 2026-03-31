@@ -1,5 +1,7 @@
 import type { Order, OrderStatus, Prisma, Product, Role } from "@prisma/client";
 import { prisma } from "../prisma/client.js";
+import * as orderRepo from "../repositories/order.repository.js";
+import * as productRepo from "../repositories/product.repository.js";
 import { AppError } from "../utils/errors.js";
 import type { CreateOrderInput } from "../schemas/order.schemas.js";
 import * as auditService from "./audit.service.js";
@@ -86,10 +88,7 @@ export function toOrderJson(
 const productSelect = { id: true, title: true, price: true } as const;
 
 export async function createOrder(buyerId: string, input: CreateOrderInput): Promise<OrderJson> {
-  const product = await prisma.product.findUnique({
-    where: { id: input.productId },
-    select: { id: true, title: true, price: true, sellerId: true },
-  });
+  const product = await productRepo.findProductForNewOrder(input.productId);
   if (!product) {
     throw new AppError(404, "NOT_FOUND", "Product not found");
   }
@@ -134,11 +133,7 @@ export async function listOrdersForUser(userId: string, role: Role): Promise<Ord
         ? { sellerId: userId }
         : { buyerId: userId };
 
-  const rows = await prisma.order.findMany({
-    where,
-    orderBy: { createdAt: "desc" },
-    include: { product: { select: productSelect } },
-  });
+  const rows = await orderRepo.findOrdersWithProductForList(where);
 
   return rows.map((row) => toOrderJson(row, { userId, role }));
 }
