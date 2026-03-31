@@ -34,13 +34,37 @@ jobs:
       - name: Unit tests
         run: npm run test:unit
 
+  web:
+    runs-on: ubuntu-latest
+    defaults:
+      run:
+        working-directory: web
+
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: actions/setup-node@v4
+        with:
+          node-version: "22"
+          cache: npm
+          cache-dependency-path: web/package-lock.json
+
+      - name: Install dependencies
+        run: npm ci
+
+      - name: Lint
+        run: npm run lint
+
+      - name: Build
+        run: npm run build
+
   # Integration tests need a reachable Postgres (DATABASE_URL). Enable when your repo wires a service container or secrets.
   # api-integration:
   #   runs-on: ubuntu-latest
   #   ...
 
   deploy:
-    needs: [api]
+    needs: [api, web]
     if: github.ref == 'refs/heads/main' && github.event_name == 'push'
     runs-on: ubuntu-latest
     steps:
