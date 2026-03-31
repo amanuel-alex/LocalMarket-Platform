@@ -28,15 +28,45 @@ describe("Auth", () => {
     });
     expect(reg.status).toBe(201);
     expect(reg.body.user).toMatchObject({ phone, role: "buyer" });
-    expect(reg.body.token).toBeTruthy();
+    expect(reg.body.accessToken).toBeTruthy();
+    expect(reg.body.refreshToken).toBeTruthy();
 
-    const me = await api().get("/auth/me").set("Authorization", `Bearer ${reg.body.token}`);
+    const me = await api()
+      .get("/auth/me")
+      .set("Authorization", `Bearer ${reg.body.accessToken}`);
     expect(me.status).toBe(200);
     expect(me.body.user.phone).toBe(phone);
 
+    const refresh = await api().post("/auth/refresh").send({
+      refreshToken: reg.body.refreshToken,
+    });
+    expect(refresh.status).toBe(200);
+    expect(refresh.body.accessToken).toBeTruthy();
+    expect(refresh.body.refreshToken).toBeTruthy();
+
     const login = await api().post("/auth/login").send({ phone, password: "password12345" });
     expect(login.status).toBe(200);
-    expect(login.body.token).toBeTruthy();
+    expect(login.body.accessToken).toBeTruthy();
+  });
+
+  it("locks account after repeated failed logins", async () => {
+    const phone = uniquePhone("lock");
+    await api().post("/auth/register").send({
+      name: "Lock User",
+      phone,
+      password: "password12345",
+    });
+    for (let i = 0; i < 5; i += 1) {
+      const res = await api()
+        .post("/auth/login")
+        .send({ phone, password: "wrong-password" });
+      expect(res.status).toBe(401);
+    }
+    const blocked = await api()
+      .post("/auth/login")
+      .send({ phone, password: "password12345" });
+    expect(blocked.status).toBe(423);
+    expect(blocked.body.error.code).toBe("ACCOUNT_LOCKED");
   });
 
   it("rejects invalid credentials", async () => {

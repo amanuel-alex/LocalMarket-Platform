@@ -7,6 +7,7 @@ export async function resetDb(): Promise<void> {
   await prisma.payment.deleteMany();
   await prisma.order.deleteMany();
   await prisma.product.deleteMany();
+  await prisma.refreshToken.deleteMany();
   await prisma.user.deleteMany();
 }
 
@@ -39,7 +40,7 @@ export async function seedSeller(
   });
   const log = await loginUser(phone);
   expect(log.status).toBe(200);
-  return { token: log.body.token, user: log.body.user };
+  return { token: log.body.accessToken, user: log.body.user };
 }
 
 export async function seedBuyer(
@@ -50,7 +51,7 @@ export async function seedBuyer(
   expect(reg.status).toBe(201);
   const log = await loginUser(phone);
   expect(log.status).toBe(200);
-  return { token: log.body.token, user: log.body.user };
+  return { token: log.body.accessToken, user: log.body.user };
 }
 
 export async function createProductAsSeller(
