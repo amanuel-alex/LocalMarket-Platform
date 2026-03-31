@@ -9,6 +9,7 @@ import {
   adminCreateProductGroupBodySchema,
   adminOrderOverrideBodySchema,
   logQuerySchema,
+  metricsWindowQuerySchema,
   userIdParamSchema,
 } from "../schemas/admin.schemas.js";
 import * as adminUsersService from "../services/adminUsers.service.js";
@@ -18,6 +19,7 @@ import * as logService from "../services/log.service.js";
 import * as orderService from "../services/order.service.js";
 import * as platformSettingsService from "../services/platformSettings.service.js";
 import * as productService from "../services/product.service.js";
+import * as metricsService from "../services/metrics.service.js";
 
 /** Release platform escrow for an order (seller must have confirmed delivery). */
 export const releaseOrderEscrow: RequestHandler = asyncHandler(async (req, res, next) => {
@@ -33,6 +35,17 @@ export const releaseOrderEscrow: RequestHandler = asyncHandler(async (req, res, 
 export const getSystemAnalytics: RequestHandler = asyncHandler(async (_req, res) => {
   const analytics = await analyticsService.getSystemAnalytics();
   res.json({ analytics });
+});
+
+/** Rolling HTTP observability from persisted request logs (latency + error rates). */
+export const getObservabilityMetrics: RequestHandler = asyncHandler(async (req, res, next) => {
+  const parsed = metricsWindowQuerySchema.safeParse(req.query);
+  if (!parsed.success) {
+    next(parsed.error);
+    return;
+  }
+  const metrics = await metricsService.getHttpMetricsSummary(parsed.data.windowHours);
+  res.json({ metrics });
 });
 
 export const listRequestLogs: RequestHandler = asyncHandler(async (req, res, next) => {

@@ -8,6 +8,12 @@ export const logQuerySchema = z.object({
 
 export type LogQuery = z.infer<typeof logQuerySchema>;
 
+export const metricsWindowQuerySchema = z.object({
+  windowHours: z.coerce.number().int().min(1).max(168).optional().default(24),
+});
+
+export type MetricsWindowQuery = z.infer<typeof metricsWindowQuerySchema>;
+
 export const userIdParamSchema = z.object({
   id: z.string().cuid(),
 });

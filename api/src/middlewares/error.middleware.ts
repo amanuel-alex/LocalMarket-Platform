@@ -2,6 +2,7 @@ import type { ErrorRequestHandler } from "express";
 import { ZodError } from "zod";
 import { Prisma } from "@prisma/client";
 import { AppError } from "../utils/errors.js";
+import { logger } from "../logger.js";
 import * as logService from "../services/log.service.js";
 import { translateErrorCode } from "../i18n/errorMessages.js";
 
@@ -86,7 +87,14 @@ export const errorMiddleware: ErrorRequestHandler = (err, req, res, _next) => {
   const stack = err instanceof Error ? err.stack : null;
   logErr(req, { message, stack, code: "INTERNAL_ERROR", statusCode: 500 });
 
-  console.error(err);
+  logger.error(
+    {
+      err: err instanceof Error ? { message: err.message, stack: err.stack } : err,
+      path: req.path,
+      method: req.method,
+    },
+    "unhandled error",
+  );
   res.status(500).json({
     error: {
       code: "INTERNAL_ERROR",

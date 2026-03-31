@@ -13,6 +13,7 @@ router.post("/orders/:id/release-escrow", adminController.releaseOrderEscrow);
 router.patch("/orders/:id", adminController.overrideOrder);
 router.patch("/disputes/:id", disputeController.adminUpdateStatus);
 router.get("/analytics", adminController.getSystemAnalytics);
+router.get("/metrics/summary", adminController.getObservabilityMetrics);
 router.get("/logs/requests", adminController.listRequestLogs);
 router.get("/logs/errors", adminController.listErrorLogs);
 router.get("/settings", adminController.getSettings);

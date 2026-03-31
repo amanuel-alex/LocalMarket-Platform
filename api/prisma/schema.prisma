@@ -115,9 +115,9 @@ model User {
 model PlatformSettings {
   id                Int      @id
   /**
-   * Basis points: 100 = 1%. Taken from order total before crediting seller available balance.
+   * Basis points: 100 = 1%, 500 = 5%. Taken from order total before crediting seller available balance.
    */
-  commissionRateBps Int      @default(0)
+  commissionRateBps Int      @default(500)
   updatedAt         DateTime @updatedAt
 
   @@map("platform_settings")

@@ -22,6 +22,7 @@ app.use(
   helmet({
     contentSecurityPolicy: false,
     crossOriginResourcePolicy: { policy: "cross-origin" },
+    hsts: getEnv().NODE_ENV === "production" ? { maxAge: 15552000, includeSubDomains: true } : false,
   }),
 );
 app.use(cors());

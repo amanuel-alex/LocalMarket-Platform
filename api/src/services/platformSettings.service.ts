@@ -7,7 +7,7 @@ export async function ensurePlatformSettingsRow(tx: DbTx | typeof prisma): Promi
   const row = await tx.platformSettings.findUnique({ where: { id: SETTINGS_ID } });
   if (!row) {
     await tx.platformSettings.create({
-      data: { id: SETTINGS_ID, commissionRateBps: 0 },
+      data: { id: SETTINGS_ID, commissionRateBps: 500 },
     });
   }
 }

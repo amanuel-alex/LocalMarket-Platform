@@ -7,14 +7,17 @@ export type JwtPayload = { sub: string; role: Role };
 
 export function signAccessToken(payload: JwtPayload): string {
   const { JWT_SECRET, ACCESS_TOKEN_EXPIRES_IN } = getEnv();
-  const signOptions = { expiresIn: ACCESS_TOKEN_EXPIRES_IN } as SignOptions;
+  const signOptions = {
+    expiresIn: ACCESS_TOKEN_EXPIRES_IN,
+    algorithm: "HS256",
+  } as SignOptions;
   return jwt.sign(payload, JWT_SECRET, signOptions);
 }
 
 export function verifyAccessToken(token: string): JwtPayload {
   const { JWT_SECRET } = getEnv();
   try {
-    const decoded = jwt.verify(token, JWT_SECRET);
+    const decoded = jwt.verify(token, JWT_SECRET, { algorithms: ["HS256"] });
     if (
       typeof decoded !== "object" ||
       decoded === null ||

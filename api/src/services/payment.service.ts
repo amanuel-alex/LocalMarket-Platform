@@ -11,6 +11,7 @@ import {
 } from "../i18n/notificationCopy.js";
 import * as walletService from "./wallet.service.js";
 import { getPaymentQueue, isQueueInfrastructureEnabled } from "../queues/queueClient.js";
+import { logger } from "../logger.js";
 
 type MpesaCallbackTxResult = {
   payment: Payment;
@@ -182,6 +183,19 @@ export async function processMpesaCallback(input: MpesaCallbackInput): Promise<{
       orderStatus: order.status,
     };
   });
+
+  if (result.payment.status === "failed") {
+    logger.warn(
+      {
+        type: "payment_failed",
+        paymentId: result.payment.id,
+        orderId: result.payment.orderId,
+        checkoutRequestId: result.payment.checkoutRequestId,
+        mpesaResultCode: input.ResultCode,
+      },
+      "payment marked failed after callback",
+    );
+  }
 
   if (result.notifyDraft) {
     const d = result.notifyDraft;
