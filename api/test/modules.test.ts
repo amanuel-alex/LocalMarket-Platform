@@ -1,4 +1,5 @@
 import { describe, expect, it } from "vitest";
+import { prisma } from "../src/prisma/client.js";
 import {
   api,
   createProductAsSeller,
@@ -222,7 +223,7 @@ describe("Payments (mock M-Pesa)", () => {
 describe("QR verify", () => {
   it("seller completes order with one-time token; reuse fails", async () => {
     const sPhone = uniquePhone("qs");
-    const { token: st } = await seedSeller("QS", sPhone);
+    const { token: st, user: sellerUser } = await seedSeller("QS", sPhone);
     const pr = await createProductAsSeller(st, {
       title: "Q",
       description: "d",
@@ -254,12 +255,28 @@ describe("QR verify", () => {
     const pickupToken = cb.body.pickupQrToken as string;
     expect(pickupToken).toBeTruthy();
 
+    const sellerWalletAfterPay = await prisma.wallet.findUnique({
+      where: { userId: sellerUser.id },
+    });
+    expect(sellerWalletAfterPay!.pendingBalance.toNumber()).toBe(15);
+    expect(sellerWalletAfterPay!.availableBalance.toNumber()).toBe(0);
+    const platformWallet = await prisma.wallet.findFirst({ where: { isPlatform: true } });
+    expect(platformWallet!.availableBalance.toNumber()).toBe(15);
+
     const ok = await api()
       .post("/qr/verify")
       .set("Authorization", `Bearer ${st}`)
       .send({ token: pickupToken });
     expect(ok.status).toBe(200);
     expect(ok.body.order.status).toBe("completed");
+
+    const sellerWalletAfterPickup = await prisma.wallet.findUnique({
+      where: { userId: sellerUser.id },
+    });
+    expect(sellerWalletAfterPickup!.pendingBalance.toNumber()).toBe(0);
+    expect(sellerWalletAfterPickup!.availableBalance.toNumber()).toBe(15);
+    const platformAfter = await prisma.wallet.findFirst({ where: { isPlatform: true } });
+    expect(platformAfter!.availableBalance.toNumber()).toBe(0);
 
     const again = await api()
       .post("/qr/verify")

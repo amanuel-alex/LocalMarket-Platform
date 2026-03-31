@@ -91,6 +91,11 @@ export async function releaseEscrowForOrder(
   const platform = await ensurePlatformWallet(tx);
   const sellerWallet = await ensureUserWallet(tx, args.sellerId);
 
+  const sw = await tx.wallet.findUnique({ where: { id: sellerWallet.id } });
+  if (!sw || sw.pendingBalance.lessThan(args.amount)) {
+    throw new AppError(409, "WALLET_INCONSISTENT", "Seller escrow balance mismatch");
+  }
+
   const p = await tx.wallet.findUnique({ where: { id: platform.id } });
   if (!p || p.availableBalance.lessThan(args.amount)) {
     throw new AppError(409, "WALLET_INCONSISTENT", "Escrow release failed: platform balance");
