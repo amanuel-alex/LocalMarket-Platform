@@ -1,5 +1,6 @@
 import type { RequestHandler } from "express";
 import { asyncHandler } from "../utils/asyncHandler.js";
+import { nearbyProductsQuerySchema } from "../schemas/location.schemas.js";
 import { createProductSchema, productIdParamSchema } from "../schemas/product.schemas.js";
 import * as productService from "../services/product.service.js";
 
@@ -16,6 +17,16 @@ export const create: RequestHandler = asyncHandler(async (req, res, next) => {
 
 export const list: RequestHandler = asyncHandler(async (_req, res) => {
   const products = await productService.listProducts();
+  res.json({ products });
+});
+
+export const nearby: RequestHandler = asyncHandler(async (req, res, next) => {
+  const parsed = nearbyProductsQuerySchema.safeParse(req.query);
+  if (!parsed.success) {
+    next(parsed.error);
+    return;
+  }
+  const products = await productService.listNearbyProducts(parsed.data);
   res.json({ products });
 });
 

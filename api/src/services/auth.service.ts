@@ -8,14 +8,8 @@ import type { RegisterInput } from "../schemas/auth.schemas.js";
 export type SafeUser = Omit<User, "passwordHash">;
 
 function toSafeUser(user: User): SafeUser {
-  return {
-    id: user.id,
-    name: user.name,
-    phone: user.phone,
-    role: user.role,
-    createdAt: user.createdAt,
-    updatedAt: user.updatedAt,
-  };
+  const { passwordHash: _, ...safe } = user;
+  return safe;
 }
 
 export async function register(input: RegisterInput): Promise<{ user: SafeUser; token: string }> {
