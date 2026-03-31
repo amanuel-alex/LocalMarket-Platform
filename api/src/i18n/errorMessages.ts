@@ -155,8 +155,13 @@ const BY_CODE: Partial<Record<string, Record<Locale, string>>> = {
   },
 };
 
+/**
+ * - `en`: always the caller’s English `fallback` (keeps specific `AppError` text).
+ * - `am` / `om`: translated line when present, else the English `fallback`.
+ */
 export function translateErrorCode(locale: Locale, code: string, fallback: string): string {
   const row = BY_CODE[code];
   if (!row) return fallback;
-  return row[locale] ?? row.en ?? fallback;
+  if (locale === "en") return fallback;
+  return row[locale] ?? fallback;
 }
