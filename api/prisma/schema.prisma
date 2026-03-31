@@ -19,6 +19,12 @@ enum OrderStatus {
   completed
 }
 
+enum PaymentStatus {
+  pending
+  completed
+  failed
+}
+
 model User {
   id             String    @id @default(cuid())
   name           String
@@ -61,10 +67,26 @@ model Order {
   buyer      User        @relation("BuyerOrders", fields: [buyerId], references: [id], onDelete: Restrict)
   seller     User        @relation("SellerOrders", fields: [sellerId], references: [id], onDelete: Restrict)
   product    Product     @relation(fields: [productId], references: [id], onDelete: Restrict)
+  payments   Payment[]
   createdAt  DateTime    @default(now())
   updatedAt  DateTime    @updatedAt
 
   @@index([buyerId])
   @@index([sellerId])
   @@index([productId])
+}
+
+model Payment {
+  id                  String        @id @default(cuid())
+  status              PaymentStatus @default(pending)
+  amount              Decimal
+  phone               String?
+  checkoutRequestId   String        @unique
+  merchantRequestId   String
+  orderId             String
+  order               Order         @relation(fields: [orderId], references: [id], onDelete: Restrict)
+  createdAt           DateTime      @default(now())
+  updatedAt           DateTime      @updatedAt
+
+  @@index([orderId])
 }

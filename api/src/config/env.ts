@@ -7,6 +7,8 @@ const schema = z.object({
   JWT_SECRET: z.string().min(32, "JWT_SECRET must be at least 32 characters"),
   JWT_EXPIRES_IN: z.string().default("7d"),
   BCRYPT_ROUNDS: z.coerce.number().int().min(10).max(14).default(12),
+  /** If set, POST /payments/callback must send header X-Callback-Secret with this value (Daraja uses different verification; this is a simple hook for prod). */
+  MPESA_CALLBACK_SECRET: z.string().optional().default(""),
 });
 
 export type Env = z.infer<typeof schema>;
