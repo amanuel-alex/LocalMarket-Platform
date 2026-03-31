@@ -4,6 +4,8 @@ import type { AssistantChatInput } from "../schemas/assistant.schemas.js";
 import { haversineDistanceKm } from "../utils/haversine.js";
 import type { ProductJson } from "./product.service.js";
 import { toProductJson } from "./product.service.js";
+import * as rankingService from "./ranking.service.js";
+import type { RankComponents } from "./ranking.service.js";
 
 /** Max products returned (after rule-based fetch + sort). */
 const RESULT_LIMIT = 20;
@@ -33,20 +35,50 @@ const NEARBY_PATTERNS = [
   "distance",
 ];
 
+/**
+ * When the user asks for “best / recommended / trusted …”, run the same smart ranker as `GET /products/ranked`
+ * (rules pick the candidate set; ranking scores price · distance · popularity · rating · trust).
+ */
+const SMART_RANK_PATTERNS = [
+  "best",
+  "top rated",
+  "top-rated",
+  "highest rated",
+  "recommended",
+  "recommend",
+  "popular",
+  "trending",
+  "trusted",
+  "trustworthy",
+  "smart pick",
+  "wow",
+  "what should i buy",
+  "which one",
+];
+
 export type AssistantIntents = {
   cheap: boolean;
   nearby: boolean;
+  smartRanking: boolean;
   category: string | null;
 };
 
 export type AssistantProductJson = ProductJson & {
   distanceKm?: number;
   locationSource?: "seller" | "product";
+  rankScore?: number;
+  rankComponents?: RankComponents;
+  sellerTrustScore?: number;
 };
 
 export type AssistantChatResult = {
-  intents: AssistantIntents & { nearbyMissingCoordinates: boolean };
+  intents: AssistantIntents & {
+    nearbyMissingCoordinates: boolean;
+    smartRankingMissingCoordinates: boolean;
+  };
   products: AssistantProductJson[];
+  /** `hybrid_ranking` = rule-based fetch + smart score sort (your “hybrid AI” advantage). */
+  assistantMode: "rules" | "hybrid_ranking";
 };
 
 function normalizeMessage(message: string): string {
@@ -96,6 +128,7 @@ export function parseIntents(message: string, categories: string[]): AssistantIn
   return {
     cheap: hasAnyPhrase(n, CHEAP_PATTERNS),
     nearby: hasAnyPhrase(n, NEARBY_PATTERNS),
+    smartRanking: hasAnyPhrase(n, SMART_RANK_PATTERNS),
     category: detectCategory(n, categories),
   };
 }
@@ -138,11 +171,31 @@ export async function runAssistantChat(input: AssistantChatInput): Promise<Assis
   const intents = parseIntents(input.message, categories);
   const nearbyMissingCoordinates =
     intents.nearby && (input.lat === undefined || input.lng === undefined);
+  const smartRankingMissingCoordinates =
+    intents.smartRanking && (input.lat === undefined || input.lng === undefined);
 
   const where: Prisma.ProductWhereInput =
     intents.category != null ? { category: intents.category } : {};
 
   const rows = await fetchAssistantRows(where);
+
+  const canHybridRank =
+    intents.smartRanking && input.lat !== undefined && input.lng !== undefined;
+
+  if (canHybridRank) {
+    const ranked = await rankingService.rankProductRowsHybrid(
+      rows,
+      input.lat,
+      input.lng,
+      RESULT_LIMIT,
+    );
+    return {
+      intents: { ...intents, nearbyMissingCoordinates, smartRankingMissingCoordinates },
+      products: ranked,
+      assistantMode: "hybrid_ranking",
+    };
+  }
+
   const useGeo = intents.nearby && !nearbyMissingCoordinates;
   const geoLat = useGeo ? input.lat! : undefined;
   const geoLng = useGeo ? input.lng! : undefined;
@@ -166,7 +219,8 @@ export async function runAssistantChat(input: AssistantChatInput): Promise<Assis
   items = items.slice(0, RESULT_LIMIT);
 
   return {
-    intents: { ...intents, nearbyMissingCoordinates },
+    intents: { ...intents, nearbyMissingCoordinates, smartRankingMissingCoordinates },
     products: items,
+    assistantMode: "rules",
   };
 }

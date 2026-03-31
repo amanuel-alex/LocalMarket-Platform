@@ -14,6 +14,7 @@ router.post(
   requireRoles("seller"),
   orderController.confirmDelivery,
 );
+router.post("/:id/review", requireRoles("buyer"), orderController.submitReview);
 router.get("/:id/receipt", orderController.receipt);
 router.get("/:id", orderController.getById);
 

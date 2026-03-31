@@ -6,6 +6,7 @@ import { requireRoles } from "../middlewares/role.middleware.js";
 const router = Router();
 
 router.get("/", productController.list);
+router.get("/ranked", productController.ranked);
 router.get("/nearby", productController.nearby);
 router.get("/search", productController.search);
 router.get("/:id/compare", productController.compare);

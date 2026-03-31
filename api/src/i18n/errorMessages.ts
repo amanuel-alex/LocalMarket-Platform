@@ -87,6 +87,11 @@ const BY_CODE: Partial<Record<string, Record<Locale, string>>> = {
     am: "የቦርሳ ቀሪ ሒሳብ አይስማማም።",
     om: "Kuussa baleessi wal hin simu.",
   },
+  REVIEW_EXISTS: {
+    en: "This order already has a review",
+    am: "ይህ ትዕዛዝ ቀድሞ ግምገማ አለው።",
+    om: "Ajajni kun duraan yaadaalee qaba.",
+  },
   DISPUTE_EXISTS: {
     en: "An open dispute already exists for this order",
     am: "በዚህ ትዕዛዝ ላይ ክርክር ቀድሞ ክፍት ነው።",

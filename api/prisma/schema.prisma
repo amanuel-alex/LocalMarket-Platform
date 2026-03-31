@@ -80,33 +80,35 @@ enum Locale {
 }
 
 model User {
-  id                  String         @id @default(cuid())
+  id                  String          @id @default(cuid())
   name                String
-  phone               String         @unique
+  phone               String          @unique
   passwordHash        String
-  role                Role           @default(buyer)
-  failedLoginAttempts Int            @default(0)
+  role                Role            @default(buyer)
+  failedLoginAttempts Int             @default(0)
   lockedUntil         DateTime?
   /**
    * When set, user cannot log in or call authenticated APIs.
    */
   bannedAt            DateTime?
   banReason           String?
-  preferredLocale     Locale         @default(en)
+  preferredLocale     Locale          @default(en)
   /**
    * Shop / pickup coordinates for sellers (optional). Used for nearby product search.
    */
   sellerLat           Float?
   sellerLng           Float?
-  createdAt           DateTime       @default(now())
-  updatedAt           DateTime       @updatedAt
+  createdAt           DateTime        @default(now())
+  updatedAt           DateTime        @updatedAt
   products            Product[]
-  ordersAsBuyer       Order[]        @relation("BuyerOrders")
-  ordersAsSeller      Order[]        @relation("SellerOrders")
+  ordersAsBuyer       Order[]         @relation("BuyerOrders")
+  ordersAsSeller      Order[]         @relation("SellerOrders")
   refreshTokens       RefreshToken[]
   wallet              Wallet?
   payouts             Payout[]
   notifications       Notification[]
+  reviewsAsSeller     ProductReview[] @relation("SellerProductReviews")
+  reviewsAsBuyer      ProductReview[] @relation("BuyerProductReviews")
 
   @@index([bannedAt])
 }
@@ -223,10 +225,10 @@ model ProductGroup {
 }
 
 model Product {
-  id             String        @id @default(cuid())
+  id             String          @id @default(cuid())
   title          String
   description    String
-  price          Decimal       @db.Decimal(14, 2)
+  price          Decimal         @db.Decimal(14, 2)
   category       String
   lat            Float
   lng            Float
@@ -237,17 +239,40 @@ model Product {
   /**
    * Optional group for the same catalog item across sellers (price compare + related).
    */
-  productGroupId String?       @map("product_group_id")
-  productGroup   ProductGroup? @relation(fields: [productGroupId], references: [id], onDelete: SetNull)
+  productGroupId String?         @map("product_group_id")
+  productGroup   ProductGroup?   @relation(fields: [productGroupId], references: [id], onDelete: SetNull)
   sellerId       String
-  seller         User          @relation(fields: [sellerId], references: [id], onDelete: Restrict)
+  seller         User            @relation(fields: [sellerId], references: [id], onDelete: Restrict)
   orders         Order[]
-  createdAt      DateTime      @default(now())
-  updatedAt      DateTime      @updatedAt
+  reviews        ProductReview[]
+  createdAt      DateTime        @default(now())
+  updatedAt      DateTime        @updatedAt
 
   @@index([sellerId])
   @@index([category])
   @@index([productGroupId])
+}
+
+/**
+ * One review per completed order (buyer). Drives product rating + seller trust signals.
+ */
+model ProductReview {
+  id        String   @id @default(cuid())
+  orderId   String   @unique @map("order_id")
+  productId String   @map("product_id")
+  sellerId  String   @map("seller_id")
+  buyerId   String   @map("buyer_id")
+  stars     Int
+  comment   String?  @db.Text
+  createdAt DateTime @default(now())
+  order     Order    @relation(fields: [orderId], references: [id], onDelete: Cascade)
+  product   Product  @relation(fields: [productId], references: [id], onDelete: Cascade)
+  seller    User     @relation("SellerProductReviews", fields: [sellerId], references: [id], onDelete: Restrict)
+  buyer     User     @relation("BuyerProductReviews", fields: [buyerId], references: [id], onDelete: Restrict)
+
+  @@index([productId])
+  @@index([sellerId])
+  @@map("product_reviews")
 }
 
 model RequestLog {
@@ -311,6 +336,7 @@ model Order {
   payments            Payment[]
   disputes            Dispute[]
   notifications       Notification[]
+  review              ProductReview?
   createdAt           DateTime       @default(now())
   updatedAt           DateTime       @updatedAt
 

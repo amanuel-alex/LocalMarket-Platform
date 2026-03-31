@@ -5,3 +5,9 @@ export const sellerInsightsQuerySchema = z.object({
 });
 
 export type SellerInsightsQuery = z.infer<typeof sellerInsightsQuerySchema>;
+
+export const sellerIdParamSchema = z.object({
+  sellerId: z.string().cuid(),
+});
+
+export type SellerIdParam = z.infer<typeof sellerIdParamSchema>;

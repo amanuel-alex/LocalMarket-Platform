@@ -32,6 +32,32 @@ export const productListQuerySchema = z.object({
 
 export type ProductListQuery = z.infer<typeof productListQuerySchema>;
 
+/** Smart ranking: optional buyer location for distance; optional category filter. */
+export const productRankedQuerySchema = z
+  .object({
+    lat: z.coerce.number().gte(-90).lte(90).optional(),
+    lng: z.coerce.number().gte(-180).lte(180).optional(),
+    limit: z.coerce.number().int().positive().max(100).optional().default(20),
+    category: z
+      .string()
+      .max(120)
+      .optional()
+      .transform((v) => (v?.trim() ? v.trim() : undefined)),
+  })
+  .superRefine((data, ctx) => {
+    const hasLat = data.lat !== undefined;
+    const hasLng = data.lng !== undefined;
+    if (hasLat !== hasLng) {
+      ctx.addIssue({
+        code: z.ZodIssueCode.custom,
+        message: "lat and lng must both be provided for distance-aware ranking",
+        path: hasLat ? ["lng"] : ["lat"],
+      });
+    }
+  });
+
+export type ProductRankedQuery = z.infer<typeof productRankedQuerySchema>;
+
 /** Query: search text (title/description), optional price range, optional location radius (lat+lng+radiusKm). */
 export const productSearchQuerySchema = z
   .object({

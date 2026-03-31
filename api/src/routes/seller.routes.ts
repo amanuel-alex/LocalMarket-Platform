@@ -7,5 +7,6 @@ const router = Router();
 
 router.patch("/location", requireAuth, requireRoles("seller"), sellerController.updateShopLocation);
 router.get("/insights", requireAuth, requireRoles("seller"), sellerController.insights);
+router.get("/:sellerId/trust", sellerController.publicTrust);
 
 export default router;

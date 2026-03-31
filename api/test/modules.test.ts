@@ -28,6 +28,14 @@ describe("Health", () => {
     expect(v2.status).toBe(200);
     expect(v2.body.apiVersion).toBe(2);
   });
+
+  it("exposes public feature checklist", async () => {
+    const res = await api().get("/api/v1/meta/checklist");
+    expect(res.status).toBe(200);
+    expect(res.body.features.smartRanking).toBe(true);
+    expect(res.body.features.hybridAssistant).toBe(true);
+    expect(res.body.checklist.some((c: { id: string }) => c.id === "smart_ranking")).toBe(true);
+  });
 });
 
 describe("Auth", () => {
@@ -146,6 +154,19 @@ describe("Products", () => {
     expect(insights.status).toBe(200);
     expect(insights.body.insights.summary).toBeDefined();
     expect(Array.isArray(insights.body.insights.revenueByDay)).toBe(true);
+
+    const seller = await prisma.user.findFirst({ where: { phone } });
+    expect(seller).toBeTruthy();
+    const trust = await api().get(`/sellers/${seller!.id}/trust`);
+    expect(trust.status).toBe(200);
+    expect(trust.body.trust.trustScore).toBeGreaterThanOrEqual(0);
+
+    const ranked = await api()
+      .get("/products/ranked")
+      .query({ lat: -1.2921, lng: 36.8219, limit: 5 });
+    expect(ranked.status).toBe(200);
+    expect(ranked.body.products.length).toBeGreaterThan(0);
+    expect(ranked.body.products[0].rankScore).toBeDefined();
   });
 
   it("rejects product create for buyer", async () => {
@@ -335,6 +356,13 @@ describe("QR verify", () => {
     const platformFinal = await prisma.wallet.findFirst({ where: { isPlatform: true } });
     expect(platformFinal!.availableBalance.toNumber()).toBeCloseTo(0.75, 2);
 
+    const reviewRes = await api()
+      .post(`/orders/${orderId}/review`)
+      .set("Authorization", `Bearer ${bt}`)
+      .send({ stars: 5, comment: "Great pickup" });
+    expect(reviewRes.status).toBe(201);
+    expect(reviewRes.body.review.stars).toBe(5);
+
     const again = await api()
       .post("/qr/verify")
       .set("Authorization", `Bearer ${st}`)
@@ -367,6 +395,7 @@ describe("Assistant", () => {
     });
     expect(cheap.status).toBe(200);
     expect(cheap.body.intents.cheap).toBe(true);
+    expect(cheap.body.assistantMode).toBe("rules");
     expect(cheap.body.products.length).toBeGreaterThan(0);
     const prices = cheap.body.products.map((p: { price: number }) => p.price);
     const sorted = [...prices].sort((a, b) => a - b);
@@ -380,5 +409,15 @@ describe("Assistant", () => {
     expect(cat.body.products.every((p: { category: string }) => p.category === "Groceries")).toBe(
       true,
     );
+
+    const hybrid = await api().post("/assistant/chat").send({
+      message: "What are the best groceries?",
+      lat: -1.2921,
+      lng: 36.8219,
+    });
+    expect(hybrid.status).toBe(200);
+    expect(hybrid.body.intents.smartRanking).toBe(true);
+    expect(hybrid.body.assistantMode).toBe("hybrid_ranking");
+    expect(hybrid.body.products[0]?.rankScore).toBeDefined();
   });
 });

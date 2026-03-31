@@ -5,9 +5,11 @@ import {
   createProductSchema,
   productIdParamSchema,
   productListQuerySchema,
+  productRankedQuerySchema,
   productSearchQuerySchema,
 } from "../schemas/product.schemas.js";
 import * as productService from "../services/product.service.js";
+import * as rankingService from "../services/ranking.service.js";
 
 export const create: RequestHandler = asyncHandler(async (req, res, next) => {
   const parsed = createProductSchema.safeParse(req.body);
@@ -29,6 +31,28 @@ export const list: RequestHandler = asyncHandler(async (req, res, next) => {
   const { page, limit } = parsed.data;
   const result = await productService.listProducts({ page, limit });
   res.json(result);
+});
+
+export const ranked: RequestHandler = asyncHandler(async (req, res, next) => {
+  const parsed = productRankedQuerySchema.safeParse(req.query);
+  if (!parsed.success) {
+    next(parsed.error);
+    return;
+  }
+  const { lat, lng, limit, category } = parsed.data;
+  const products = await rankingService.listRankedProducts({
+    lat,
+    lng,
+    limit,
+    category,
+  });
+  res.json({
+    products,
+    ranking: {
+      description:
+        "Higher rankScore is better. Blends: lower price & distance, higher popularity & ratings, boosted by seller trust.",
+    },
+  });
 });
 
 export const nearby: RequestHandler = asyncHandler(async (req, res, next) => {

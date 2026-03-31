@@ -15,6 +15,7 @@ import walletRoutes from "../../routes/wallet.routes.js";
 import { requireAuth } from "../../middlewares/auth.middleware.js";
 import { globalApiRateLimiter } from "../../middlewares/rateLimit.middleware.js";
 import { requireRoles } from "../../middlewares/role.middleware.js";
+import * as metaController from "../../controllers/meta.controller.js";
 
 /** Versioned HTTP API (current). Mount at `/api/v1` and, for compatibility, at `/`. */
 export const v1Router = Router();
@@ -22,6 +23,8 @@ export const v1Router = Router();
 v1Router.get("/health", (_req, res) => {
   res.json({ ok: true, apiVersion: 1 });
 });
+
+v1Router.get("/meta/checklist", metaController.checklist);
 
 v1Router.use(globalApiRateLimiter);
 
