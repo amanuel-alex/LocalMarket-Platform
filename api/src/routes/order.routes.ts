@@ -9,6 +9,11 @@ router.use(requireAuth);
 
 router.post("/", requireRoles("buyer"), orderController.create);
 router.get("/", orderController.list);
+router.post(
+  "/:id/confirm-delivery",
+  requireRoles("seller"),
+  orderController.confirmDelivery,
+);
 router.get("/:id", orderController.getById);
 
 export default router;

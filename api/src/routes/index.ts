@@ -1,4 +1,5 @@
 import { Router } from "express";
+import adminRoutes from "./admin.routes.js";
 import assistantRoutes from "./assistant.routes.js";
 import authRoutes from "./auth.routes.js";
 import orderRoutes from "./order.routes.js";
@@ -30,3 +31,5 @@ router.use("/payouts", payoutRoutes);
 router.get("/admin/health", requireAuth, requireRoles("admin"), (_req, res) => {
   res.json({ ok: true, scope: "admin" });
 });
+
+router.use("/admin", adminRoutes);

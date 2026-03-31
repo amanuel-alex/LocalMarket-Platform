@@ -3,6 +3,7 @@ import { prisma } from "../src/prisma/client.js";
 import {
   api,
   createProductAsSeller,
+  seedAdmin,
   seedBuyer,
   seedSeller,
 } from "./helpers.js";
@@ -269,14 +270,38 @@ describe("QR verify", () => {
       .send({ token: pickupToken });
     expect(ok.status).toBe(200);
     expect(ok.body.order.status).toBe("completed");
+    expect(ok.body.order.eligibleForEscrowRelease).toBe(false);
 
     const sellerWalletAfterPickup = await prisma.wallet.findUnique({
       where: { userId: sellerUser.id },
     });
-    expect(sellerWalletAfterPickup!.pendingBalance.toNumber()).toBe(0);
-    expect(sellerWalletAfterPickup!.availableBalance.toNumber()).toBe(15);
-    const platformAfter = await prisma.wallet.findFirst({ where: { isPlatform: true } });
-    expect(platformAfter!.availableBalance.toNumber()).toBe(0);
+    expect(sellerWalletAfterPickup!.pendingBalance.toNumber()).toBe(15);
+    expect(sellerWalletAfterPickup!.availableBalance.toNumber()).toBe(0);
+    const platformAfterPickup = await prisma.wallet.findFirst({ where: { isPlatform: true } });
+    expect(platformAfterPickup!.availableBalance.toNumber()).toBe(15);
+
+    const confirm = await api()
+      .post(`/orders/${orderId}/confirm-delivery`)
+      .set("Authorization", `Bearer ${st}`);
+    expect(confirm.status).toBe(200);
+    expect(confirm.body.order.deliveryConfirmedAt).toBeTruthy();
+    expect(confirm.body.order.eligibleForEscrowRelease).toBe(true);
+
+    const { token: adminToken } = await seedAdmin("Admin", uniquePhone("adm"));
+    const released = await api()
+      .post(`/admin/orders/${orderId}/release-escrow`)
+      .set("Authorization", `Bearer ${adminToken}`);
+    expect(released.status).toBe(200);
+    expect(released.body.order.escrowReleasedAt).toBeTruthy();
+    expect(released.body.order.eligibleForEscrowRelease).toBe(false);
+
+    const sellerWalletFinal = await prisma.wallet.findUnique({
+      where: { userId: sellerUser.id },
+    });
+    expect(sellerWalletFinal!.pendingBalance.toNumber()).toBe(0);
+    expect(sellerWalletFinal!.availableBalance.toNumber()).toBe(15);
+    const platformFinal = await prisma.wallet.findFirst({ where: { isPlatform: true } });
+    expect(platformFinal!.availableBalance.toNumber()).toBe(0);
 
     const again = await api()
       .post("/qr/verify")

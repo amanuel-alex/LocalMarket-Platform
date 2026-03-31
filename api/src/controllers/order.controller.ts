@@ -32,3 +32,13 @@ export const getById: RequestHandler = asyncHandler(async (req, res, next) => {
   );
   res.json({ order });
 });
+
+export const confirmDelivery: RequestHandler = asyncHandler(async (req, res, next) => {
+  const parsed = orderIdParamSchema.safeParse(req.params);
+  if (!parsed.success) {
+    next(parsed.error);
+    return;
+  }
+  const order = await orderService.confirmDeliveryBySeller(req.user!.id, parsed.data.id);
+  res.json({ order });
+});

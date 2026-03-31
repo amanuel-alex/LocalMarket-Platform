@@ -2,6 +2,7 @@ import type { Order, OrderStatus, Product, Role } from "@prisma/client";
 import { prisma } from "../prisma/client.js";
 import { AppError } from "../utils/errors.js";
 import type { CreateOrderInput } from "../schemas/order.schemas.js";
+import * as walletService from "./wallet.service.js";
 
 type OrderWithProduct = Order & {
   product: Pick<Product, "id" | "title" | "price">;
@@ -18,6 +19,10 @@ export type OrderJson = {
   product: { id: string; title: string; price: number };
   createdAt: Date;
   updatedAt: Date;
+  deliveryConfirmedAt: Date | null;
+  escrowReleasedAt: Date | null;
+  /** Completed + seller confirmed delivery + admin has not released escrow yet (awaiting admin/system). */
+  eligibleForEscrowRelease: boolean;
   /** Present only for the buyer when order is paid and pickup QR is still unused. */
   pickupQrToken?: string;
 };
@@ -26,6 +31,11 @@ export function toOrderJson(
   row: OrderWithProduct,
   viewer?: { userId: string; role: Role },
 ): OrderJson {
+  const eligibleForEscrowRelease =
+    row.status === "completed" &&
+    row.deliveryConfirmedAt != null &&
+    row.escrowReleasedAt == null;
+
   const base: OrderJson = {
     id: row.id,
     status: row.status,
@@ -41,6 +51,9 @@ export function toOrderJson(
     },
     createdAt: row.createdAt,
     updatedAt: row.updatedAt,
+    deliveryConfirmedAt: row.deliveryConfirmedAt ?? null,
+    escrowReleasedAt: row.escrowReleasedAt ?? null,
+    eligibleForEscrowRelease,
   };
 
   const showPickupToken =
@@ -122,4 +135,74 @@ export async function getOrderByIdForUser(
     throw new AppError(403, "FORBIDDEN", "You cannot access this order");
   }
   return toOrderJson(row, { userId, role });
+}
+
+/** After buyer pickup (QR): seller confirms delivery → funds become eligible for admin release. */
+export async function confirmDeliveryBySeller(
+  sellerId: string,
+  orderId: string,
+): Promise<OrderJson> {
+  const row = await prisma.order.findUnique({
+    where: { id: orderId },
+    include: { product: { select: productSelect } },
+  });
+  if (!row) {
+    throw new AppError(404, "NOT_FOUND", "Order not found");
+  }
+  if (row.sellerId !== sellerId) {
+    throw new AppError(403, "FORBIDDEN", "You can only confirm delivery on your own orders");
+  }
+  if (row.status !== "completed") {
+    throw new AppError(409, "ORDER_NOT_READY", "Order must be completed (pickup verified) first");
+  }
+  if (row.deliveryConfirmedAt) {
+    throw new AppError(409, "ALREADY_CONFIRMED", "Delivery was already confirmed");
+  }
+  if (row.escrowReleasedAt) {
+    throw new AppError(409, "ALREADY_RELEASED", "Escrow was already released for this order");
+  }
+
+  const updated = await prisma.order.update({
+    where: { id: orderId },
+    data: { deliveryConfirmedAt: new Date() },
+    include: { product: { select: productSelect } },
+  });
+
+  return toOrderJson(updated, { userId: sellerId, role: "seller" });
+}
+
+/** Admin/system: move escrow from pending → seller available after seller confirmed delivery. */
+export async function releaseOrderEscrowByAdmin(orderId: string): Promise<OrderJson> {
+  return prisma.$transaction(async (tx) => {
+    const row = await tx.order.findUnique({
+      where: { id: orderId },
+      include: { product: { select: productSelect } },
+    });
+    if (!row) {
+      throw new AppError(404, "NOT_FOUND", "Order not found");
+    }
+    if (row.status !== "completed") {
+      throw new AppError(409, "ORDER_NOT_READY", "Order must be completed before escrow release");
+    }
+    if (!row.deliveryConfirmedAt) {
+      throw new AppError(409, "DELIVERY_NOT_CONFIRMED", "Seller has not confirmed delivery yet");
+    }
+    if (row.escrowReleasedAt) {
+      throw new AppError(409, "ALREADY_RELEASED", "Escrow already released for this order");
+    }
+
+    await walletService.releaseEscrowForOrder(tx, {
+      orderId: row.id,
+      sellerId: row.sellerId,
+      amount: row.totalPrice,
+    });
+
+    const updated = await tx.order.update({
+      where: { id: orderId },
+      data: { escrowReleasedAt: new Date() },
+      include: { product: { select: productSelect } },
+    });
+
+    return toOrderJson(updated, { userId: "", role: "admin" });
+  });
 }

@@ -57,6 +57,21 @@ export async function seedBuyer(
   return { token: log.body.accessToken, user: log.body.user };
 }
 
+export async function seedAdmin(
+  name: string,
+  phone: string,
+): Promise<{ token: string; user: { id: string; role: string } }> {
+  const reg = await registerUser(name, phone);
+  expect(reg.status).toBe(201);
+  await prisma.user.update({
+    where: { id: reg.body.user.id },
+    data: { role: "admin" },
+  });
+  const log = await loginUser(phone);
+  expect(log.status).toBe(200);
+  return { token: log.body.accessToken, user: log.body.user };
+}
+
 export async function createProductAsSeller(
   token: string,
   body: {
