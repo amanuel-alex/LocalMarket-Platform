@@ -5,6 +5,13 @@ import type { CreateProductInput } from "../schemas/product.schemas.js";
 import { haversineDistanceKm } from "../utils/haversine.js";
 import { AppError } from "../utils/errors.js";
 
+/** Multiplicative band around anchor price for “similar” related items (±30%). */
+const RELATED_PRICE_MIN_FACTOR = 0.7;
+const RELATED_PRICE_MAX_FACTOR = 1.3;
+/** Cap rows read from DB before in-memory sort by price proximity (index-friendly filters already applied). */
+const RELATED_CANDIDATE_CAP = 48;
+const RELATED_RESULT_LIMIT = 6;
+
 export type ProductJson = {
   id: string;
   title: string;
@@ -92,4 +99,40 @@ export async function getProductById(id: string): Promise<ProductJson> {
     throw new AppError(404, "NOT_FOUND", "Product not found");
   }
   return toProductJson(row);
+}
+
+/**
+ * Same category, similar price (±30%), excludes anchor product.
+ * One indexed query + small in-memory sort by closest price (then recency).
+ */
+export async function listRelatedProducts(anchorProductId: string): Promise<ProductJson[]> {
+  const anchor = await prisma.product.findUnique({ where: { id: anchorProductId } });
+  if (!anchor) {
+    throw new AppError(404, "NOT_FOUND", "Product not found");
+  }
+
+  const minPrice = anchor.price.times(RELATED_PRICE_MIN_FACTOR);
+  const maxPrice = anchor.price.times(RELATED_PRICE_MAX_FACTOR);
+  const anchorPriceNum = anchor.price.toNumber();
+
+  const rows = await prisma.product.findMany({
+    where: {
+      category: anchor.category,
+      id: { not: anchor.id },
+      price: { gte: minPrice, lte: maxPrice },
+    },
+    orderBy: { updatedAt: "desc" },
+    take: RELATED_CANDIDATE_CAP,
+  });
+
+  const withGap = rows.map((row) => ({
+    row,
+    gap: Math.abs(row.price.toNumber() - anchorPriceNum),
+  }));
+
+  withGap.sort((a, b) =>
+    a.gap !== b.gap ? a.gap - b.gap : b.row.updatedAt.getTime() - a.row.updatedAt.getTime(),
+  );
+
+  return withGap.slice(0, RELATED_RESULT_LIMIT).map(({ row }) => toProductJson(row));
 }
