@@ -12,6 +12,8 @@ export const createProductSchema = z.object({
   category: z.string().trim().min(1).max(120),
   location: locationSchema,
   imageUrl: z.string().url().max(2048).optional(),
+  /** Optional catalog group (same item across sellers) for price compare / related. */
+  productGroupId: z.string().cuid().optional(),
 });
 
 export type CreateProductInput = z.infer<typeof createProductSchema>;

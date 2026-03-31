@@ -8,14 +8,20 @@ export async function resetDb(): Promise<void> {
   await prisma.payout.deleteMany();
   await prisma.requestLog.deleteMany();
   await prisma.errorLog.deleteMany();
+  await prisma.auditLog.deleteMany();
   await prisma.payment.deleteMany();
   await prisma.dispute.deleteMany();
   await prisma.notification.deleteMany();
   await prisma.order.deleteMany();
   await prisma.product.deleteMany();
+  await prisma.productGroup.deleteMany();
+  await prisma.platformSettings.deleteMany();
   await prisma.refreshToken.deleteMany();
   await prisma.wallet.deleteMany();
   await prisma.user.deleteMany();
+  await prisma.platformSettings.create({
+    data: { id: 1, commissionRateBps: 0 },
+  });
 }
 
 export const api = () => request(app);

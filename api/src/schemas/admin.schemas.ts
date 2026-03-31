@@ -1,3 +1,4 @@
+import { OrderStatus } from "@prisma/client";
 import { z } from "zod";
 
 export const logQuerySchema = z.object({
@@ -6,3 +7,42 @@ export const logQuerySchema = z.object({
 });
 
 export type LogQuery = z.infer<typeof logQuerySchema>;
+
+export const userIdParamSchema = z.object({
+  id: z.string().cuid(),
+});
+
+export const adminCommissionBodySchema = z.object({
+  commissionRateBps: z.coerce.number().int().min(0).max(10_000),
+});
+
+export const adminBanBodySchema = z.object({
+  reason: z.string().max(2000).optional(),
+});
+
+export const adminOrderOverrideBodySchema = z
+  .object({
+    status: z.nativeEnum(OrderStatus).optional(),
+    clearPickupQr: z.boolean().optional(),
+    adminNote: z.string().max(4000).optional(),
+  })
+  .superRefine((data, ctx) => {
+    const hasPatch =
+      data.status !== undefined ||
+      data.clearPickupQr === true ||
+      data.adminNote !== undefined;
+    if (!hasPatch) {
+      ctx.addIssue({
+        code: z.ZodIssueCode.custom,
+        message: "Provide at least one of: status, clearPickupQr, adminNote",
+      });
+    }
+  });
+
+export const adminCreateProductGroupBodySchema = z.object({
+  label: z.string().trim().max(200).optional(),
+});
+
+export const adminAssignProductGroupBodySchema = z.object({
+  productGroupId: z.string().cuid().nullable(),
+});

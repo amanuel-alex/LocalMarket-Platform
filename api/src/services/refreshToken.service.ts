@@ -46,6 +46,9 @@ export async function rotateRefreshToken(
     if (!user) {
       throw new AppError(401, "INVALID_REFRESH_TOKEN", "Invalid refresh token");
     }
+    if (user.bannedAt != null) {
+      throw new AppError(403, "ACCOUNT_BANNED", "This account has been suspended");
+    }
 
     await tx.refreshToken.update({
       where: { id: row.id },

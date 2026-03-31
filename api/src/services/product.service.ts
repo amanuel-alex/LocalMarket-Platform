@@ -33,6 +33,7 @@ export type ProductJson = {
   category: string;
   location: { lat: number; lng: number };
   imageUrl: string | null;
+  productGroupId: string | null;
   sellerId: string;
   createdAt: Date;
   updatedAt: Date;
@@ -57,6 +58,7 @@ export function toProductJson(row: Product): ProductJson {
     category: row.category,
     location: { lat: row.lat, lng: row.lng },
     imageUrl: row.imageUrl ?? null,
+    productGroupId: row.productGroupId ?? null,
     sellerId: row.sellerId,
     createdAt: row.createdAt,
     updatedAt: row.updatedAt,
@@ -64,6 +66,13 @@ export function toProductJson(row: Product): ProductJson {
 }
 
 export async function createProduct(sellerId: string, input: CreateProductInput): Promise<ProductJson> {
+  if (input.productGroupId) {
+    const g = await prisma.productGroup.findUnique({ where: { id: input.productGroupId } });
+    if (!g) {
+      throw new AppError(404, "NOT_FOUND", "Product group not found");
+    }
+  }
+
   const row = await prisma.product.create({
     data: {
       title: input.title,
@@ -73,6 +82,7 @@ export async function createProduct(sellerId: string, input: CreateProductInput)
       lat: input.location.lat,
       lng: input.location.lng,
       imageUrl: input.imageUrl ?? null,
+      productGroupId: input.productGroupId ?? null,
       sellerId,
     },
   });
@@ -207,9 +217,26 @@ export async function listRelatedProducts(anchorProductId: string): Promise<Prod
   }
 
   return cacheGetOrSetRelated(anchorProductId, async () => {
+    const anchorPriceNum = anchor.price.toNumber();
+
+    if (anchor.productGroupId) {
+      const rows = await prisma.product.findMany({
+        where: { productGroupId: anchor.productGroupId, id: { not: anchor.id } },
+        orderBy: { updatedAt: "desc" },
+        take: RELATED_CANDIDATE_CAP,
+      });
+      const withGap = rows.map((row) => ({
+        row,
+        gap: Math.abs(row.price.toNumber() - anchorPriceNum),
+      }));
+      withGap.sort((a, b) =>
+        a.gap !== b.gap ? a.gap - b.gap : b.row.updatedAt.getTime() - a.row.updatedAt.getTime(),
+      );
+      return withGap.slice(0, RELATED_RESULT_LIMIT).map(({ row }) => toProductJson(row));
+    }
+
     const minPrice = anchor.price.times(RELATED_PRICE_MIN_FACTOR);
     const maxPrice = anchor.price.times(RELATED_PRICE_MAX_FACTOR);
-    const anchorPriceNum = anchor.price.toNumber();
 
     const rows = await prisma.product.findMany({
       where: {
@@ -232,4 +259,55 @@ export async function listRelatedProducts(anchorProductId: string): Promise<Prod
 
     return withGap.slice(0, RELATED_RESULT_LIMIT).map(({ row }) => toProductJson(row));
   });
+}
+
+/** Same `productGroupId` listings (price comparison). Empty if the product has no group. */
+export async function listProductGroupComparisons(anchorProductId: string): Promise<{
+  productGroupId: string | null;
+  products: ProductJson[];
+}> {
+  const anchor = await prisma.product.findUnique({ where: { id: anchorProductId } });
+  if (!anchor) {
+    throw new AppError(404, "NOT_FOUND", "Product not found");
+  }
+  if (!anchor.productGroupId) {
+    return { productGroupId: null, products: [] };
+  }
+  const rows = await prisma.product.findMany({
+    where: { productGroupId: anchor.productGroupId },
+    orderBy: [{ price: "asc" }, { updatedAt: "desc" }],
+  });
+  return {
+    productGroupId: anchor.productGroupId,
+    products: rows.map(toProductJson),
+  };
+}
+
+export async function adminAssignProductGroup(
+  productId: string,
+  productGroupId: string | null,
+): Promise<ProductJson> {
+  if (productGroupId) {
+    const g = await prisma.productGroup.findUnique({ where: { id: productGroupId } });
+    if (!g) {
+      throw new AppError(404, "NOT_FOUND", "Product group not found");
+    }
+  }
+  const exists = await prisma.product.findUnique({ where: { id: productId } });
+  if (!exists) {
+    throw new AppError(404, "NOT_FOUND", "Product not found");
+  }
+  const row = await prisma.product.update({
+    where: { id: productId },
+    data: { productGroupId },
+  });
+  await bumpProductCatalogCacheEpoch();
+  return toProductJson(row);
+}
+
+export async function createProductGroup(label?: string | null): Promise<{ id: string; label: string | null }> {
+  const row = await prisma.productGroup.create({
+    data: { label: label?.trim() ? label.trim() : null },
+  });
+  return { id: row.id, label: row.label };
 }

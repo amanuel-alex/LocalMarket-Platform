@@ -94,6 +94,10 @@ export async function login(phone: string, password: string): Promise<AuthTokenP
     throw new AppError(401, "INVALID_CREDENTIALS", "Invalid phone or password");
   }
 
+  if (user.bannedAt != null) {
+    throw new AppError(403, "ACCOUNT_BANNED", "This account has been suspended");
+  }
+
   const updated = await prisma.user.update({
     where: { id: user.id },
     data: { failedLoginAttempts: 0, lockedUntil: null },

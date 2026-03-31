@@ -1,7 +1,8 @@
-import type { Order, OrderStatus, Product, Role } from "@prisma/client";
+import type { Order, OrderStatus, Prisma, Product, Role } from "@prisma/client";
 import { prisma } from "../prisma/client.js";
 import { AppError } from "../utils/errors.js";
 import type { CreateOrderInput } from "../schemas/order.schemas.js";
+import * as auditService from "./audit.service.js";
 import * as walletService from "./wallet.service.js";
 
 type OrderWithProduct = Order & {
@@ -21,6 +22,8 @@ export type OrderJson = {
   updatedAt: Date;
   deliveryConfirmedAt: Date | null;
   escrowReleasedAt: Date | null;
+  adminOverrideNote: string | null;
+  adminOverriddenAt: Date | null;
   /** Completed + seller confirmed delivery + admin has not released escrow yet (awaiting admin/system). */
   eligibleForEscrowRelease: boolean;
   /** Present only for the buyer when order is paid and pickup QR is still unused. */
@@ -53,6 +56,8 @@ export function toOrderJson(
     updatedAt: row.updatedAt,
     deliveryConfirmedAt: row.deliveryConfirmedAt ?? null,
     escrowReleasedAt: row.escrowReleasedAt ?? null,
+    adminOverrideNote: row.adminOverrideNote ?? null,
+    adminOverriddenAt: row.adminOverriddenAt ?? null,
     eligibleForEscrowRelease,
   };
 
@@ -227,4 +232,56 @@ export async function releaseOrderEscrowByAdmin(orderId: string): Promise<OrderJ
 
     return toOrderJson(updated, { userId: "", role: "admin" });
   });
+}
+
+/** Admin: adjust order fields (status, pickup token, note). Does not move wallet balances — use with care. */
+export async function adminOverrideOrder(
+  adminId: string,
+  orderId: string,
+  input: {
+    status?: OrderStatus;
+    clearPickupQr?: boolean;
+    adminNote?: string;
+  },
+): Promise<OrderJson> {
+  const row = await prisma.order.findUnique({
+    where: { id: orderId },
+    include: { product: { select: productSelect } },
+  });
+  if (!row) {
+    throw new AppError(404, "NOT_FOUND", "Order not found");
+  }
+
+  const data: Prisma.OrderUpdateInput = {
+    adminOverriddenAt: new Date(),
+  };
+  if (input.adminNote !== undefined) {
+    data.adminOverrideNote = input.adminNote;
+  }
+  if (input.status !== undefined) {
+    data.status = input.status;
+  }
+  if (input.clearPickupQr) {
+    data.qrToken = null;
+  }
+
+  const updated = await prisma.order.update({
+    where: { id: orderId },
+    data,
+    include: { product: { select: productSelect } },
+  });
+
+  await auditService.recordAudit({
+    actorId: adminId,
+    action: "order.override",
+    targetType: "Order",
+    targetId: orderId,
+    note: input.adminNote ?? null,
+    meta: {
+      status: input.status ?? null,
+      clearPickupQr: input.clearPickupQr ?? false,
+    },
+  });
+
+  return toOrderJson(updated, { userId: adminId, role: "admin" });
 }

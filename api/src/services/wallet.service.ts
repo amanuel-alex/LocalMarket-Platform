@@ -1,6 +1,7 @@
-import type { Prisma } from "@prisma/client";
+import { Prisma } from "@prisma/client";
 import { prisma } from "../prisma/client.js";
 import { AppError } from "../utils/errors.js";
+import * as platformSettingsService from "./platformSettings.service.js";
 
 export type DbTx = Prisma.TransactionClient;
 
@@ -91,43 +92,52 @@ export async function releaseEscrowForOrder(
   const platform = await ensurePlatformWallet(tx);
   const sellerWallet = await ensureUserWallet(tx, args.sellerId);
 
+  const bps = await platformSettingsService.getCommissionRateBpsForTx(tx);
+  const net = args.amount.times(new Prisma.Decimal(10_000 - bps)).dividedBy(10_000);
+  const commission = args.amount.minus(net);
+
   const sw = await tx.wallet.findUnique({ where: { id: sellerWallet.id } });
   if (!sw || sw.pendingBalance.lessThan(args.amount)) {
     throw new AppError(409, "WALLET_INCONSISTENT", "Seller escrow balance mismatch");
   }
 
   const p = await tx.wallet.findUnique({ where: { id: platform.id } });
-  if (!p || p.availableBalance.lessThan(args.amount)) {
+  if (!p || p.availableBalance.lessThan(net)) {
     throw new AppError(409, "WALLET_INCONSISTENT", "Escrow release failed: platform balance");
   }
 
   await tx.wallet.update({
     where: { id: platform.id },
-    data: { availableBalance: { decrement: args.amount } },
+    data: { availableBalance: { decrement: net } },
   });
   await tx.wallet.update({
     where: { id: sellerWallet.id },
     data: {
       pendingBalance: { decrement: args.amount },
-      availableBalance: { increment: args.amount },
+      availableBalance: { increment: net },
     },
   });
+
+  const commissionNote =
+    bps > 0
+      ? `Escrow released; platform commission ${bps} bps (${commission.toString()} withheld)`
+      : "Escrow released after order completion";
 
   await tx.walletTransaction.createMany({
     data: [
       {
         walletId: platform.id,
         type: "order_escrow_release",
-        amount: args.amount,
+        amount: net,
         orderId: args.orderId,
-        note: "Escrow released after order completion",
+        note: commissionNote,
       },
       {
         walletId: sellerWallet.id,
         type: "order_escrow_release",
-        amount: args.amount,
+        amount: net,
         orderId: args.orderId,
-        note: "Pending moved to available for payout",
+        note: "Pending moved to available for payout (after commission)",
       },
     ],
   });

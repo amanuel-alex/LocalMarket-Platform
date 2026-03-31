@@ -63,3 +63,14 @@ export const related: RequestHandler = asyncHandler(async (req, res, next) => {
   const products = await productService.listRelatedProducts(parsed.data.id);
   res.json({ products });
 });
+
+/** Price comparison: all listings sharing `productGroupId`, sorted by price. */
+export const compare: RequestHandler = asyncHandler(async (req, res, next) => {
+  const parsed = productIdParamSchema.safeParse(req.params);
+  if (!parsed.success) {
+    next(parsed.error);
+    return;
+  }
+  const result = await productService.listProductGroupComparisons(parsed.data.id);
+  res.json(result);
+});
