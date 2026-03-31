@@ -1,0 +1,14 @@
+import { Router } from "express";
+import * as orderController from "../controllers/order.controller.js";
+import { requireAuth } from "../middlewares/auth.middleware.js";
+import { requireRoles } from "../middlewares/role.middleware.js";
+
+const router = Router();
+
+router.use(requireAuth);
+
+router.post("/", requireRoles("buyer"), orderController.create);
+router.get("/", orderController.list);
+router.get("/:id", orderController.getById);
+
+export default router;

@@ -13,15 +13,23 @@ enum Role {
   admin
 }
 
+enum OrderStatus {
+  pending
+  paid
+  completed
+}
+
 model User {
-  id           String    @id @default(cuid())
-  name         String
-  phone        String    @unique
-  passwordHash String
-  role         Role      @default(buyer)
-  createdAt    DateTime  @default(now())
-  updatedAt    DateTime  @updatedAt
-  products     Product[]
+  id             String    @id @default(cuid())
+  name           String
+  phone          String    @unique
+  passwordHash   String
+  role           Role      @default(buyer)
+  createdAt      DateTime  @default(now())
+  updatedAt      DateTime  @updatedAt
+  products       Product[]
+  ordersAsBuyer  Order[]   @relation("BuyerOrders")
+  ordersAsSeller Order[]   @relation("SellerOrders")
 }
 
 model Product {
@@ -34,9 +42,29 @@ model Product {
   lng         Float
   sellerId    String
   seller      User     @relation(fields: [sellerId], references: [id], onDelete: Restrict)
+  orders      Order[]
   createdAt   DateTime @default(now())
   updatedAt   DateTime @updatedAt
 
   @@index([sellerId])
   @@index([category])
+}
+
+model Order {
+  id         String      @id @default(cuid())
+  status     OrderStatus @default(pending)
+  quantity   Int
+  totalPrice Decimal
+  buyerId    String
+  sellerId   String
+  productId  String
+  buyer      User        @relation("BuyerOrders", fields: [buyerId], references: [id], onDelete: Restrict)
+  seller     User        @relation("SellerOrders", fields: [sellerId], references: [id], onDelete: Restrict)
+  product    Product     @relation(fields: [productId], references: [id], onDelete: Restrict)
+  createdAt  DateTime    @default(now())
+  updatedAt  DateTime    @updatedAt
+
+  @@index([buyerId])
+  @@index([sellerId])
+  @@index([productId])
 }
