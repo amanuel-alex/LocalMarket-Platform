@@ -26,6 +26,8 @@ const schema = z.object({
   CLOUDINARY_API_SECRET: z.string().optional().default(""),
   /** Prefix for uploaded images, e.g. `localmarket/products`. */
   CLOUDINARY_UPLOAD_FOLDER: z.string().optional().default("localmarket/products"),
+  /** Optional: Redis for product list / nearby / related caching (e.g. redis://localhost:6379). */
+  REDIS_URL: z.string().optional().default(""),
 });
 
 export type Env = z.infer<typeof schema>;

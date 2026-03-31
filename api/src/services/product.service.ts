@@ -1,4 +1,11 @@
-import type { Product } from "@prisma/client";
+import type { Prisma, Product } from "@prisma/client";
+import {
+  bumpProductCatalogCacheEpoch,
+  cacheGetOrSetNearby,
+  cacheGetOrSetProductById,
+  cacheGetOrSetProductList,
+  cacheGetOrSetRelated,
+} from "../cache/productCatalog.cache.js";
 import { prisma } from "../prisma/client.js";
 import type { NearbyProductsQuery } from "../schemas/location.schemas.js";
 import type { CreateProductInput } from "../schemas/product.schemas.js";
@@ -11,6 +18,10 @@ const RELATED_PRICE_MAX_FACTOR = 1.3;
 /** Cap rows read from DB before in-memory sort by price proximity (index-friendly filters already applied). */
 const RELATED_CANDIDATE_CAP = 48;
 const RELATED_RESULT_LIMIT = 6;
+
+type ProductRowWithSellerCoords = Prisma.ProductGetPayload<{
+  include: { seller: { select: { sellerLat: true; sellerLng: true } } };
+}>;
 
 export type ProductJson = {
   id: string;
@@ -58,20 +69,18 @@ export async function createProduct(sellerId: string, input: CreateProductInput)
       sellerId,
     },
   });
+  await bumpProductCatalogCacheEpoch();
   return toProductJson(row);
 }
 
 export async function listProducts(): Promise<ProductJson[]> {
-  const rows = await prisma.product.findMany({ orderBy: { createdAt: "desc" } });
-  return rows.map(toProductJson);
+  return cacheGetOrSetProductList(async () => {
+    const rows = await prisma.product.findMany({ orderBy: { createdAt: "desc" } });
+    return rows.map(toProductJson);
+  });
 }
 
-/** Near `(query.lat, query.lng)`: uses seller shop coords when set, otherwise product listing coords. Sorted by Haversine distance ascending. */
-export async function listNearbyProducts(query: NearbyProductsQuery): Promise<NearbyProductJson[]> {
-  const rows = await prisma.product.findMany({
-    include: { seller: { select: { sellerLat: true, sellerLng: true } } },
-  });
-
+function computeNearbyProducts(query: NearbyProductsQuery, rows: ProductRowWithSellerCoords[]): NearbyProductJson[] {
   const enriched = rows.map((row) => {
     const useSeller =
       row.seller.sellerLat != null &&
@@ -96,12 +105,25 @@ export async function listNearbyProducts(query: NearbyProductsQuery): Promise<Ne
   return filtered.sort((a, b) => a.distanceKm - b.distanceKm).slice(0, query.limit);
 }
 
+/** Near `(query.lat, query.lng)`: uses seller shop coords when set, otherwise product listing coords. Sorted by Haversine distance ascending. */
+export async function listNearbyProducts(query: NearbyProductsQuery): Promise<NearbyProductJson[]> {
+  return cacheGetOrSetNearby(query, async () => {
+    const rows = await prisma.product.findMany({
+      include: { seller: { select: { sellerLat: true, sellerLng: true } } },
+    });
+    return computeNearbyProducts(query, rows);
+  });
+}
+
 export async function getProductById(id: string): Promise<ProductJson> {
-  const row = await prisma.product.findUnique({ where: { id } });
-  if (!row) {
+  const json = await cacheGetOrSetProductById(id, async () => {
+    const row = await prisma.product.findUnique({ where: { id } });
+    return row ? toProductJson(row) : null;
+  });
+  if (!json) {
     throw new AppError(404, "NOT_FOUND", "Product not found");
   }
-  return toProductJson(row);
+  return json;
 }
 
 /**
@@ -114,28 +136,30 @@ export async function listRelatedProducts(anchorProductId: string): Promise<Prod
     throw new AppError(404, "NOT_FOUND", "Product not found");
   }
 
-  const minPrice = anchor.price.times(RELATED_PRICE_MIN_FACTOR);
-  const maxPrice = anchor.price.times(RELATED_PRICE_MAX_FACTOR);
-  const anchorPriceNum = anchor.price.toNumber();
+  return cacheGetOrSetRelated(anchorProductId, async () => {
+    const minPrice = anchor.price.times(RELATED_PRICE_MIN_FACTOR);
+    const maxPrice = anchor.price.times(RELATED_PRICE_MAX_FACTOR);
+    const anchorPriceNum = anchor.price.toNumber();
 
-  const rows = await prisma.product.findMany({
-    where: {
-      category: anchor.category,
-      id: { not: anchor.id },
-      price: { gte: minPrice, lte: maxPrice },
-    },
-    orderBy: { updatedAt: "desc" },
-    take: RELATED_CANDIDATE_CAP,
+    const rows = await prisma.product.findMany({
+      where: {
+        category: anchor.category,
+        id: { not: anchor.id },
+        price: { gte: minPrice, lte: maxPrice },
+      },
+      orderBy: { updatedAt: "desc" },
+      take: RELATED_CANDIDATE_CAP,
+    });
+
+    const withGap = rows.map((row) => ({
+      row,
+      gap: Math.abs(row.price.toNumber() - anchorPriceNum),
+    }));
+
+    withGap.sort((a, b) =>
+      a.gap !== b.gap ? a.gap - b.gap : b.row.updatedAt.getTime() - a.row.updatedAt.getTime(),
+    );
+
+    return withGap.slice(0, RELATED_RESULT_LIMIT).map(({ row }) => toProductJson(row));
   });
-
-  const withGap = rows.map((row) => ({
-    row,
-    gap: Math.abs(row.price.toNumber() - anchorPriceNum),
-  }));
-
-  withGap.sort((a, b) =>
-    a.gap !== b.gap ? a.gap - b.gap : b.row.updatedAt.getTime() - a.row.updatedAt.getTime(),
-  );
-
-  return withGap.slice(0, RELATED_RESULT_LIMIT).map(({ row }) => toProductJson(row));
 }

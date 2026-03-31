@@ -1,3 +1,4 @@
+import { bumpProductCatalogCacheEpoch } from "../cache/productCatalog.cache.js";
 import { prisma } from "../prisma/client.js";
 import type { SellerShopLocationInput } from "../schemas/location.schemas.js";
 
@@ -16,5 +17,6 @@ export async function updateSellerShopLocation(
     data: { sellerLat: input.lat, sellerLng: input.lng },
     select: { id: true, sellerLat: true, sellerLng: true },
   });
+  await bumpProductCatalogCacheEpoch();
   return user;
 }
