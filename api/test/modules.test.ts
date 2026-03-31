@@ -137,6 +137,13 @@ describe("Products", () => {
     expect(v1paged.body.products.length).toBe(1);
     expect(v1paged.body.totalPages).toBeGreaterThanOrEqual(2);
 
+    const filtered = await api()
+      .get("/products")
+      .query({ category: "Electronics", sort: "price_asc", minPrice: 50, maxPrice: 500 });
+    expect(filtered.status).toBe(200);
+    expect(filtered.body.products.every((p: { category: string }) => p.category === "Electronics")).toBe(true);
+    expect(filtered.body.products.length).toBeGreaterThanOrEqual(1);
+
     const one = await api().get(`/products/${id1}`);
     expect(one.status).toBe(200);
     expect(one.body.product.title).toBe("Phone A");

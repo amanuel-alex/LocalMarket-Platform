@@ -24,11 +24,34 @@ export const productIdParamSchema = z.object({
 
 export type ProductIdParam = z.infer<typeof productIdParamSchema>;
 
-/** `GET /products` pagination (defaults match common client expectations). */
-export const productListQuerySchema = z.object({
-  page: z.coerce.number().int().positive().optional().default(1),
-  limit: z.coerce.number().int().positive().max(100).optional().default(10),
-});
+/** `GET /products` pagination + optional filters (indexed `where` in Prisma). */
+export const productListQuerySchema = z
+  .object({
+    page: z.coerce.number().int().positive().optional().default(1),
+    limit: z.coerce.number().int().positive().max(100).optional().default(10),
+    category: z
+      .string()
+      .max(120)
+      .optional()
+      .transform((v) => (v?.trim() ? v.trim() : undefined)),
+    minPrice: z.coerce.number().nonnegative().finite().optional(),
+    maxPrice: z.coerce.number().positive().finite().optional(),
+    sellerId: z.string().cuid().optional(),
+    sort: z.enum(["createdAt_desc", "price_asc", "price_desc"]).optional().default("createdAt_desc"),
+  })
+  .superRefine((data, ctx) => {
+    if (
+      data.minPrice !== undefined &&
+      data.maxPrice !== undefined &&
+      data.minPrice > data.maxPrice
+    ) {
+      ctx.addIssue({
+        code: z.ZodIssueCode.custom,
+        message: "minPrice must be less than or equal to maxPrice",
+        path: ["minPrice"],
+      });
+    }
+  });
 
 export type ProductListQuery = z.infer<typeof productListQuerySchema>;
 

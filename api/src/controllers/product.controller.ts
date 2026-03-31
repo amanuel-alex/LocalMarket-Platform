@@ -28,8 +28,7 @@ export const list: RequestHandler = asyncHandler(async (req, res, next) => {
     next(parsed.error);
     return;
   }
-  const { page, limit } = parsed.data;
-  const result = await productService.listProducts({ page, limit });
+  const result = await productService.listProducts(parsed.data);
   res.json(result);
 });
 

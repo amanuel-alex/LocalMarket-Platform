@@ -1,17 +1,19 @@
 import { Prisma, type Product } from "@prisma/client";
 import {
   bumpProductCatalogCacheEpoch,
+  cacheGetOrSetCompare,
   cacheGetOrSetNearby,
   cacheGetOrSetProductById,
   cacheGetOrSetProductListPage,
   cacheGetOrSetRelated,
   cacheGetOrSetSearch,
   productSearchFingerprint,
+  shortStableHash,
 } from "../cache/productCatalog.cache.js";
 import type { NearbyProductsQuery } from "../schemas/location.schemas.js";
-import type { CreateProductInput, ProductSearchQuery } from "../schemas/product.schemas.js";
+import type { CreateProductInput, ProductListQuery, ProductSearchQuery } from "../schemas/product.schemas.js";
 import * as productRepo from "../repositories/product.repository.js";
-import type { ProductWithSellerCoords } from "../repositories/product.repository.js";
+import type { ProductCatalogRecord, ProductWithSellerCoords } from "../repositories/product.repository.js";
 import { haversineDistanceKm } from "../utils/haversine.js";
 import { AppError } from "../utils/errors.js";
 
@@ -58,7 +60,7 @@ export type ProductListResult = {
   totalPages: number;
 };
 
-export function toProductJson(row: Product): ProductJson {
+export function toProductJson(row: Product | ProductCatalogRecord | ProductWithSellerCoords): ProductJson {
   return {
     id: row.id,
     title: row.title,
@@ -97,14 +99,38 @@ export async function createProduct(sellerId: string, input: CreateProductInput)
   return toProductJson(row);
 }
 
-export async function listProducts(params: { page: number; limit: number }): Promise<ProductListResult> {
-  const { page, limit } = params;
+export async function listProducts(params: ProductListQuery): Promise<ProductListResult> {
+  const { page, limit, category, minPrice, maxPrice, sellerId, sort } = params;
   const skip = (page - 1) * limit;
 
-  return cacheGetOrSetProductListPage(page, limit, async () => {
+  const where: Prisma.ProductWhereInput = {};
+  if (category) where.category = category;
+  if (sellerId) where.sellerId = sellerId;
+  if (minPrice !== undefined || maxPrice !== undefined) {
+    where.price = {};
+    if (minPrice !== undefined) where.price.gte = minPrice;
+    if (maxPrice !== undefined) where.price.lte = maxPrice;
+  }
+
+  const orderBy: Prisma.ProductOrderByWithRelationInput =
+    sort === "price_asc"
+      ? { price: "asc" }
+      : sort === "price_desc"
+        ? { price: "desc" }
+        : { createdAt: "desc" };
+
+  const filtersKey = shortStableHash({
+    c: category ?? null,
+    min: minPrice ?? null,
+    max: maxPrice ?? null,
+    sid: sellerId ?? null,
+    s: sort,
+  });
+
+  return cacheGetOrSetProductListPage(page, limit, filtersKey, async () => {
     const [rows, total] = await Promise.all([
-      productRepo.findProductsPaginated(skip, limit),
-      productRepo.countProducts(),
+      productRepo.findProductsPaginated(skip, limit, { where, orderBy }),
+      productRepo.countProducts(where),
     ]);
     const totalPages = total === 0 ? 0 : Math.ceil(total / limit);
     return {
@@ -284,14 +310,17 @@ export async function listProductGroupComparisons(anchorProductId: string): Prom
   if (!anchor) {
     throw new AppError(404, "NOT_FOUND", "Product not found");
   }
-  if (!anchor.productGroupId) {
-    return { productGroupId: null, products: [] };
-  }
-  const rows = await productRepo.findProductsInGroupOrderedByPrice(anchor.productGroupId);
-  return {
-    productGroupId: anchor.productGroupId,
-    products: rows.map(toProductJson),
-  };
+
+  return cacheGetOrSetCompare(anchorProductId, async () => {
+    if (!anchor.productGroupId) {
+      return { productGroupId: null, products: [] };
+    }
+    const rows = await productRepo.findProductsInGroupOrderedByPrice(anchor.productGroupId);
+    return {
+      productGroupId: anchor.productGroupId,
+      products: rows.map(toProductJson),
+    };
+  });
 }
 
 export async function adminAssignProductGroup(

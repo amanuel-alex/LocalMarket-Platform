@@ -1,4 +1,5 @@
 import express from "express";
+import compression from "compression";
 import cors from "cors";
 import helmet from "helmet";
 import { getEnv } from "./config/env.js";
@@ -23,8 +24,9 @@ app.use(
     contentSecurityPolicy: false,
     crossOriginResourcePolicy: { policy: "cross-origin" },
     hsts: getEnv().NODE_ENV === "production" ? { maxAge: 15552000, includeSubDomains: true } : false,
-  }),
+    }),
 );
+app.use(compression());
 app.use(cors());
 app.use(express.json({ limit: "512kb" }));
 app.use(express.urlencoded({ extended: true, limit: "512kb" }));

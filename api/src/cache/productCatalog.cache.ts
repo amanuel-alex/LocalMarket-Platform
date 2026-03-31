@@ -1,6 +1,8 @@
+import { createHash } from "node:crypto";
 import type { ProductSearchQuery } from "../schemas/product.schemas.js";
 import type { NearbyProductsQuery } from "../schemas/location.schemas.js";
 import type { NearbyProductJson, ProductJson, SearchProductJson } from "../services/product.service.js";
+import type { RankedProductJson } from "../services/ranking.service.js"; // type-only: no runtime cycle with ranking.service
 import { getRedis } from "./redisClient.js";
 
 const EPOCH_KEY = "productcat:epoch";
@@ -10,6 +12,8 @@ const TTL_BY_ID_SEC = 300;
 const TTL_NEARBY_SEC = 60;
 const TTL_RELATED_SEC = 180;
 const TTL_SEARCH_SEC = 90;
+const TTL_RANKED_SEC = 45;
+const TTL_COMPARE_SEC = 120;
 
 export type ProductListPageCached = {
   products: ProductJson[];
@@ -19,8 +23,18 @@ export type ProductListPageCached = {
   totalPages: number;
 };
 
+export type CompareListingsCached = {
+  productGroupId: string | null;
+  products: ProductJson[];
+};
+
 function keyParts(epoch: string, suffix: string): string {
   return `productcat:${epoch}:${suffix}`;
+}
+
+/** Short deterministic Redis key segment from filter/sort params (avoids huge keys). */
+export function shortStableHash(payload: unknown): string {
+  return createHash("sha256").update(JSON.stringify(payload)).digest("hex").slice(0, 24);
 }
 
 async function readEpoch(): Promise<string> {
@@ -66,13 +80,26 @@ function reviveSearch(raw: SearchProductJson): SearchProductJson {
   return out;
 }
 
+function reviveRanked(raw: RankedProductJson): RankedProductJson {
+  const base = reviveProductJson(raw);
+  return {
+    ...base,
+    distanceKm: raw.distanceKm,
+    locationSource: raw.locationSource,
+    rankScore: raw.rankScore,
+    rankComponents: raw.rankComponents,
+    sellerTrustScore: raw.sellerTrustScore,
+  };
+}
+
 export async function cacheGetOrSetProductListPage(
   page: number,
   limit: number,
+  filtersKey: string,
   loader: () => Promise<ProductListPageCached>,
 ): Promise<ProductListPageCached> {
   const epoch = await readEpoch();
-  const key = keyParts(epoch, `list:p${page}:l${limit}`);
+  const key = keyParts(epoch, `list:p${page}:l${limit}:f${filtersKey}`);
   const r = getRedis();
   if (r) {
     try {
@@ -231,6 +258,83 @@ export async function cacheGetOrSetSearch(
   if (r) {
     try {
       await r.set(key, JSON.stringify(fresh), "EX", TTL_SEARCH_SEC);
+    } catch {
+      /* ignore */
+    }
+  }
+  return fresh;
+}
+
+export function rankedQueryFingerprint(input: {
+  lat?: number;
+  lng?: number;
+  limit: number;
+  category?: string;
+}): string {
+  return shortStableHash({
+    lat: input.lat ?? null,
+    lng: input.lng ?? null,
+    lim: input.limit,
+    cat: input.category ?? null,
+  });
+}
+
+export async function cacheGetOrSetRanked(
+  fingerprint: string,
+  loader: () => Promise<RankedProductJson[]>,
+): Promise<RankedProductJson[]> {
+  const epoch = await readEpoch();
+  const key = keyParts(epoch, `ranked:${fingerprint}`);
+  const r = getRedis();
+  if (r) {
+    try {
+      const hit = await r.get(key);
+      if (hit) {
+        const parsed = JSON.parse(hit) as RankedProductJson[];
+        return parsed.map(reviveRanked);
+      }
+    } catch {
+      /* fall through */
+    }
+  }
+
+  const fresh = await loader();
+  if (r) {
+    try {
+      await r.set(key, JSON.stringify(fresh), "EX", TTL_RANKED_SEC);
+    } catch {
+      /* ignore */
+    }
+  }
+  return fresh;
+}
+
+export async function cacheGetOrSetCompare(
+  anchorProductId: string,
+  loader: () => Promise<CompareListingsCached>,
+): Promise<CompareListingsCached> {
+  const epoch = await readEpoch();
+  const key = keyParts(epoch, `compare:${anchorProductId}`);
+  const r = getRedis();
+  if (r) {
+    try {
+      const hit = await r.get(key);
+      if (hit) {
+        const parsed = JSON.parse(hit) as CompareListingsCached;
+        return {
+          ...parsed,
+          products: parsed.products.map(reviveProductJson),
+        };
+      }
+    } catch {
+      /* fall through */
+    }
+  }
+
+  const fresh = await loader();
+  if (r) {
+    try {
+      await r.set(key, JSON.stringify(fresh), "EX", TTL_COMPARE_SEC);
     } catch {
       /* ignore */
     }

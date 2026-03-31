@@ -1,5 +1,5 @@
-import type { Product } from "@prisma/client";
 import { prisma } from "../prisma/client.js";
+import { cacheGetOrSetRanked, rankedQueryFingerprint } from "../cache/productCatalog.cache.js";
 import type { ProductWithSellerCoords } from "../repositories/product.repository.js";
 import * as productRepo from "../repositories/product.repository.js";
 import { haversineDistanceKm } from "../utils/haversine.js";
@@ -159,7 +159,7 @@ function scoreRow(
 
   const { locationSource } = resolveCoords(row);
 
-  const base = toProductJson(row as unknown as Product);
+  const base = toProductJson(row);
   return {
     ...base,
     distanceKm: ctx.lat0 != null && ctx.lng0 != null ? distKm : 0,
@@ -185,62 +185,68 @@ export async function listRankedProducts(input: {
   category?: string;
 }): Promise<RankedProductJson[]> {
   const limit = Math.min(100, Math.max(1, input.limit ?? 20));
+  const fp = rankedQueryFingerprint({
+    lat: input.lat,
+    lng: input.lng,
+    limit,
+    category: input.category,
+  });
 
-  const rows = await productRepo.findProductsForSearch(
-    input.category ? { category: input.category } : {},
-    RANK_FETCH_CAP,
-  );
+  return cacheGetOrSetRanked(fp, async () => {
+    const rows = await productRepo.findProductsForSearch(
+      input.category ? { category: input.category } : {},
+      RANK_FETCH_CAP,
+    );
 
-  if (rows.length === 0) return [];
+    if (rows.length === 0) return [];
 
-  const productIds = rows.map((r) => r.id);
-  const { orderCount, ratingAvg } = await loadAggregates(productIds);
+    const productIds = rows.map((r) => r.id);
+    const { orderCount, ratingAvg } = await loadAggregates(productIds);
 
-  const prices = rows.map((r) => r.price.toNumber());
-  let distances: number[] = [];
-  if (input.lat != null && input.lng != null) {
-    const la = input.lat;
-    const ln = input.lng;
-    distances = rows.map((r) => distanceKmFor(r, la, ln));
-  }
-  const orderCounts = rows.map((r) => orderCount.get(r.id) ?? 0);
+    const prices = rows.map((r) => r.price.toNumber());
+    let distances: number[] = [];
+    if (input.lat != null && input.lng != null) {
+      const la = input.lat;
+      const ln = input.lng;
+      distances = rows.map((r) => distanceKmFor(r, la, ln));
+    }
+    const orderCounts = rows.map((r) => orderCount.get(r.id) ?? 0);
 
-  const sellerIds = [...new Set(rows.map((r) => r.sellerId))];
-  const sellerTrust = new Map<string, number>();
-  await Promise.all(
-    sellerIds.map(async (sid) => {
-      const t = await computeSellerTrust(sid);
-      sellerTrust.set(sid, t.trustScore);
-    }),
-  );
+    const sellerIds = [...new Set(rows.map((r) => r.sellerId))];
+    const sellerTrust = new Map<string, number>();
+    await Promise.all(
+      sellerIds.map(async (sid) => {
+        const t = await computeSellerTrust(sid);
+        sellerTrust.set(sid, t.trustScore);
+      }),
+    );
 
-  const ctx = {
-    prices,
-    distances,
-    orderCounts,
-    lat0: input.lat,
-    lng0: input.lng,
-    orderCount,
-    ratingAvg,
-    sellerTrust,
-  };
+    const ctx = {
+      prices,
+      distances,
+      orderCounts,
+      lat0: input.lat,
+      lng0: input.lng,
+      orderCount,
+      ratingAvg,
+      sellerTrust,
+    };
 
-  const scored = rows
-    .map((row) => {
-      const partial = scoreRow(row, ctx);
-      const { preTrust, rankComponents, ...rest } = partial;
-      const sellerTrustScore = sellerTrust.get(row.sellerId) ?? 50;
-      return {
-        ...rest,
-        rankComponents,
-        rankScore: preTrust,
-        sellerTrustScore,
-      } as RankedProductJson;
-    })
-    .sort((a, b) => b.rankScore - a.rankScore)
-    .slice(0, limit);
-
-  return scored;
+    return rows
+      .map((row) => {
+        const partial = scoreRow(row, ctx);
+        const { preTrust, rankComponents, ...rest } = partial;
+        const sellerTrustScore = sellerTrust.get(row.sellerId) ?? 50;
+        return {
+          ...rest,
+          rankComponents,
+          rankScore: preTrust,
+          sellerTrustScore,
+        } as RankedProductJson;
+      })
+      .sort((a, b) => b.rankScore - a.rankScore)
+      .slice(0, limit);
+  });
 }
 
 /** Used by the assistant: rank already-fetched rows (same scoring, no extra DB for products). */

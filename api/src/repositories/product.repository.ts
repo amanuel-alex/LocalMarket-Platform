@@ -3,6 +3,24 @@ import { prisma } from "../prisma/client.js";
 
 const sellerCoordsSelect = { sellerLat: true, sellerLng: true } as const;
 
+/** Fields needed for API product JSON (smaller rows from Postgres). */
+export const productCatalogSelect = {
+  id: true,
+  title: true,
+  description: true,
+  price: true,
+  category: true,
+  lat: true,
+  lng: true,
+  imageUrl: true,
+  productGroupId: true,
+  sellerId: true,
+  createdAt: true,
+  updatedAt: true,
+} as const;
+
+export type ProductCatalogRecord = Prisma.ProductGetPayload<{ select: typeof productCatalogSelect }>;
+
 export type ProductWithSellerCoords = Prisma.ProductGetPayload<{
   include: { seller: { select: typeof sellerCoordsSelect } };
 }>;
@@ -11,16 +29,28 @@ export async function countProducts(where?: Prisma.ProductWhereInput): Promise<n
   return prisma.product.count({ where });
 }
 
-export async function findProductsPaginated(skip: number, take: number): Promise<Product[]> {
+export async function findProductsPaginated(
+  skip: number,
+  take: number,
+  opts?: {
+    where?: Prisma.ProductWhereInput;
+    orderBy?: Prisma.ProductOrderByWithRelationInput;
+  },
+): Promise<ProductCatalogRecord[]> {
   return prisma.product.findMany({
+    where: opts?.where,
+    orderBy: opts?.orderBy ?? { createdAt: "desc" },
     skip,
     take,
-    orderBy: { createdAt: "desc" },
+    select: productCatalogSelect,
   });
 }
 
-export async function findProductById(id: string): Promise<Product | null> {
-  return prisma.product.findUnique({ where: { id } });
+export async function findProductById(id: string): Promise<ProductCatalogRecord | null> {
+  return prisma.product.findUnique({
+    where: { id },
+    select: productCatalogSelect,
+  });
 }
 
 export async function findProductForNewOrder(productId: string) {
@@ -65,11 +95,12 @@ export async function findPeerProductsByGroup(
   productGroupId: string,
   excludeProductId: string,
   take: number,
-): Promise<Product[]> {
+): Promise<ProductCatalogRecord[]> {
   return prisma.product.findMany({
     where: { productGroupId, id: { not: excludeProductId } },
     orderBy: { updatedAt: "desc" },
     take,
+    select: productCatalogSelect,
   });
 }
 
@@ -79,7 +110,7 @@ export async function findSimilarInCategoryByPriceBand(
   minPrice: Prisma.Decimal,
   maxPrice: Prisma.Decimal,
   take: number,
-): Promise<Product[]> {
+): Promise<ProductCatalogRecord[]> {
   return prisma.product.findMany({
     where: {
       category,
@@ -88,13 +119,17 @@ export async function findSimilarInCategoryByPriceBand(
     },
     orderBy: { updatedAt: "desc" },
     take,
+    select: productCatalogSelect,
   });
 }
 
-export async function findProductsInGroupOrderedByPrice(productGroupId: string): Promise<Product[]> {
+export async function findProductsInGroupOrderedByPrice(
+  productGroupId: string,
+): Promise<ProductCatalogRecord[]> {
   return prisma.product.findMany({
     where: { productGroupId },
     orderBy: [{ price: "asc" }, { updatedAt: "desc" }],
+    select: productCatalogSelect,
   });
 }
 

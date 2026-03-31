@@ -250,6 +250,7 @@ model Product {
 
   @@index([sellerId])
   @@index([category])
+  @@index([category, price])
   @@index([productGroupId])
 }
 
