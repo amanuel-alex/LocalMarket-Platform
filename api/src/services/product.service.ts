@@ -19,6 +19,7 @@ export type ProductJson = {
   price: number;
   category: string;
   location: { lat: number; lng: number };
+  imageUrl: string | null;
   sellerId: string;
   createdAt: Date;
   updatedAt: Date;
@@ -37,6 +38,7 @@ export function toProductJson(row: Product): ProductJson {
     price: row.price.toNumber(),
     category: row.category,
     location: { lat: row.lat, lng: row.lng },
+    imageUrl: row.imageUrl ?? null,
     sellerId: row.sellerId,
     createdAt: row.createdAt,
     updatedAt: row.updatedAt,
@@ -52,6 +54,7 @@ export async function createProduct(sellerId: string, input: CreateProductInput)
       category: input.category,
       lat: input.location.lat,
       lng: input.location.lng,
+      imageUrl: input.imageUrl ?? null,
       sellerId,
     },
   });

@@ -11,6 +11,7 @@ export const createProductSchema = z.object({
   price: z.number().positive().finite(),
   category: z.string().trim().min(1).max(120),
   location: locationSchema,
+  imageUrl: z.string().url().max(2048).optional(),
 });
 
 export type CreateProductInput = z.infer<typeof createProductSchema>;

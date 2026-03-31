@@ -6,6 +6,8 @@ import { prisma } from "../src/prisma/client.js";
 export async function resetDb(): Promise<void> {
   await prisma.walletTransaction.deleteMany();
   await prisma.payout.deleteMany();
+  await prisma.requestLog.deleteMany();
+  await prisma.errorLog.deleteMany();
   await prisma.payment.deleteMany();
   await prisma.dispute.deleteMany();
   await prisma.notification.deleteMany();

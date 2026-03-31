@@ -11,5 +11,8 @@ router.use(requireRoles("admin"));
 
 router.post("/orders/:id/release-escrow", adminController.releaseOrderEscrow);
 router.patch("/disputes/:id", disputeController.adminUpdateStatus);
+router.get("/analytics", adminController.getSystemAnalytics);
+router.get("/logs/requests", adminController.listRequestLogs);
+router.get("/logs/errors", adminController.listErrorLogs);
 
 export default router;

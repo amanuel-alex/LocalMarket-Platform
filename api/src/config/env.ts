@@ -20,6 +20,12 @@ const schema = z.object({
     .optional()
     .default("0")
     .transform((v) => v === "1"),
+  /** Product image uploads (Cloudinary). Leave empty to disable POST /uploads/product-image. */
+  CLOUDINARY_CLOUD_NAME: z.string().optional().default(""),
+  CLOUDINARY_API_KEY: z.string().optional().default(""),
+  CLOUDINARY_API_SECRET: z.string().optional().default(""),
+  /** Prefix for uploaded images, e.g. `localmarket/products`. */
+  CLOUDINARY_UPLOAD_FOLDER: z.string().optional().default("localmarket/products"),
 });
 
 export type Env = z.infer<typeof schema>;

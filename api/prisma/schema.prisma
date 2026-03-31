@@ -158,6 +158,8 @@ model Product {
   category    String
   lat         Float
   lng         Float
+  /** HTTPS URL from Cloudinary (or other CDN) after upload. */
+  imageUrl    String?
   sellerId    String
   seller      User     @relation(fields: [sellerId], references: [id], onDelete: Restrict)
   orders      Order[]
@@ -166,6 +168,35 @@ model Product {
 
   @@index([sellerId])
   @@index([category])
+}
+
+model RequestLog {
+  id         String   @id @default(cuid())
+  method     String
+  path       String
+  statusCode Int
+  durationMs Int
+  userId     String?
+  ip         String?
+  createdAt  DateTime @default(now())
+
+  @@index([createdAt])
+  @@map("request_logs")
+}
+
+model ErrorLog {
+  id         String   @id @default(cuid())
+  message    String
+  stack      String?  @db.Text
+  code       String?
+  path       String?
+  method     String?
+  userId     String?
+  statusCode Int?
+  createdAt  DateTime @default(now())
+
+  @@index([createdAt])
+  @@map("error_logs")
 }
 
 model Order {
