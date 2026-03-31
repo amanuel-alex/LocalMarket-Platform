@@ -3,6 +3,7 @@ import type { OrderStatus, Payment, PaymentStatus } from "@prisma/client";
 import { prisma } from "../prisma/client.js";
 import { AppError } from "../utils/errors.js";
 import type { InitiatePaymentInput, MpesaCallbackInput } from "../schemas/payment.schemas.js";
+import * as notificationService from "./notification.service.js";
 import * as walletService from "./wallet.service.js";
 
 export type StkPushSimulatedResponse = {
@@ -107,7 +108,10 @@ export async function processMpesaCallback(input: MpesaCallbackInput): Promise<{
         data: { status: "completed" },
       });
       let pickupQrToken: string | undefined;
-      const orderBefore = await tx.order.findUnique({ where: { id: payment.orderId } });
+      const orderBefore = await tx.order.findUnique({
+        where: { id: payment.orderId },
+        include: { product: { select: { title: true } } },
+      });
       if (orderBefore?.status === "pending") {
         const qrToken = randomBytes(32).toString("base64url");
         await tx.order.update({
@@ -122,6 +126,23 @@ export async function processMpesaCallback(input: MpesaCallbackInput): Promise<{
           sellerId: orderBefore.sellerId,
           amount: orderBefore.totalPrice,
         });
+
+        await notificationService.createManyInTx(tx, [
+          {
+            userId: orderBefore.buyerId,
+            type: "payment_success",
+            title: "Payment successful",
+            body: `Your payment for "${orderBefore.product.title}" was received. Your order is paid and ready for pickup.`,
+            orderId: orderBefore.id,
+          },
+          {
+            userId: orderBefore.sellerId,
+            type: "order_update",
+            title: "Order paid",
+            body: `The buyer paid for "${orderBefore.product.title}". Prepare for handoff.`,
+            orderId: orderBefore.id,
+          },
+        ]);
       }
       const order = await tx.order.findUniqueOrThrow({ where: { id: payment.orderId } });
       return { payment: updatedPayment, orderStatus: order.status, pickupQrToken };

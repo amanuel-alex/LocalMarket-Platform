@@ -2,6 +2,7 @@ import { prisma } from "../prisma/client.js";
 import { AppError } from "../utils/errors.js";
 import type { OrderJson } from "./order.service.js";
 import { toOrderJson } from "./order.service.js";
+import * as notificationService from "./notification.service.js";
 
 /** pickup verified → order `completed`. Funds stay in platform escrow until seller confirms delivery and admin releases. */
 export async function verifyPickupQr(sellerId: string, token: string): Promise<OrderJson> {
@@ -26,13 +27,25 @@ export async function verifyPickupQr(sellerId: string, token: string): Promise<O
     throw new AppError(409, "ORDER_NOT_READY", "Order cannot be picked up in its current state");
   }
 
-  const updated = await prisma.order.update({
-    where: { id: order.id },
-    data: {
-      status: "completed",
-      qrConsumedAt: new Date(),
-    },
-    include: { product: { select: { id: true, title: true, price: true } } },
+  const updated = await prisma.$transaction(async (tx) => {
+    const row = await tx.order.update({
+      where: { id: order.id },
+      data: {
+        status: "completed",
+        qrConsumedAt: new Date(),
+      },
+      include: { product: { select: { id: true, title: true, price: true } } },
+    });
+    await notificationService.createManyInTx(tx, [
+      {
+        userId: row.buyerId,
+        type: "order_update",
+        title: "Pickup completed",
+        body: `Your pickup for "${row.product.title}" was confirmed. The order is complete.`,
+        orderId: row.id,
+      },
+    ]);
+    return row;
   });
 
   return toOrderJson(updated, { userId: sellerId, role: "seller" });

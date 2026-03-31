@@ -54,6 +54,12 @@ enum DisputeStatus {
   closed
 }
 
+enum NotificationType {
+  order_update
+  payment_success
+  delivery_confirmation
+}
+
 model User {
   id                   String         @id @default(cuid())
   name                 String
@@ -73,6 +79,7 @@ model User {
   refreshTokens        RefreshToken[]
   wallet               Wallet?
   payouts              Payout[]
+  notifications        Notification[]
 }
 
 model Wallet {
@@ -180,13 +187,31 @@ model Order {
   seller        User        @relation("SellerOrders", fields: [sellerId], references: [id], onDelete: Restrict)
   product       Product     @relation(fields: [productId], references: [id], onDelete: Restrict)
   payments      Payment[]
-  disputes      Dispute[]
+  disputes       Dispute[]
+  notifications  Notification[]
   createdAt     DateTime    @default(now())
   updatedAt     DateTime    @updatedAt
 
   @@index([buyerId])
   @@index([sellerId])
   @@index([productId])
+}
+
+model Notification {
+  id        String           @id @default(cuid())
+  userId    String
+  type      NotificationType
+  title     String
+  body      String
+  orderId   String?
+  readAt    DateTime?
+  createdAt DateTime         @default(now())
+  user      User             @relation(fields: [userId], references: [id], onDelete: Cascade)
+  order     Order?           @relation(fields: [orderId], references: [id], onDelete: SetNull)
+
+  @@index([userId])
+  @@index([userId, createdAt])
+  @@map("notifications")
 }
 
 model Dispute {

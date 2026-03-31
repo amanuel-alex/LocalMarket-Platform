@@ -85,16 +85,28 @@ export async function createOrder(buyerId: string, input: CreateOrderInput): Pro
 
   const totalPrice = product.price.times(input.quantity);
 
-  const row = await prisma.order.create({
-    data: {
-      buyerId,
-      sellerId: product.sellerId,
-      productId: product.id,
-      quantity: input.quantity,
-      totalPrice,
-      status: "pending",
-    },
-    include: { product: { select: productSelect } },
+  const row = await prisma.$transaction(async (tx) => {
+    const created = await tx.order.create({
+      data: {
+        buyerId,
+        sellerId: product.sellerId,
+        productId: product.id,
+        quantity: input.quantity,
+        totalPrice,
+        status: "pending",
+      },
+      include: { product: { select: productSelect } },
+    });
+    await tx.notification.create({
+      data: {
+        userId: product.sellerId,
+        type: "order_update",
+        title: "New order",
+        body: `New order: ${input.quantity}× "${product.title}".`,
+        orderId: created.id,
+      },
+    });
+    return created;
   });
 
   return toOrderJson(row, { userId: buyerId, role: "buyer" });
@@ -166,6 +178,16 @@ export async function confirmDeliveryBySeller(
     where: { id: orderId },
     data: { deliveryConfirmedAt: new Date() },
     include: { product: { select: productSelect } },
+  });
+
+  await prisma.notification.create({
+    data: {
+      userId: updated.buyerId,
+      type: "delivery_confirmation",
+      title: "Delivery confirmed",
+      body: `The seller confirmed delivery for "${updated.product.title}".`,
+      orderId: updated.id,
+    },
   });
 
   return toOrderJson(updated, { userId: sellerId, role: "seller" });
