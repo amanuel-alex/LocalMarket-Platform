@@ -18,5 +18,6 @@ router.post("/logout", refreshRateLimiter, authController.logout);
 router.post("/otp/send", otpSendRateLimiter, authController.otpNotImplemented);
 router.post("/otp/verify", otpVerifyRateLimiter, authController.otpNotImplemented);
 router.get("/me", requireAuth, authController.me);
+router.patch("/me/locale", requireAuth, authController.patchMeLocale);
 
 export default router;

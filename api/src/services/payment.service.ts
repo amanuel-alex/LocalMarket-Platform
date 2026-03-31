@@ -4,7 +4,11 @@ import { prisma } from "../prisma/client.js";
 import { AppError } from "../utils/errors.js";
 import type { InitiatePaymentInput, MpesaCallbackInput } from "../schemas/payment.schemas.js";
 import * as dispatch from "./notificationDispatch.service.js";
-import type { NotificationPayload } from "./notificationDispatch.service.js";
+import { getPreferredLocalesMap } from "../i18n/userLocales.js";
+import {
+  orderPaidSellerCopy,
+  paymentSuccessBuyerCopy,
+} from "../i18n/notificationCopy.js";
 import * as walletService from "./wallet.service.js";
 import { getPaymentQueue, isQueueInfrastructureEnabled } from "../queues/queueClient.js";
 
@@ -12,7 +16,12 @@ type MpesaCallbackTxResult = {
   payment: Payment;
   orderStatus: OrderStatus;
   pickupQrToken?: string;
-  notifyItems?: NotificationPayload[];
+  notifyDraft?: {
+    buyerId: string;
+    sellerId: string;
+    productTitle: string;
+    orderId: string;
+  };
 };
 
 export type StkPushSimulatedResponse = {
@@ -132,7 +141,7 @@ export async function processMpesaCallback(input: MpesaCallbackInput): Promise<{
         data: { status: "completed" },
       });
       let pickupQrToken: string | undefined;
-      let notifyItems: NotificationPayload[] | undefined;
+      let notifyDraft: MpesaCallbackTxResult["notifyDraft"];
       const orderBefore = await tx.order.findUnique({
         where: { id: payment.orderId },
         include: { product: { select: { title: true } } },
@@ -152,25 +161,15 @@ export async function processMpesaCallback(input: MpesaCallbackInput): Promise<{
           amount: orderBefore.totalPrice,
         });
 
-        notifyItems = [
-          {
-            userId: orderBefore.buyerId,
-            type: "payment_success",
-            title: "Payment successful",
-            body: `Your payment for "${orderBefore.product.title}" was received. Your order is paid and ready for pickup.`,
-            orderId: orderBefore.id,
-          },
-          {
-            userId: orderBefore.sellerId,
-            type: "order_update",
-            title: "Order paid",
-            body: `The buyer paid for "${orderBefore.product.title}". Prepare for handoff.`,
-            orderId: orderBefore.id,
-          },
-        ];
+        notifyDraft = {
+          buyerId: orderBefore.buyerId,
+          sellerId: orderBefore.sellerId,
+          productTitle: orderBefore.product.title,
+          orderId: orderBefore.id,
+        };
       }
       const order = await tx.order.findUniqueOrThrow({ where: { id: payment.orderId } });
-      return { payment: updatedPayment, orderStatus: order.status, pickupQrToken, notifyItems };
+      return { payment: updatedPayment, orderStatus: order.status, pickupQrToken, notifyDraft };
     }
 
     const updatedPayment = await tx.payment.update({
@@ -184,8 +183,29 @@ export async function processMpesaCallback(input: MpesaCallbackInput): Promise<{
     };
   });
 
-  if (result.notifyItems?.length) {
-    await dispatch.dispatchNotifications(result.notifyItems);
+  if (result.notifyDraft) {
+    const d = result.notifyDraft;
+    const locs = await getPreferredLocalesMap([d.buyerId, d.sellerId]);
+    const buyerL = locs.get(d.buyerId) ?? "en";
+    const sellerL = locs.get(d.sellerId) ?? "en";
+    const buyerCopy = paymentSuccessBuyerCopy(buyerL, d.productTitle);
+    const sellerCopy = orderPaidSellerCopy(sellerL, d.productTitle);
+    await dispatch.dispatchNotifications([
+      {
+        userId: d.buyerId,
+        type: "payment_success",
+        title: buyerCopy.title,
+        body: buyerCopy.body,
+        orderId: d.orderId,
+      },
+      {
+        userId: d.sellerId,
+        type: "order_update",
+        title: sellerCopy.title,
+        body: sellerCopy.body,
+        orderId: d.orderId,
+      },
+    ]);
   }
 
   return {

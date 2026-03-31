@@ -1,4 +1,4 @@
-import type { User } from "@prisma/client";
+import type { Locale, User } from "@prisma/client";
 import { prisma } from "../prisma/client.js";
 import { getEnv } from "../config/env.js";
 import { AppError } from "../utils/errors.js";
@@ -38,6 +38,7 @@ export async function register(input: RegisterInput): Promise<AuthTokenPair> {
       name: input.name,
       phone: input.phone,
       passwordHash,
+      ...(input.locale != null ? { preferredLocale: input.locale } : {}),
       wallet: {
         create: {
           isPlatform: false,
@@ -121,5 +122,13 @@ export async function getProfile(userId: string): Promise<SafeUser> {
   if (!user) {
     throw new AppError(404, "NOT_FOUND", "User not found");
   }
+  return toSafeUser(user);
+}
+
+export async function updatePreferredLocale(userId: string, locale: Locale): Promise<SafeUser> {
+  const user = await prisma.user.update({
+    where: { id: userId },
+    data: { preferredLocale: locale },
+  });
   return toSafeUser(user);
 }

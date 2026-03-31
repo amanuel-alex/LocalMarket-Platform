@@ -3,6 +3,7 @@ import { ZodError } from "zod";
 import { Prisma } from "@prisma/client";
 import { AppError } from "../utils/errors.js";
 import * as logService from "../services/log.service.js";
+import { translateErrorCode } from "../i18n/errorMessages.js";
 
 function logErr(
   req: Parameters<ErrorRequestHandler>[1],
@@ -27,6 +28,8 @@ function logErr(
 }
 
 export const errorMiddleware: ErrorRequestHandler = (err, req, res, _next) => {
+  const locale = req.locale ?? "en";
+
   if (err instanceof ZodError) {
     logErr(req, {
       message: "Validation failed",
@@ -37,7 +40,7 @@ export const errorMiddleware: ErrorRequestHandler = (err, req, res, _next) => {
     res.status(400).json({
       error: {
         code: "VALIDATION_ERROR",
-        message: "Validation failed",
+        message: translateErrorCode(locale, "VALIDATION_ERROR", "Validation failed"),
         details: err.flatten(),
       },
     });
@@ -51,7 +54,10 @@ export const errorMiddleware: ErrorRequestHandler = (err, req, res, _next) => {
       statusCode: err.status,
     });
     res.status(err.status).json({
-      error: { code: err.code, message: err.message },
+      error: {
+        code: err.code,
+        message: translateErrorCode(locale, err.code, err.message),
+      },
     });
     return;
   }
@@ -64,7 +70,14 @@ export const errorMiddleware: ErrorRequestHandler = (err, req, res, _next) => {
       statusCode: 409,
     });
     res.status(409).json({
-      error: { code: "CONFLICT", message: "A record with this value already exists" },
+      error: {
+        code: "CONFLICT",
+        message: translateErrorCode(
+          locale,
+          "CONFLICT",
+          "A record with this value already exists",
+        ),
+      },
     });
     return;
   }
@@ -75,6 +88,9 @@ export const errorMiddleware: ErrorRequestHandler = (err, req, res, _next) => {
 
   console.error(err);
   res.status(500).json({
-    error: { code: "INTERNAL_ERROR", message: "Internal server error" },
+    error: {
+      code: "INTERNAL_ERROR",
+      message: translateErrorCode(locale, "INTERNAL_ERROR", "Internal server error"),
+    },
   });
 };

@@ -60,6 +60,13 @@ enum NotificationType {
   delivery_confirmation
 }
 
+/** UI / API copy: English, አማርኛ (Amharic), Oromoo (Latin script). */
+enum Locale {
+  en
+  am
+  om
+}
+
 model User {
   id                   String         @id @default(cuid())
   name                 String
@@ -71,6 +78,7 @@ model User {
   /** When set, user cannot log in or call authenticated APIs. */
   bannedAt             DateTime?
   banReason            String?
+  preferredLocale      Locale         @default(en)
   /** Shop / pickup coordinates for sellers (optional). Used for nearby product search. */
   sellerLat            Float?
   sellerLng            Float?

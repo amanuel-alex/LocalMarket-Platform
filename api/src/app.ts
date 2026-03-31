@@ -9,6 +9,7 @@ import {
   sanitizeBodyMiddleware,
   sanitizeQueryMiddleware,
 } from "./middlewares/sanitize.middleware.js";
+import { localeMiddleware } from "./middlewares/locale.middleware.js";
 
 export const app = express();
 
@@ -27,6 +28,7 @@ app.use(express.json({ limit: "512kb" }));
 app.use(express.urlencoded({ extended: true, limit: "512kb" }));
 app.use(sanitizeQueryMiddleware);
 app.use(sanitizeBodyMiddleware);
+app.use(localeMiddleware);
 app.use(requestLogMiddleware);
 app.use(router);
 app.use(errorMiddleware);

@@ -3,6 +3,8 @@ import { AppError } from "../utils/errors.js";
 import type { OrderJson } from "./order.service.js";
 import { toOrderJson } from "./order.service.js";
 import * as dispatch from "./notificationDispatch.service.js";
+import { getPreferredLocalesMap } from "../i18n/userLocales.js";
+import { pickupCompletedBuyerCopy } from "../i18n/notificationCopy.js";
 
 /** pickup verified → order `completed`. Funds stay in platform escrow until seller confirms delivery and admin releases. */
 export async function verifyPickupQr(sellerId: string, token: string): Promise<OrderJson> {
@@ -38,12 +40,15 @@ export async function verifyPickupQr(sellerId: string, token: string): Promise<O
     });
   });
 
+  const locs = await getPreferredLocalesMap([updated.buyerId]);
+  const buyerL = locs.get(updated.buyerId) ?? "en";
+  const copy = pickupCompletedBuyerCopy(buyerL, updated.product.title);
   await dispatch.dispatchNotifications([
     {
       userId: updated.buyerId,
       type: "order_update",
-      title: "Pickup completed",
-      body: `Your pickup for "${updated.product.title}" was confirmed. The order is complete.`,
+      title: copy.title,
+      body: copy.body,
       orderId: updated.id,
     },
   ]);

@@ -4,6 +4,11 @@ import { AppError } from "../utils/errors.js";
 import type { CreateOrderInput } from "../schemas/order.schemas.js";
 import * as auditService from "./audit.service.js";
 import * as dispatch from "./notificationDispatch.service.js";
+import { getPreferredLocalesMap } from "../i18n/userLocales.js";
+import {
+  deliveryConfirmedBuyerCopy,
+  newOrderSellerCopy,
+} from "../i18n/notificationCopy.js";
 import * as walletService from "./wallet.service.js";
 
 type OrderWithProduct = Order & {
@@ -105,12 +110,15 @@ export async function createOrder(buyerId: string, input: CreateOrderInput): Pro
     });
   });
 
+  const locs = await getPreferredLocalesMap([product.sellerId]);
+  const sellerL = locs.get(product.sellerId) ?? "en";
+  const copy = newOrderSellerCopy(sellerL, input.quantity, product.title);
   await dispatch.dispatchNotifications([
     {
       userId: product.sellerId,
       type: "order_update",
-      title: "New order",
-      body: `New order: ${input.quantity}× "${product.title}".`,
+      title: copy.title,
+      body: copy.body,
       orderId: row.id,
     },
   ]);
@@ -186,12 +194,15 @@ export async function confirmDeliveryBySeller(
     include: { product: { select: productSelect } },
   });
 
+  const locs = await getPreferredLocalesMap([updated.buyerId]);
+  const buyerL = locs.get(updated.buyerId) ?? "en";
+  const copy = deliveryConfirmedBuyerCopy(buyerL, updated.product.title);
   await dispatch.dispatchNotifications([
     {
       userId: updated.buyerId,
       type: "delivery_confirmation",
-      title: "Delivery confirmed",
-      body: `The seller confirmed delivery for "${updated.product.title}".`,
+      title: copy.title,
+      body: copy.body,
       orderId: updated.id,
     },
   ]);
