@@ -1,4 +1,4 @@
-import type { Prisma, Product } from "@prisma/client";
+import { Prisma, type Product } from "@prisma/client";
 import {
   bumpProductCatalogCacheEpoch,
   cacheGetOrSetNearby,
@@ -8,7 +8,7 @@ import {
 } from "../cache/productCatalog.cache.js";
 import { prisma } from "../prisma/client.js";
 import type { NearbyProductsQuery } from "../schemas/location.schemas.js";
-import type { CreateProductInput } from "../schemas/product.schemas.js";
+import type { CreateProductInput, ProductSearchQuery } from "../schemas/product.schemas.js";
 import { haversineDistanceKm } from "../utils/haversine.js";
 import { AppError } from "../utils/errors.js";
 
@@ -18,6 +18,8 @@ const RELATED_PRICE_MAX_FACTOR = 1.3;
 /** Cap rows read from DB before in-memory sort by price proximity (index-friendly filters already applied). */
 const RELATED_CANDIDATE_CAP = 48;
 const RELATED_RESULT_LIMIT = 6;
+/** Max rows loaded from DB before in-memory location filter / sort (text and price use Prisma where). */
+const SEARCH_FETCH_CAP = 500;
 
 type ProductRowWithSellerCoords = Prisma.ProductGetPayload<{
   include: { seller: { select: { sellerLat: true; sellerLng: true } } };
@@ -39,6 +41,11 @@ export type ProductJson = {
 export type NearbyProductJson = ProductJson & {
   distanceKm: number;
   locationSource: "seller" | "product";
+};
+
+export type SearchProductJson = ProductJson & {
+  distanceKm?: number;
+  locationSource?: "seller" | "product";
 };
 
 export function toProductJson(row: Product): ProductJson {
@@ -113,6 +120,69 @@ export async function listNearbyProducts(query: NearbyProductsQuery): Promise<Ne
     });
     return computeNearbyProducts(query, rows);
   });
+}
+
+export async function searchProducts(query: ProductSearchQuery): Promise<SearchProductJson[]> {
+  const where: Prisma.ProductWhereInput = {};
+
+  if (query.q) {
+    where.OR = [
+      { title: { contains: query.q, mode: "insensitive" } },
+      { description: { contains: query.q, mode: "insensitive" } },
+    ];
+  }
+
+  if (query.minPrice !== undefined || query.maxPrice !== undefined) {
+    where.price = {};
+    if (query.minPrice !== undefined) {
+      where.price.gte = new Prisma.Decimal(query.minPrice);
+    }
+    if (query.maxPrice !== undefined) {
+      where.price.lte = new Prisma.Decimal(query.maxPrice);
+    }
+  }
+
+  const rows = await prisma.product.findMany({
+    where,
+    include: { seller: { select: { sellerLat: true, sellerLng: true } } },
+    orderBy: { updatedAt: "desc" },
+    take: SEARCH_FETCH_CAP,
+  });
+
+  const hasLocation =
+    query.lat !== undefined &&
+    query.lng !== undefined &&
+    query.radiusKm !== undefined;
+
+  if (!hasLocation) {
+    return rows.slice(0, query.limit).map((row) => toProductJson(row));
+  }
+
+  const lat0 = query.lat!;
+  const lng0 = query.lng!;
+  const radiusKm = query.radiusKm!;
+
+  const withDistance = rows.map((row) => {
+    const useSeller =
+      row.seller.sellerLat != null &&
+      row.seller.sellerLng != null &&
+      !Number.isNaN(row.seller.sellerLat) &&
+      !Number.isNaN(row.seller.sellerLng);
+    const lat = useSeller ? row.seller.sellerLat! : row.lat;
+    const lng = useSeller ? row.seller.sellerLng! : row.lng;
+    const locationSource = useSeller ? ("seller" as const) : ("product" as const);
+    const distanceKm = haversineDistanceKm(lat0, lng0, lat, lng);
+    return {
+      ...toProductJson(row),
+      distanceKm: Math.round(distanceKm * 1000) / 1000,
+      locationSource,
+    };
+  });
+
+  return withDistance
+    .filter((p) => p.distanceKm! <= radiusKm)
+    .sort((a, b) => a.distanceKm! - b.distanceKm!)
+    .slice(0, query.limit);
 }
 
 export async function getProductById(id: string): Promise<ProductJson> {

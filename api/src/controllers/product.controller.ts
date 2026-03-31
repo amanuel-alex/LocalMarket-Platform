@@ -1,7 +1,11 @@
 import type { RequestHandler } from "express";
 import { asyncHandler } from "../utils/asyncHandler.js";
 import { nearbyProductsQuerySchema } from "../schemas/location.schemas.js";
-import { createProductSchema, productIdParamSchema } from "../schemas/product.schemas.js";
+import {
+  createProductSchema,
+  productIdParamSchema,
+  productSearchQuerySchema,
+} from "../schemas/product.schemas.js";
 import * as productService from "../services/product.service.js";
 
 export const create: RequestHandler = asyncHandler(async (req, res, next) => {
@@ -27,6 +31,16 @@ export const nearby: RequestHandler = asyncHandler(async (req, res, next) => {
     return;
   }
   const products = await productService.listNearbyProducts(parsed.data);
+  res.json({ products });
+});
+
+export const search: RequestHandler = asyncHandler(async (req, res, next) => {
+  const parsed = productSearchQuerySchema.safeParse(req.query);
+  if (!parsed.success) {
+    next(parsed.error);
+    return;
+  }
+  const products = await productService.searchProducts(parsed.data);
   res.json({ products });
 });
 

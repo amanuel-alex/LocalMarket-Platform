@@ -21,3 +21,63 @@ export const productIdParamSchema = z.object({
 });
 
 export type ProductIdParam = z.infer<typeof productIdParamSchema>;
+
+/** Query: search text (title/description), optional price range, optional location radius (lat+lng+radiusKm). */
+export const productSearchQuerySchema = z
+  .object({
+    q: z
+      .string()
+      .max(200)
+      .optional()
+      .transform((val) => {
+        if (val === undefined) return undefined;
+        const t = val.trim();
+        return t.length === 0 ? undefined : t;
+      }),
+    minPrice: z.coerce.number().nonnegative().finite().optional(),
+    maxPrice: z.coerce.number().positive().finite().optional(),
+    lat: z.coerce.number().gte(-90).lte(90).optional(),
+    lng: z.coerce.number().gte(-180).lte(180).optional(),
+    radiusKm: z.coerce.number().positive().max(2000).optional(),
+    limit: z.coerce.number().int().positive().max(200).optional().default(50),
+  })
+  .superRefine((data, ctx) => {
+    const hasLat = data.lat !== undefined;
+    const hasLng = data.lng !== undefined;
+    if (hasLat !== hasLng) {
+      ctx.addIssue({
+        code: z.ZodIssueCode.custom,
+        message: "lat and lng must both be provided for a location filter",
+        path: hasLat ? ["lng"] : ["lat"],
+      });
+    }
+    if (hasLat && data.radiusKm === undefined) {
+      ctx.addIssue({
+        code: z.ZodIssueCode.custom,
+        message: "radiusKm is required when filtering by location",
+        path: ["radiusKm"],
+      });
+    }
+    if (
+      data.minPrice !== undefined &&
+      data.maxPrice !== undefined &&
+      data.minPrice > data.maxPrice
+    ) {
+      ctx.addIssue({
+        code: z.ZodIssueCode.custom,
+        message: "minPrice must be less than or equal to maxPrice",
+        path: ["minPrice"],
+      });
+    }
+    const hasQ = data.q !== undefined;
+    const hasPrice = data.minPrice !== undefined || data.maxPrice !== undefined;
+    const hasLoc = hasLat;
+    if (!hasQ && !hasPrice && !hasLoc) {
+      ctx.addIssue({
+        code: z.ZodIssueCode.custom,
+        message: "Provide at least one of: q (name/text), minPrice and/or maxPrice, or lat/lng/radiusKm",
+      });
+    }
+  });
+
+export type ProductSearchQuery = z.infer<typeof productSearchQuerySchema>;
