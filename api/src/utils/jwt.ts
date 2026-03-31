@@ -1,25 +1,34 @@
 import jwt, { type SignOptions } from "jsonwebtoken";
 import type { Role } from "@prisma/client";
 import { getEnv } from "../config/env.js";
+import { AppError } from "./errors.js";
 
 export type JwtPayload = { sub: string; role: Role };
 
-export function signToken(payload: JwtPayload): string {
-  const { JWT_SECRET, JWT_EXPIRES_IN } = getEnv();
-  const signOptions = { expiresIn: JWT_EXPIRES_IN } as SignOptions;
+export function signAccessToken(payload: JwtPayload): string {
+  const { JWT_SECRET, ACCESS_TOKEN_EXPIRES_IN } = getEnv();
+  const signOptions = { expiresIn: ACCESS_TOKEN_EXPIRES_IN } as SignOptions;
   return jwt.sign(payload, JWT_SECRET, signOptions);
 }
 
-export function verifyToken(token: string): JwtPayload {
+export function verifyAccessToken(token: string): JwtPayload {
   const { JWT_SECRET } = getEnv();
-  const decoded = jwt.verify(token, JWT_SECRET);
-  if (
-    typeof decoded !== "object" ||
-    decoded === null ||
-    !("sub" in decoded) ||
-    !("role" in decoded)
-  ) {
-    throw new Error("Invalid token payload");
+  try {
+    const decoded = jwt.verify(token, JWT_SECRET);
+    if (
+      typeof decoded !== "object" ||
+      decoded === null ||
+      !("sub" in decoded) ||
+      !("role" in decoded)
+    ) {
+      throw new AppError(401, "UNAUTHORIZED", "Invalid token");
+    }
+    return decoded as JwtPayload;
+  } catch (e) {
+    if (e instanceof AppError) throw e;
+    if (e instanceof jwt.TokenExpiredError) {
+      throw new AppError(401, "TOKEN_EXPIRED", "Access token expired");
+    }
+    throw new AppError(401, "UNAUTHORIZED", "Invalid or expired token");
   }
-  return decoded as JwtPayload;
 }

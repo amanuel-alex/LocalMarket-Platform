@@ -26,19 +26,34 @@ enum PaymentStatus {
 }
 
 model User {
-  id             String    @id @default(cuid())
-  name           String
-  phone          String    @unique
-  passwordHash   String
-  role           Role      @default(buyer)
+  id                   String         @id @default(cuid())
+  name                 String
+  phone                String         @unique
+  passwordHash         String
+  role                 Role           @default(buyer)
+  failedLoginAttempts  Int            @default(0)
+  lockedUntil          DateTime?
   /** Shop / pickup coordinates for sellers (optional). Used for nearby product search. */
-  sellerLat      Float?
-  sellerLng      Float?
-  createdAt      DateTime  @default(now())
-  updatedAt      DateTime  @updatedAt
-  products       Product[]
-  ordersAsBuyer  Order[]   @relation("BuyerOrders")
-  ordersAsSeller Order[]   @relation("SellerOrders")
+  sellerLat            Float?
+  sellerLng            Float?
+  createdAt            DateTime       @default(now())
+  updatedAt            DateTime       @updatedAt
+  products             Product[]
+  ordersAsBuyer        Order[]        @relation("BuyerOrders")
+  ordersAsSeller       Order[]        @relation("SellerOrders")
+  refreshTokens        RefreshToken[]
+}
+
+model RefreshToken {
+  id        String    @id @default(cuid())
+  tokenHash String    @unique
+  userId    String
+  user      User      @relation(fields: [userId], references: [id], onDelete: Cascade)
+  expiresAt DateTime
+  createdAt DateTime  @default(now())
+  revokedAt DateTime?
+
+  @@index([userId])
 }
 
 model Product {

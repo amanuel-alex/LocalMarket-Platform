@@ -1,5 +1,5 @@
 import type { RequestHandler } from "express";
-import { verifyToken } from "../utils/jwt.js";
+import { verifyAccessToken } from "../utils/jwt.js";
 import { AppError } from "../utils/errors.js";
 
 export const requireAuth: RequestHandler = (req, _res, next) => {
@@ -14,10 +14,10 @@ export const requireAuth: RequestHandler = (req, _res, next) => {
     return;
   }
   try {
-    const { sub, role } = verifyToken(token);
+    const { sub, role } = verifyAccessToken(token);
     req.user = { id: sub, role };
     next();
-  } catch {
-    next(new AppError(401, "UNAUTHORIZED", "Invalid or expired token"));
+  } catch (e) {
+    next(e);
   }
 };
