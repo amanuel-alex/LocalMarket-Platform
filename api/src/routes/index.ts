@@ -3,9 +3,11 @@ import assistantRoutes from "./assistant.routes.js";
 import authRoutes from "./auth.routes.js";
 import orderRoutes from "./order.routes.js";
 import paymentRoutes from "./payment.routes.js";
+import payoutRoutes from "./payout.routes.js";
 import productRoutes from "./product.routes.js";
 import qrRoutes from "./qr.routes.js";
 import sellerRoutes from "./seller.routes.js";
+import walletRoutes from "./wallet.routes.js";
 import { requireAuth } from "../middlewares/auth.middleware.js";
 import { requireRoles } from "../middlewares/role.middleware.js";
 
@@ -22,6 +24,8 @@ router.use("/sellers", sellerRoutes);
 router.use("/orders", orderRoutes);
 router.use("/payments", paymentRoutes);
 router.use("/qr", qrRoutes);
+router.use("/wallets", walletRoutes);
+router.use("/payouts", payoutRoutes);
 
 router.get("/admin/health", requireAuth, requireRoles("admin"), (_req, res) => {
   res.json({ ok: true, scope: "admin" });

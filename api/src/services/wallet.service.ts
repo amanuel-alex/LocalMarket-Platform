@@ -182,7 +182,7 @@ export async function listTransactionsForUser(
     take: limit,
   });
 
-  return rows.map((r) => ({
+  return rows.map((r: (typeof rows)[number]) => ({
     id: r.id,
     type: r.type,
     amount: r.amount.toNumber(),

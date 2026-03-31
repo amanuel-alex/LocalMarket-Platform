@@ -3,7 +3,7 @@ generator client {
 }
 
 datasource db {
-  provider = "postgres"
+  provider = "sqlite"
   url      = env("DATABASE_URL")
 }
 
@@ -73,9 +73,9 @@ model Wallet {
   userId            String?   @unique
   isPlatform        Boolean   @default(false)
   /** Funds the platform has collected (escrow float). */
-  availableBalance  Decimal   @default(0) @db.Decimal(14, 2)
+  availableBalance  Decimal   @default(0)
   /** Seller: earnings awaiting pickup / dispute window (mirrors platform liability for that seller). */
-  pendingBalance    Decimal   @default(0) @db.Decimal(14, 2)
+  pendingBalance    Decimal   @default(0)
   createdAt         DateTime  @default(now())
   updatedAt         DateTime  @updatedAt
   user              User?     @relation(fields: [userId], references: [id], onDelete: Cascade)
@@ -91,7 +91,7 @@ model WalletTransaction {
   walletId    String
   wallet      Wallet                @relation(fields: [walletId], references: [id], onDelete: Restrict)
   type        WalletTransactionType
-  amount      Decimal               @db.Decimal(14, 2)
+  amount      Decimal
   orderId     String?
   paymentId   String?
   payoutId    String?
@@ -109,7 +109,7 @@ model Payout {
   id          String       @id @default(cuid())
   walletId    String
   userId      String
-  amount      Decimal      @db.Decimal(14, 2)
+  amount      Decimal
   status      PayoutStatus @default(pending)
   note        String?
   requestedAt DateTime     @default(now())

@@ -4,10 +4,13 @@ import { app } from "../src/app.js";
 import { prisma } from "../src/prisma/client.js";
 
 export async function resetDb(): Promise<void> {
+  await prisma.walletTransaction.deleteMany();
+  await prisma.payout.deleteMany();
   await prisma.payment.deleteMany();
   await prisma.order.deleteMany();
   await prisma.product.deleteMany();
   await prisma.refreshToken.deleteMany();
+  await prisma.wallet.deleteMany();
   await prisma.user.deleteMany();
 }
 
