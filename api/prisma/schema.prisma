@@ -3,7 +3,7 @@ generator client {
 }
 
 datasource db {
-  provider = "sqlite"
+  provider = "postgres"
   url      = env("DATABASE_URL")
 }
 
@@ -25,6 +25,27 @@ enum PaymentStatus {
   failed
 }
 
+enum WalletTransactionType {
+  /** Buyer payment settled; funds held by platform, seller credited as pending (escrow). */
+  order_escrow_in
+  /** Pickup verified; seller pending → available, platform releases liability. */
+  order_escrow_release
+  /** Seller requested payout; available debited, payout record created. */
+  payout_reserve
+  /** Payout marked paid externally (no further balance change). */
+  payout_complete
+  /** Payout cancelled / failed; funds returned to seller available. */
+  payout_cancel
+  adjustment
+}
+
+enum PayoutStatus {
+  pending
+  paid
+  failed
+  cancelled
+}
+
 model User {
   id                   String         @id @default(cuid())
   name                 String
@@ -42,6 +63,64 @@ model User {
   ordersAsBuyer        Order[]        @relation("BuyerOrders")
   ordersAsSeller       Order[]        @relation("SellerOrders")
   refreshTokens        RefreshToken[]
+  wallet               Wallet?
+  payouts              Payout[]
+}
+
+model Wallet {
+  id                String    @id @default(cuid())
+  /** Set only for user wallets; null for the single platform treasury row. */
+  userId            String?   @unique
+  isPlatform        Boolean   @default(false)
+  /** Funds the platform has collected (escrow float). */
+  availableBalance  Decimal   @default(0) @db.Decimal(14, 2)
+  /** Seller: earnings awaiting pickup / dispute window (mirrors platform liability for that seller). */
+  pendingBalance    Decimal   @default(0) @db.Decimal(14, 2)
+  createdAt         DateTime  @default(now())
+  updatedAt         DateTime  @updatedAt
+  user              User?     @relation(fields: [userId], references: [id], onDelete: Cascade)
+  transactions      WalletTransaction[]
+  payouts           Payout[]
+
+  @@index([isPlatform])
+  @@map("wallets")
+}
+
+model WalletTransaction {
+  id          String                @id @default(cuid())
+  walletId    String
+  wallet      Wallet                @relation(fields: [walletId], references: [id], onDelete: Restrict)
+  type        WalletTransactionType
+  amount      Decimal               @db.Decimal(14, 2)
+  orderId     String?
+  paymentId   String?
+  payoutId    String?
+  note        String?
+  createdAt   DateTime              @default(now())
+
+  @@index([walletId])
+  @@index([orderId])
+  @@index([paymentId])
+  @@index([payoutId])
+  @@map("wallet_transactions")
+}
+
+model Payout {
+  id          String       @id @default(cuid())
+  walletId    String
+  userId      String
+  amount      Decimal      @db.Decimal(14, 2)
+  status      PayoutStatus @default(pending)
+  note        String?
+  requestedAt DateTime     @default(now())
+  completedAt DateTime?
+  wallet      Wallet       @relation(fields: [walletId], references: [id], onDelete: Restrict)
+  user        User         @relation(fields: [userId], references: [id], onDelete: Restrict)
+
+  @@index([userId])
+  @@index([walletId])
+  @@index([status])
+  @@map("payouts")
 }
 
 model RefreshToken {

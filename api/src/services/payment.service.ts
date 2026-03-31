@@ -3,6 +3,7 @@ import type { OrderStatus, Payment, PaymentStatus } from "@prisma/client";
 import { prisma } from "../prisma/client.js";
 import { AppError } from "../utils/errors.js";
 import type { InitiatePaymentInput, MpesaCallbackInput } from "../schemas/payment.schemas.js";
+import * as walletService from "./wallet.service.js";
 
 export type StkPushSimulatedResponse = {
   MerchantRequestID: string;
@@ -114,6 +115,13 @@ export async function processMpesaCallback(input: MpesaCallbackInput): Promise<{
           data: { status: "paid", qrToken },
         });
         pickupQrToken = qrToken;
+
+        await walletService.applyEscrowFromPayment(tx, {
+          orderId: payment.orderId,
+          paymentId: payment.id,
+          sellerId: orderBefore.sellerId,
+          amount: orderBefore.totalPrice,
+        });
       }
       const order = await tx.order.findUniqueOrThrow({ where: { id: payment.orderId } });
       return { payment: updatedPayment, orderStatus: order.status, pickupQrToken };

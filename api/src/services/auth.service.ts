@@ -38,6 +38,13 @@ export async function register(input: RegisterInput): Promise<AuthTokenPair> {
       name: input.name,
       phone: input.phone,
       passwordHash,
+      wallet: {
+        create: {
+          isPlatform: false,
+          availableBalance: 0,
+          pendingBalance: 0,
+        },
+      },
     },
   });
   return buildAuthResponse(user);

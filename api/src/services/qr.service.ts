@@ -2,6 +2,7 @@ import { prisma } from "../prisma/client.js";
 import { AppError } from "../utils/errors.js";
 import type { OrderJson } from "./order.service.js";
 import { toOrderJson } from "./order.service.js";
+import * as walletService from "./wallet.service.js";
 
 export async function verifyPickupQr(sellerId: string, token: string): Promise<OrderJson> {
   const order = await prisma.order.findUnique({
@@ -25,13 +26,23 @@ export async function verifyPickupQr(sellerId: string, token: string): Promise<O
     throw new AppError(409, "ORDER_NOT_READY", "Order cannot be picked up in its current state");
   }
 
-  const updated = await prisma.order.update({
-    where: { id: order.id },
-    data: {
-      status: "completed",
-      qrConsumedAt: new Date(),
-    },
-    include: { product: { select: { id: true, title: true, price: true } } },
+  const updated = await prisma.$transaction(async (tx) => {
+    const row = await tx.order.update({
+      where: { id: order.id },
+      data: {
+        status: "completed",
+        qrConsumedAt: new Date(),
+      },
+      include: { product: { select: { id: true, title: true, price: true } } },
+    });
+
+    await walletService.releaseEscrowForOrder(tx, {
+      orderId: order.id,
+      sellerId: order.sellerId,
+      amount: order.totalPrice,
+    });
+
+    return row;
   });
 
   return toOrderJson(updated, { userId: sellerId, role: "seller" });
