@@ -46,6 +46,14 @@ enum PayoutStatus {
   cancelled
 }
 
+enum DisputeStatus {
+  open
+  reviewing
+  resolved_refund
+  resolved_no_action
+  closed
+}
+
 model User {
   id                   String         @id @default(cuid())
   name                 String
@@ -172,12 +180,29 @@ model Order {
   seller        User        @relation("SellerOrders", fields: [sellerId], references: [id], onDelete: Restrict)
   product       Product     @relation(fields: [productId], references: [id], onDelete: Restrict)
   payments      Payment[]
+  disputes      Dispute[]
   createdAt     DateTime    @default(now())
   updatedAt     DateTime    @updatedAt
 
   @@index([buyerId])
   @@index([sellerId])
   @@index([productId])
+}
+
+model Dispute {
+  id        String        @id @default(cuid())
+  orderId   String        @map("order_id")
+  reason    String
+  status    DisputeStatus @default(open)
+  /** Optional admin resolution / internal note (set when updating status). */
+  note      String?
+  createdAt DateTime      @default(now())
+  updatedAt DateTime      @updatedAt
+  order     Order         @relation(fields: [orderId], references: [id], onDelete: Restrict)
+
+  @@index([orderId])
+  @@index([status])
+  @@map("disputes")
 }
 
 model Payment {
