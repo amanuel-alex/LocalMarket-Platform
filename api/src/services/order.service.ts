@@ -18,10 +18,15 @@ export type OrderJson = {
   product: { id: string; title: string; price: number };
   createdAt: Date;
   updatedAt: Date;
+  /** Present only for the buyer when order is paid and pickup QR is still unused. */
+  pickupQrToken?: string;
 };
 
-function toOrderJson(row: OrderWithProduct): OrderJson {
-  return {
+export function toOrderJson(
+  row: OrderWithProduct,
+  viewer?: { userId: string; role: Role },
+): OrderJson {
+  const base: OrderJson = {
     id: row.id,
     status: row.status,
     quantity: row.quantity,
@@ -37,6 +42,21 @@ function toOrderJson(row: OrderWithProduct): OrderJson {
     createdAt: row.createdAt,
     updatedAt: row.updatedAt,
   };
+
+  const showPickupToken =
+    viewer &&
+    viewer.role === "buyer" &&
+    row.buyerId === viewer.userId &&
+    row.status === "paid" &&
+    row.qrConsumedAt === null &&
+    row.qrToken !== null &&
+    row.qrToken.length > 0;
+
+  if (showPickupToken) {
+    return { ...base, pickupQrToken: row.qrToken! };
+  }
+
+  return base;
 }
 
 const productSelect = { id: true, title: true, price: true } as const;
@@ -64,7 +84,7 @@ export async function createOrder(buyerId: string, input: CreateOrderInput): Pro
     include: { product: { select: productSelect } },
   });
 
-  return toOrderJson(row);
+  return toOrderJson(row, { userId: buyerId, role: "buyer" });
 }
 
 export async function listOrdersForUser(userId: string, role: Role): Promise<OrderJson[]> {
@@ -81,7 +101,7 @@ export async function listOrdersForUser(userId: string, role: Role): Promise<Ord
     include: { product: { select: productSelect } },
   });
 
-  return rows.map(toOrderJson);
+  return rows.map((row) => toOrderJson(row, { userId, role }));
 }
 
 export async function getOrderByIdForUser(
@@ -101,5 +121,5 @@ export async function getOrderByIdForUser(
   if (!allowed) {
     throw new AppError(403, "FORBIDDEN", "You cannot access this order");
   }
-  return toOrderJson(row);
+  return toOrderJson(row, { userId, role });
 }

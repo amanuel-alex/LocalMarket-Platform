@@ -3,6 +3,7 @@ import authRoutes from "./auth.routes.js";
 import orderRoutes from "./order.routes.js";
 import paymentRoutes from "./payment.routes.js";
 import productRoutes from "./product.routes.js";
+import qrRoutes from "./qr.routes.js";
 import { requireAuth } from "../middlewares/auth.middleware.js";
 import { requireRoles } from "../middlewares/role.middleware.js";
 
@@ -16,6 +17,7 @@ router.use("/auth", authRoutes);
 router.use("/products", productRoutes);
 router.use("/orders", orderRoutes);
 router.use("/payments", paymentRoutes);
+router.use("/qr", qrRoutes);
 
 router.get("/admin/health", requireAuth, requireRoles("admin"), (_req, res) => {
   res.json({ ok: true, scope: "admin" });

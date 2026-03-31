@@ -82,6 +82,8 @@ export async function initiateStkPush(
 export async function processMpesaCallback(input: MpesaCallbackInput): Promise<{
   payment: Payment;
   orderStatus: OrderStatus;
+  /** Issued when this callback first transitions the order from pending → paid (for mock/E2E). */
+  pickupQrToken?: string;
 }> {
   const success = input.ResultCode === 0;
 
@@ -103,12 +105,18 @@ export async function processMpesaCallback(input: MpesaCallbackInput): Promise<{
         where: { id: payment.id },
         data: { status: "completed" },
       });
-      await tx.order.updateMany({
-        where: { id: payment.orderId, status: "pending" },
-        data: { status: "paid" },
-      });
+      let pickupQrToken: string | undefined;
+      const orderBefore = await tx.order.findUnique({ where: { id: payment.orderId } });
+      if (orderBefore?.status === "pending") {
+        const qrToken = randomBytes(32).toString("base64url");
+        await tx.order.update({
+          where: { id: payment.orderId },
+          data: { status: "paid", qrToken },
+        });
+        pickupQrToken = qrToken;
+      }
       const order = await tx.order.findUniqueOrThrow({ where: { id: payment.orderId } });
-      return { payment: updatedPayment, orderStatus: order.status };
+      return { payment: updatedPayment, orderStatus: order.status, pickupQrToken };
     }
 
     const updatedPayment = await tx.payment.update({

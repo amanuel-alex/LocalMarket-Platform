@@ -20,7 +20,9 @@ export const callback: RequestHandler = asyncHandler(async (req, res, next) => {
     next(parsed.error);
     return;
   }
-  const { payment, orderStatus } = await paymentService.processMpesaCallback(parsed.data);
+  const { payment, orderStatus, pickupQrToken } = await paymentService.processMpesaCallback(
+    parsed.data,
+  );
   res.status(200).json({
     ResultCode: "0",
     ResultDesc: "Callback processed",
@@ -31,5 +33,6 @@ export const callback: RequestHandler = asyncHandler(async (req, res, next) => {
       checkoutRequestId: payment.checkoutRequestId,
     },
     orderStatus,
+    ...(pickupQrToken ? { pickupQrToken } : {}),
   });
 });

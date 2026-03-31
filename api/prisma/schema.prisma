@@ -57,19 +57,22 @@ model Product {
 }
 
 model Order {
-  id         String      @id @default(cuid())
-  status     OrderStatus @default(pending)
-  quantity   Int
-  totalPrice Decimal
-  buyerId    String
-  sellerId   String
-  productId  String
-  buyer      User        @relation("BuyerOrders", fields: [buyerId], references: [id], onDelete: Restrict)
-  seller     User        @relation("SellerOrders", fields: [sellerId], references: [id], onDelete: Restrict)
-  product    Product     @relation(fields: [productId], references: [id], onDelete: Restrict)
-  payments   Payment[]
-  createdAt  DateTime    @default(now())
-  updatedAt  DateTime    @updatedAt
+  id            String      @id @default(cuid())
+  status        OrderStatus @default(pending)
+  quantity      Int
+  totalPrice    Decimal
+  buyerId       String
+  sellerId      String
+  productId     String
+  /** Secure one-time pickup token (raw); generated when payment succeeds — not the order id. */
+  qrToken       String?     @unique
+  qrConsumedAt  DateTime?
+  buyer         User        @relation("BuyerOrders", fields: [buyerId], references: [id], onDelete: Restrict)
+  seller        User        @relation("SellerOrders", fields: [sellerId], references: [id], onDelete: Restrict)
+  product       Product     @relation(fields: [productId], references: [id], onDelete: Restrict)
+  payments      Payment[]
+  createdAt     DateTime    @default(now())
+  updatedAt     DateTime    @updatedAt
 
   @@index([buyerId])
   @@index([sellerId])
