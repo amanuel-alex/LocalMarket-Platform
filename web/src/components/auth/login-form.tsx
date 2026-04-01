@@ -2,7 +2,7 @@
 
 import { zodResolver } from "@hookform/resolvers/zod";
 import Link from "next/link";
-import { useRouter } from "next/navigation";
+import { useRouter, useSearchParams } from "next/navigation";
 import { useState } from "react";
 import { useForm } from "react-hook-form";
 
@@ -29,8 +29,17 @@ import { parsePreferredLocale, setSession } from "@/lib/auth-storage";
 import { getPostLoginPath } from "@/lib/roles";
 import { loginFormSchema, type LoginFormValues } from "@/lib/validations/auth";
 
+function safeInternalPath(next: string | null): string | null {
+  if (!next) return null;
+  const t = next.trim();
+  if (!t.startsWith("/") || t.startsWith("//")) return null;
+  if (t.includes("://")) return null;
+  return t;
+}
+
 export function LoginForm() {
   const router = useRouter();
+  const searchParams = useSearchParams();
   const [serverError, setServerError] = useState<string | null>(null);
 
   const form = useForm<LoginFormValues>({
@@ -54,7 +63,8 @@ export function LoginForm() {
           ...(preferredLocale ? { preferredLocale } : {}),
         },
       });
-      router.push(getPostLoginPath(String(data.user.role)));
+      const next = safeInternalPath(searchParams.get("next"));
+      router.push(next ?? getPostLoginPath(String(data.user.role)));
       router.refresh();
     } catch (e) {
       setServerError(parseApiError(e));
@@ -130,7 +140,14 @@ export function LoginForm() {
       <CardFooter className="flex justify-center border-t border-border/60 pt-6">
         <p className="text-sm text-muted-foreground">
           No account?{" "}
-          <Link href="/register" className="font-medium text-primary underline-offset-4 hover:underline">
+          <Link
+            href={
+              searchParams.get("next")
+                ? `/register?next=${encodeURIComponent(searchParams.get("next")!)}`
+                : "/register"
+            }
+            className="font-medium text-primary underline-offset-4 hover:underline"
+          >
             Create one
           </Link>
         </p>

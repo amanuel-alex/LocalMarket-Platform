@@ -156,7 +156,7 @@ export function BuyerProductDetailClient({ productId }: { productId: string }) {
             <p className="mt-2 text-muted-foreground">{product.category}</p>
           </div>
 
-          <div className="prose prose-sm max-w-none text-muted-foreground dark:prose-invert">
+          <div className="max-w-none text-sm leading-relaxed text-muted-foreground">
             <p className="whitespace-pre-wrap">{product.description || "No description provided."}</p>
           </div>
 
