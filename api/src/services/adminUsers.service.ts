@@ -1,4 +1,4 @@
-import type { Role } from "@prisma/client";
+import type { Prisma, Role } from "@prisma/client";
 import { prisma } from "../prisma/client.js";
 import { AppError } from "../utils/errors.js";
 import * as auditService from "./audit.service.js";
@@ -74,9 +74,22 @@ export async function unbanUserByAdmin(adminId: string, targetUserId: string): P
 export async function listUsersForAdmin(
   limit: number,
   offset: number,
+  filters?: { q?: string; role?: Role },
 ): Promise<{ users: AdminUserRow[]; total: number }> {
+  const where: Prisma.UserWhereInput = {};
+  if (filters?.role) {
+    where.role = filters.role;
+  }
+  if (filters?.q) {
+    where.OR = [
+      { name: { contains: filters.q, mode: "insensitive" } },
+      { phone: { contains: filters.q, mode: "insensitive" } },
+    ];
+  }
+
   const [users, total] = await Promise.all([
     prisma.user.findMany({
+      where,
       select: {
         id: true,
         name: true,
@@ -90,7 +103,7 @@ export async function listUsersForAdmin(
       take: limit,
       skip: offset,
     }),
-    prisma.user.count(),
+    prisma.user.count({ where }),
   ]);
   return { users, total };
 }

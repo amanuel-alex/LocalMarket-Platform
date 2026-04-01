@@ -9,6 +9,8 @@ import {
   adminCreateProductGroupBodySchema,
   adminOrderOverrideBodySchema,
   adminPaymentsQuerySchema,
+  adminPayoutsQuerySchema,
+  adminProductsQuerySchema,
   adminUserPatchBodySchema,
   adminUsersQuerySchema,
   logQuerySchema,
@@ -23,6 +25,7 @@ import * as auditService from "../services/audit.service.js";
 import * as logService from "../services/log.service.js";
 import * as orderService from "../services/order.service.js";
 import * as platformSettingsService from "../services/platformSettings.service.js";
+import * as payoutService from "../services/payout.service.js";
 import * as productService from "../services/product.service.js";
 import * as metricsService from "../services/metrics.service.js";
 
@@ -53,8 +56,8 @@ export const listUsers: RequestHandler = asyncHandler(async (req, res, next) => 
     next(parsed.error);
     return;
   }
-  const { limit, offset } = parsed.data;
-  const result = await adminUsersService.listUsersForAdmin(limit, offset);
+  const { limit, offset, q, role } = parsed.data;
+  const result = await adminUsersService.listUsersForAdmin(limit, offset, { q, role });
   res.json({
     users: result.users.map((u) => ({
       ...u,

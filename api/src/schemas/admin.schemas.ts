@@ -56,6 +56,20 @@ export const adminAssignProductGroupBodySchema = z.object({
 export const adminUsersQuerySchema = z.object({
   limit: z.coerce.number().int().min(1).max(100).optional().default(50),
   offset: z.coerce.number().int().min(0).optional().default(0),
+  q: z.string().trim().max(120).optional(),
+  role: z.nativeEnum(Role).optional(),
+});
+
+export const adminProductsQuerySchema = z.object({
+  limit: z.coerce.number().int().min(1).max(100).optional().default(50),
+  offset: z.coerce.number().int().min(0).optional().default(0),
+  q: z.string().trim().max(120).optional(),
+  category: z.string().trim().max(120).optional(),
+});
+
+export const adminPayoutsQuerySchema = z.object({
+  limit: z.coerce.number().int().min(1).max(100).optional().default(50),
+  offset: z.coerce.number().int().min(0).optional().default(0),
 });
 
 export const adminUserPatchBodySchema = z

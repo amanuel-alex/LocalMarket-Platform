@@ -1,4 +1,5 @@
 import { prisma } from "../prisma/client.js";
+import * as analyticsService from "./analytics.service.js";
 
 export type AdminRecentOrderRow = {
   id: string;
@@ -15,9 +16,12 @@ export type AdminDashboardPayload = {
     products: number;
     orders: number;
     revenue: number;
+    /** Distinct buyers/sellers with order activity in the last 30 days. */
+    activeUsersLast30Days: number;
   };
   recentOrders: AdminRecentOrderRow[];
   salesByDay: Array<{ date: string; amount: number }>;
+  topProducts: analyticsService.PopularProductRow[];
 };
 
 const SALES_DAY_RANGE = 14;
@@ -27,7 +31,7 @@ export async function getAdminDashboard(): Promise<AdminDashboardPayload> {
   from.setUTCDate(from.getUTCDate() - SALES_DAY_RANGE);
   from.setUTCHours(0, 0, 0, 0);
 
-  const [productCount, orderCount, salesAgg, recentRaw, paidOrders] = await Promise.all([
+  const [productCount, orderCount, salesAgg, recentRaw, paidOrders, analyticsSnap] = await Promise.all([
     prisma.product.count(),
     prisma.order.count(),
     prisma.order.aggregate({
@@ -36,7 +40,7 @@ export async function getAdminDashboard(): Promise<AdminDashboardPayload> {
     }),
     prisma.order.findMany({
       orderBy: { createdAt: "desc" },
-      take: 10,
+      take: 50,
       include: {
         product: { select: { title: true } },
         buyer: { select: { name: true } },
@@ -50,6 +54,7 @@ export async function getAdminDashboard(): Promise<AdminDashboardPayload> {
       },
       select: { totalPrice: true, createdAt: true },
     }),
+    analyticsService.getSystemAnalytics(),
   ]);
 
   const byDay = new Map<string, number>();
@@ -85,5 +90,6 @@ export async function getAdminDashboard(): Promise<AdminDashboardPayload> {
       sellerName: o.seller.name,
     })),
     salesByDay,
+    topProducts: analyticsSnap.popularProducts.slice(0, 8),
   };
 }
