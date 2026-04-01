@@ -53,7 +53,14 @@ const productFormSchema = z.object({
   category: z.string().min(1).max(120),
   lat: z.coerce.number().min(-90).max(90),
   lng: z.coerce.number().min(-180).max(180),
-  imageUrl: z.string().url().optional().or(z.literal("")),
+  imageUrl: z
+    .string()
+    .max(2048)
+    .optional()
+    .refine(
+      (s) => s === undefined || s === "" || /^https?:\/\//i.test(s.trim()),
+      "Enter a valid image URL",
+    ),
 });
 
 type ProductFormValues = z.infer<typeof productFormSchema>;

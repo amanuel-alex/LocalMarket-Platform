@@ -14,7 +14,7 @@ export function DashboardShell({ children }: { children: ReactNode }) {
         <AppSidebar />
         <SidebarInset className="flex min-h-svh flex-col bg-muted/20">
           <AppNavbar />
-          <main className="flex-1 p-4 sm:p-6">{children}</main>
+          <main className="flex-1 p-4 transition-opacity duration-200 sm:p-6">{children}</main>
         </SidebarInset>
       </SidebarProvider>
     </TooltipProvider>

@@ -42,7 +42,7 @@ export function AppSidebar() {
     <Sidebar collapsible="icon" className="border-r border-sidebar-border shadow-sm">
       <SidebarHeader className="px-2 pb-2 pt-4">
         <Link
-          href="/dashboard"
+          href="/"
           className="flex items-center gap-2 rounded-2xl px-2 py-1.5 text-lg font-semibold tracking-tight text-sidebar-foreground outline-none ring-sidebar-ring transition hover:bg-sidebar-accent focus-visible:ring-2"
         >
           <span className="flex size-9 shrink-0 items-center justify-center rounded-xl bg-sidebar-primary text-sm font-bold text-sidebar-primary-foreground shadow-sm">
