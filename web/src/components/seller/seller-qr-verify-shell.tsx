@@ -53,7 +53,7 @@ export function SellerQrVerifyShell() {
         </Card>
       </div>
 
-      <QrVerifyClient />
+      <QrVerifyClient embedded />
     </div>
   );
 }

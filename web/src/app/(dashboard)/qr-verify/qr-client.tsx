@@ -12,7 +12,7 @@ import { normalizeRole } from "@/lib/roles";
 import { toastApiError, verifyQrToken } from "@/lib/api";
 import { CheckCircle2, XCircle } from "lucide-react";
 
-export function QrVerifyClient() {
+export function QrVerifyClient({ embedded = false }: { embedded?: boolean } = {}) {
   const user = getStoredUser();
   const [token, setToken] = useState("");
   const [loading, setLoading] = useState(false);
@@ -57,15 +57,17 @@ export function QrVerifyClient() {
   const isDelivery = r === "delivery";
 
   return (
-    <div className="mx-auto max-w-xl space-y-8">
-      <div>
-        <h1 className="text-2xl font-semibold tracking-tight">QR verification</h1>
-        <p className="text-sm text-muted-foreground">
-          {isDelivery
-            ? "Confirm handoff by entering the pickup token from the buyer’s QR code."
-            : "Enter the pickup token from the buyer’s QR code (in-store pickup)."}
-        </p>
-      </div>
+    <div className={embedded ? "mx-auto max-w-xl space-y-6" : "mx-auto max-w-xl space-y-8"}>
+      {!embedded ? (
+        <div>
+          <h1 className="text-2xl font-semibold tracking-tight">QR verification</h1>
+          <p className="text-sm text-muted-foreground">
+            {isDelivery
+              ? "Confirm handoff by entering the pickup token from the buyer’s QR code."
+              : "Enter the pickup token from the buyer’s QR code (in-store pickup)."}
+          </p>
+        </div>
+      ) : null}
 
       <motion.div
         initial={{ opacity: 0, scale: 0.98 }}
