@@ -91,7 +91,7 @@
     "subtitle": "Gabaa irraa tarree haaraa — calaluu dhaaf xuqi.",
     "loading": "Fe'aa jira…",
     "empty": "Amma amaloota hin jiru.",
-    "error": "Oomishoota hin fe'amne. Fakkeenya agarsiifna.",
+    "samplesNote": "Kaardii fakkeessaa mul'ataaf. Oomishoonni umamaa gurgurtoonni yeroo maxxanfatanii API keessan yeroo hojjechaa jiru agarsiifamu.",
     "locationFallback": "Naannoo"
   },
   "cta": {

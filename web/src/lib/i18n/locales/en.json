@@ -103,7 +103,7 @@
     "subtitle": "Fresh listings from the marketplace — swipe to explore.",
     "loading": "Loading picks…",
     "empty": "No listings yet. Check back soon.",
-    "error": "Could not load products. Showing samples.",
+    "samplesNote": "Sample cards for preview. Live listings appear when sellers publish and your API is running.",
     "locationFallback": "Local"
   },
   "cta": {

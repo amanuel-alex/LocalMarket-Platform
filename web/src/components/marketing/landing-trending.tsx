@@ -86,7 +86,7 @@ export function LandingTrending() {
   const { messages } = useLandingI18n();
   const [rows, setRows] = useState<ProductRow[]>([]);
   const [loading, setLoading] = useState(true);
-  const [usedMock, setUsedMock] = useState(false);
+  const [showSamplesNote, setShowSamplesNote] = useState(false);
 
   useEffect(() => {
     let c = false;
@@ -96,15 +96,15 @@ export function LandingTrending() {
         if (c) return;
         if (d.products.length > 0) {
           setRows(d.products);
-          setUsedMock(false);
+          setShowSamplesNote(false);
         } else {
           setRows(MOCK);
-          setUsedMock(true);
+          setShowSamplesNote(true);
         }
       } catch {
         if (!c) {
           setRows(MOCK);
-          setUsedMock(true);
+          setShowSamplesNote(true);
         }
       } finally {
         if (!c) setLoading(false);
@@ -127,14 +127,12 @@ export function LandingTrending() {
           <h2 className="mt-3 text-balance text-3xl font-semibold tracking-tight text-zinc-900 dark:text-zinc-50 md:text-4xl">
             {messages.trending.title}
           </h2>
-          <p className="mt-4 text-pretty text-lg text-zinc-600 dark:text-zinc-400">
-            {messages.trending.subtitle}
-            {usedMock && !loading ? (
-              <span className="mt-2 block text-sm text-amber-700 dark:text-amber-400">
-                {messages.trending.error}
-              </span>
-            ) : null}
-          </p>
+          <p className="mt-4 text-pretty text-lg text-zinc-600 dark:text-zinc-400">{messages.trending.subtitle}</p>
+          {showSamplesNote && !loading ? (
+            <p className="mx-auto mt-3 max-w-xl text-pretty text-xs leading-relaxed text-zinc-500 dark:text-zinc-500">
+              {messages.trending.samplesNote}
+            </p>
+          ) : null}
         </div>
 
         {loading ? (
