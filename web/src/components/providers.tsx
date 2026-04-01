@@ -1,14 +1,15 @@
 "use client";
 
 import type { ReactNode } from "react";
+import { ThemeProvider } from "next-themes";
 
-import { Toaster } from "@/components/ui/sonner";
+import { ThemeToaster } from "@/components/theme-toaster";
 
 export function Providers({ children }: { children: ReactNode }) {
   return (
-    <>
+    <ThemeProvider attribute="class" defaultTheme="system" enableSystem storageKey="ethiolocal-theme">
       {children}
-      <Toaster richColors position="top-right" closeButton />
-    </>
+      <ThemeToaster />
+    </ThemeProvider>
   );
 }

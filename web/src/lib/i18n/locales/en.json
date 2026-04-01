@@ -1,0 +1,131 @@
+{
+  "nav": {
+    "features": "Features",
+    "howItWorks": "How it works",
+    "product": "Product",
+    "trust": "Trust",
+    "trending": "Trending"
+  },
+  "header": {
+    "signIn": "Sign in",
+    "getStarted": "Get started",
+    "language": "Language",
+    "themeLight": "Light",
+    "themeDark": "Dark"
+  },
+  "hero": {
+    "badge": "Local-first marketplace",
+    "titleBefore": "Discover, Compare, and Buy from Local Markets —",
+    "titleHighlight": "Smarter",
+    "subtitle": "EthioLocal connects buyers with nearby sellers, shows the best prices, and ensures secure transactions with QR verification.",
+    "ctaPrimary": "Get started",
+    "ctaSecondary": "Explore products",
+    "mockQr": "QR verified pickup"
+  },
+  "features": {
+    "eyebrow": "Features",
+    "title": "Built for smarter local buying",
+    "subtitle": "Price clarity, proximity, trust, and AI help — in one premium experience.",
+    "items": [
+      {
+        "title": "Smart price comparison",
+        "description": "See offers side by side and pick the best value without hopping between chats and shops."
+      },
+      {
+        "title": "Nearby shops (GPS)",
+        "description": "Discover sellers around you with hyperlocal listings that respect where you actually are."
+      },
+      {
+        "title": "QR verification",
+        "description": "Confirm pickup and release funds only when the buyer scans the right token at handoff."
+      },
+      {
+        "title": "AI assistant",
+        "description": "Natural-language help for finding products, comparing options, and tracking your orders."
+      }
+    ]
+  },
+  "howItWorks": {
+    "eyebrow": "How it works",
+    "title": "From discovery to verified pickup",
+    "subtitle": "A linear flow that keeps buyers informed and sellers protected.",
+    "steps": [
+      {
+        "title": "Browse products",
+        "description": "Search categories and nearby listings tailored to your location."
+      },
+      {
+        "title": "Compare prices",
+        "description": "Stack offers from multiple sellers before you commit."
+      },
+      {
+        "title": "Pay securely",
+        "description": "Complete checkout with transparent totals and payment tracking."
+      },
+      {
+        "title": "Verify with QR",
+        "description": "Scan at pickup so both sides know the handoff is legitimate."
+      }
+    ]
+  },
+  "preview": {
+    "eyebrow": "Product preview",
+    "title": "Web command center, mobile momentum",
+    "subtitle": "Operators see the full picture on the dashboard; buyers stay in flow with the mobile app experience.",
+    "dashboardLabel": "Dashboard",
+    "mobileLabel": "Mobile app (Flutter)",
+    "adminLabel": "Admin · EthioLocal",
+    "revenue": "Revenue",
+    "orders": "Orders",
+    "products": "Products",
+    "salesTrend": "Sales trend",
+    "goodMorning": "Good morning",
+    "nearbyDeals": "Nearby deals",
+    "compareSellers": "Compare 3 sellers",
+    "tabHome": "Home",
+    "tabExplore": "Explore",
+    "tabOrders": "Orders",
+    "tabProfile": "Profile"
+  },
+  "trust": {
+    "title": "Why choose EthioLocal?",
+    "subtitle": "We combine marketplace mechanics with verification and analytics so communities can trade with confidence—not just convenience.",
+    "bullets": [
+      "Verified transactions with structured order and payment states",
+      "Local-first design: proximity, language, and regional payment patterns",
+      "Transparent pricing and comparison before you buy",
+      "Secure payments with clear status from pending to completed"
+    ]
+  },
+  "trending": {
+    "eyebrow": "Trending now",
+    "title": "Popular picks near you",
+    "subtitle": "Fresh listings from the marketplace — swipe to explore.",
+    "loading": "Loading picks…",
+    "empty": "No listings yet. Check back soon.",
+    "error": "Could not load products. Showing samples.",
+    "locationFallback": "Local"
+  },
+  "cta": {
+    "title": "Start buying smarter today",
+    "subtitle": "Join thousands of locals who compare, pay, and verify in one trusted place.",
+    "button": "Join EthioLocal"
+  },
+  "footer": {
+    "tagline": "Local markets, modern stack—compare, pay, and verify with confidence.",
+    "about": "About",
+    "contact": "Contact",
+    "privacy": "Privacy",
+    "copyright": "EthioLocal. All rights reserved."
+  },
+  "chat": {
+    "open": "Open assistant",
+    "close": "Close",
+    "title": "EthioLocal Assistant",
+    "subtitle": "Mock AI · answers are simulated",
+    "placeholder": "Ask about prices, nearby shops, or QR pickup…",
+    "welcome": "Hi! I can help you compare local prices, find nearby shops, or explain QR pickup. What would you like to know?",
+    "thinking": "Thinking…",
+    "sendAria": "Send message"
+  }
+}

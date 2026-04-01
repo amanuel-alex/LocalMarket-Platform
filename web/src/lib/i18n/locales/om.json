@@ -1,0 +1,119 @@
+{
+  "nav": {
+    "features": "Amaloota",
+    "howItWorks": "Akka hojjetu",
+    "product": "Oomisha",
+    "trust": "Amantaa",
+    "trending": "Beekamoo"
+  },
+  "header": {
+    "signIn": "Seeni",
+    "getStarted": "Jalqabi",
+    "language": "Afaan",
+    "themeLight": "Ifaa",
+    "themeDark": "Dukkana"
+  },
+  "hero": {
+    "badge": "Gabaa naannoo teknolojii haarawa",
+    "titleBefore": "Gabaa Naannoo Keessaa Barbaadi, Wal Giddugaleessi, Bitadhu —",
+    "titleHighlight": "Sammuu waliin",
+    "subtitle": "EthioLocal bitattota gurgurtoota naannoo waliin walitti hidha, gatii gaarii agarsiisa, adeemsa nageenya qabu immoo mirkaneessaa QR waliin mirkaneessa.",
+    "ctaPrimary": "Jalqabi",
+    "ctaSecondary": "Oomishoota qoradhu",
+    "mockQr": "Fudhannoo QR mirkanaa'e"
+  },
+  "features": {
+    "eyebrow": "Amaloota",
+    "title": "Bitachuu naannoo sammuu waliin",
+    "subtitle": "Gatii, dhiyoo, amantaa fi gargaarsa AI — muuxannoo tokko keessatti.",
+    "items": [
+      {
+        "title": "Wal giddugaleessuu gatii",
+        "description": "Kaffaltii walitti laali gatii gaarii filachuuf gabaawwan gidduu seenuu malee."
+      },
+      {
+        "title": "Suuqoota naannoo (GPS)",
+        "description": "Gurgurtoota naannoo kee jiran argadhu — tarree naannoo kee irratti hundaa'e."
+      },
+      {
+        "title": "Mirkaneessaa QR",
+        "description": "Fudhannoo yeroo bitattuun mallattoo sirrii QR scan gochu qofa kaffaltiin ni bilisa."
+      },
+      {
+        "title": "Gargaara AI",
+        "description": "Afaan uumamaa: oomisha barbaaduu, wal giddugaleessuu, ajaja hordofuu."
+      }
+    ]
+  },
+  "howItWorks": {
+    "eyebrow": "Akka hojjetu",
+    "title": "Argamuu irraa fudhannoo mirkanaa'atti",
+    "subtitle": "Adeemsa salpha bitattota beeksisaa gurgurtoota nageenya qaba.",
+    "steps": [
+      { "title": "Oomishoota qoradhu", "description": "Gosa fi tarree naannoo kee irratti hundaa'e barbaadi." },
+      { "title": "Gatii wal giddugaleessi", "description": "Dura bitachuu keessan dura kaffaltii meeqaatuu walitti laali." },
+      { "title": "Nageenyaan kaffali", "description": "Waluma galatti ifa ta'eefi haala kaffaltii waliin." },
+      { "title": "QR waliin mirkaneessi", "description": "Yeroo fudhannoo scan gochuun mirkaneessi." }
+    ]
+  },
+  "preview": {
+    "eyebrow": "Mul'ata oomishaa",
+    "title": "Toora web, sochii bilbilaa",
+    "subtitle": "Bulchitoonni dashboard irratti muuxannoo guutuu argatu; bitattuun app bilbilaa irratti deemsa qaba.",
+    "dashboardLabel": "Dashboard",
+    "mobileLabel": "App bilbilaa (Flutter)",
+    "adminLabel": "Bulchiisa · EthioLocal",
+    "revenue": "Galii",
+    "orders": "Ajajoota",
+    "products": "Oomishoota",
+    "salesTrend": "Adeemsa gurgurtaa",
+    "goodMorning": "Akkam bultan",
+    "nearbyDeals": "Kaffaltii naannoo",
+    "compareSellers": "Gurgurtoota 3 wal giddugaleessi",
+    "tabHome": "Mana",
+    "tabExplore": "Qoradhu",
+    "tabOrders": "Ajajoota",
+    "tabProfile": "Seenaa"
+  },
+  "trust": {
+    "title": "Maaliif EthioLocal filattu?",
+    "subtitle": "Teknolojii gabaa mirkaneessaa fi xiinxala waliin walitti fidina — salpha qofa osoo hin taane amantaa waliin.",
+    "bullets": [
+      "Adeemsa ajajaa fi kaffaltii sirnaan qophaa'e",
+      "Naannoo dura ta'e, afaanii fi kaffaltii naannoo",
+      "Gatii ifa ta'e dura bitachuu keessan",
+      "Kaffaltiin nageenya qabu yeroo eeguu irraa hanga xumurametti"
+    ]
+  },
+  "trending": {
+    "eyebrow": "Amma beekamaa",
+    "title": "Filannoo beekamaa naannoo keessan",
+    "subtitle": "Gabaa irraa tarree haaraa — calaluu dhaaf xuqi.",
+    "loading": "Fe'aa jira…",
+    "empty": "Amma amaloota hin jiru.",
+    "error": "Oomishoota hin fe'amne. Fakkeenya agarsiifna.",
+    "locationFallback": "Naannoo"
+  },
+  "cta": {
+    "title": "Har'a sammuu waliin bitadhuu jalqabi",
+    "subtitle": "Naannoo kumaan hedduun bakka amanamaa tokko keessatti wal giddugaleessi, kaffali, mirkaneessi.",
+    "button": "EthioLocal waliin makami"
+  },
+  "footer": {
+    "tagline": "Gabaa naannoo, teknolojii haarawa — wal giddugaleessi, kaffali, mirkaneessi.",
+    "about": "Waa'ee",
+    "contact": "Qunnamaa",
+    "privacy": "Icittiidhaan",
+    "copyright": "EthioLocal. Mirkaneessi seeraan kan eegame."
+  },
+  "chat": {
+    "open": "Gargaara bani",
+    "close": "Cufi",
+    "title": "Gargaara EthioLocal",
+    "subtitle": "AI fakkeessaa · deebiinni ni xiyyeeffama",
+    "placeholder": "Gatii, suuqoota naannoo, ykn QR gaafadhu…",
+    "welcome": "Akkam! Gatii naannoo wal giddugaleessuu, suuqoota argachuu, ykn QR ibsuu nan gargaaru. Maal barbaaddu?",
+    "thinking": "Yaadaa jira…",
+    "sendAria": "Ergaa ergi"
+  }
+}
