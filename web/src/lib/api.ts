@@ -269,6 +269,11 @@ export type OrderRow = {
   updatedAt: string;
   deliveryConfirmedAt: string | null;
   escrowReleasedAt: string | null;
+  /** Buyer-only: pickup token after successful M-Pesa (until QR consumed). */
+  pickupQrToken?: string;
+  adminOverrideNote?: string | null;
+  adminOverriddenAt?: string | null;
+  eligibleForEscrowRelease?: boolean;
 };
 
 export async function fetchOrders() {
@@ -307,6 +312,106 @@ export type ProductListResult = {
 export async function fetchProducts(params: Record<string, string | number | undefined>) {
   const { data } = await apiClient.get<ProductListResult>("/products", { params });
   return data;
+}
+
+export async function fetchProductById(id: string) {
+  const { data } = await apiClient.get<{ product: ProductRow }>(`/products/${id}`);
+  return data.product;
+}
+
+export type RankedProduct = ProductRow & {
+  rankScore: number;
+  distanceKm: number;
+  locationSource: string;
+  sellerTrustScore: number;
+};
+
+export async function fetchRankedProducts(params: {
+  lat?: number;
+  lng?: number;
+  limit?: number;
+  category?: string;
+}) {
+  const { data } = await apiClient.get<{
+    products: RankedProduct[];
+    ranking: { description: string };
+  }>("/products/ranked", { params });
+  return data;
+}
+
+export async function searchProductsPublic(params: {
+  q: string;
+  limit?: number;
+  minPrice?: number;
+  maxPrice?: number;
+  lat?: number;
+  lng?: number;
+  radiusKm?: number;
+}) {
+  const { data } = await apiClient.get<{ products: ProductRow[] }>("/products/search", { params });
+  return data.products;
+}
+
+export async function createOrder(body: { productId: string; quantity: number }) {
+  const { data } = await apiClient.post<{ order: OrderRow }>("/orders", body);
+  return data.order;
+}
+
+export type InitiatePaymentResult = {
+  stkPush: {
+    MerchantRequestID: string;
+    CheckoutRequestID: string;
+    ResponseCode: string;
+    ResponseDescription: string;
+    CustomerMessage: string;
+  };
+  payment: {
+    id: string;
+    orderId: string;
+    amount: number;
+    status: string;
+    checkoutRequestId: string;
+  };
+};
+
+export async function initiatePayment(body: { orderId: string; phone?: string }) {
+  const { data } = await apiClient.post<InitiatePaymentResult>("/payments/initiate", body);
+  return data;
+}
+
+export type OrderReceiptJson = {
+  receiptNumber: string;
+  issuedAt: string;
+  order: {
+    id: string;
+    status: string;
+    quantity: number;
+    currency: string;
+    total: number;
+    createdAt: string;
+  };
+  lineItems: Array<{
+    description: string;
+    quantity: number;
+    unitPrice: number;
+    lineTotal: number;
+  }>;
+  platform: {
+    label: string;
+    commissionRatePercent: number;
+    feeAppliesOn: string;
+  };
+  payment: {
+    id: string;
+    status: string;
+    amount: number;
+    recordedAt: string;
+  } | null;
+};
+
+export async function fetchOrderReceipt(orderId: string) {
+  const { data } = await apiClient.get<{ receipt: OrderReceiptJson }>(`/orders/${orderId}/receipt`);
+  return data.receipt;
 }
 
 export async function createProduct(body: {
