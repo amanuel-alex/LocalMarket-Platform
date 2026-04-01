@@ -60,15 +60,9 @@ export function BuyerShopHome() {
     (patch: Record<string, string | undefined>) => {
       const p = new URLSearchParams(searchParams.toString());
       for (const [k, v] of Object.entries(patch)) {
-        if (v === undefined || v === "" || v === "all") {
-          if (k === "q") p.delete("q");
-          else if (v === "all" && (k === "category" || k === "city" || k === "added")) p.delete(k);
-          else if (v === undefined || v === "") p.delete(k);
-        } else {
-          p.set(k, v);
-        }
+        if (v === undefined || v === "") p.delete(k);
+        else p.set(k, v);
       }
-      if (patch.sort === undefined && !p.has("sort")) p.set("sort", "createdAt_desc");
       const qs = p.toString();
       router.replace(qs ? `/shop?${qs}` : "/shop", { scroll: false });
     },
@@ -193,7 +187,7 @@ export function BuyerShopHome() {
           <div className="space-y-1.5">
             <p className="text-xs font-medium text-muted-foreground">Category</p>
             <Select
-              value={categoryParam}
+              value={!categoryParam || categoryParam === "all" ? "all" : categoryParam}
               onValueChange={(v) => syncUrl({ category: v === "all" ? undefined : v })}
             >
               <SelectTrigger className="rounded-xl">
@@ -201,6 +195,11 @@ export function BuyerShopHome() {
               </SelectTrigger>
               <SelectContent className="rounded-xl">
                 <SelectItem value="all">All categories</SelectItem>
+                {categoryParam !== "all" &&
+                categoryParam &&
+                !categories.includes(categoryParam) ? (
+                  <SelectItem value={categoryParam}>{categoryParam}</SelectItem>
+                ) : null}
                 {categories.map((cat) => (
                   <SelectItem key={cat} value={cat}>
                     {cat}
