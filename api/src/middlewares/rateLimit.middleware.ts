@@ -62,6 +62,15 @@ export const otpVerifyRateLimiter = rateLimit({
   handler: i18nRateLimitHandler("otp_verify"),
 });
 
+/** OpenAI assistant (cost control). */
+export const assistantOpenAiRateLimiter = rateLimit({
+  ...limiterBase,
+  windowMs: 15 * 60 * 1000,
+  max: isTest ? 10_000 : 40,
+  handler: i18nRateLimitHandler("global"),
+  skip: () => isTest,
+});
+
 /** Broad API protection (per IP). Skipped in `NODE_ENV=test`. */
 export const globalApiRateLimiter = rateLimit({
   ...limiterBase,

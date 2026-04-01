@@ -7,6 +7,7 @@
     "trending": "ታዋቂ"
   },
   "header": {
+    "shop": "መደብር",
     "signIn": "ግባ",
     "getStarted": "ጀምር",
     "language": "ቋንቋ",
@@ -111,6 +112,7 @@
     "close": "ዝጋ",
     "title": "ኢትዮሎካል ረዳት",
     "subtitle": "ሞክ ኤአይ · መልሶች የተዋቁ ናቸው",
+    "subtitleLive": "OpenAI · ወቅታዊ ካታሎግ እና መሳሪያዎች",
     "placeholder": "ስለ ዋጋ፣ አቅራቢ ሱቆች ወይም ኪው አር ይጠይቁ…",
     "welcome": "ሰላም! የአካባቢ ዋጋ ማወዳደር፣ አቅራቢ ማግኘት ወይም ኪው አር ማብራሪያ ልረዳዎ።",
     "thinking": "በማሰብ ላይ…",

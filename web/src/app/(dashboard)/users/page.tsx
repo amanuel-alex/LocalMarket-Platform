@@ -1,5 +1,5 @@
-import { UsersClient } from "./users-client";
+import { UsersLegacyRedirect } from "@/components/navigation/workspace-redirects";
 
 export default function UsersPage() {
-  return <UsersClient />;
+  return <UsersLegacyRedirect />;
 }

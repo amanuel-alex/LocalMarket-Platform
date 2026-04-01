@@ -26,6 +26,7 @@ import {
 import { Input } from "@/components/ui/input";
 import { loginRequest, parseApiError } from "@/lib/auth-api";
 import { setSession } from "@/lib/auth-storage";
+import { getPostLoginPath } from "@/lib/roles";
 import { loginFormSchema, type LoginFormValues } from "@/lib/validations/auth";
 
 export function LoginForm() {
@@ -51,7 +52,7 @@ export function LoginForm() {
           role: String(data.user.role),
         },
       });
-      router.push("/dashboard");
+      router.push(getPostLoginPath(String(data.user.role)));
       router.refresh();
     } catch (e) {
       setServerError(parseApiError(e));

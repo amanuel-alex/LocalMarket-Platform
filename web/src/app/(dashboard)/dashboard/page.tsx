@@ -1,5 +1,5 @@
-import { DashboardClient } from "./dashboard-client";
+import { DashboardEntryRedirect } from "@/components/navigation/workspace-redirects";
 
 export default function DashboardPage() {
-  return <DashboardClient />;
+  return <DashboardEntryRedirect />;
 }

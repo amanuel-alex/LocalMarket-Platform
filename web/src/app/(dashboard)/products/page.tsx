@@ -1,5 +1,5 @@
-import { ProductsClient } from "./products-client";
+import { ProductsLegacyRedirect } from "@/components/navigation/workspace-redirects";
 
 export default function ProductsPage() {
-  return <ProductsClient />;
+  return <ProductsLegacyRedirect />;
 }

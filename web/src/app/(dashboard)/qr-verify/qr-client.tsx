@@ -8,6 +8,7 @@ import { Alert, AlertDescription, AlertTitle } from "@/components/ui/alert";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { getStoredUser } from "@/lib/auth-storage";
+import { normalizeRole } from "@/lib/roles";
 import { toastApiError, verifyQrToken } from "@/lib/api";
 import { CheckCircle2, XCircle } from "lucide-react";
 
@@ -44,19 +45,26 @@ export function QrVerifyClient() {
     return <p className="text-sm text-muted-foreground">Sign in to verify pickup QR codes.</p>;
   }
 
-  if (user.role !== "seller") {
+  const r = normalizeRole(user.role);
+  if (r !== "seller" && r !== "delivery") {
     return (
       <p className="text-sm text-muted-foreground">
-        QR verification is available for <strong>seller</strong> accounts (in-store pickup).
+        QR verification is available for <strong>seller</strong> and <strong>delivery</strong> roles.
       </p>
     );
   }
+
+  const isDelivery = r === "delivery";
 
   return (
     <div className="mx-auto max-w-xl space-y-8">
       <div>
         <h1 className="text-2xl font-semibold tracking-tight">QR verification</h1>
-        <p className="text-sm text-muted-foreground">Enter the pickup token from the buyer&apos;s QR code</p>
+        <p className="text-sm text-muted-foreground">
+          {isDelivery
+            ? "Confirm handoff by entering the pickup token from the buyer’s QR code."
+            : "Enter the pickup token from the buyer’s QR code (in-store pickup)."}
+        </p>
       </div>
 
       <motion.div

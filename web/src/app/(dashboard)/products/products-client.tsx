@@ -36,6 +36,7 @@ import {
 } from "@/components/ui/table";
 import { Textarea } from "@/components/ui/textarea";
 import { getStoredUser } from "@/lib/auth-storage";
+import { normalizeRole } from "@/lib/roles";
 import {
   createProduct,
   deleteProduct,
@@ -153,7 +154,7 @@ export function ProductsClient() {
   }
 
   async function onSubmit(values: ProductFormValues) {
-    if (!user || user.role !== "seller") return;
+    if (!user || normalizeRole(user.role) !== "seller") return;
     const price = Number(values.price);
     const lat = Number(values.lat);
     const lng = Number(values.lng);
@@ -213,7 +214,7 @@ export function ProductsClient() {
     }
   }
 
-  if (!user || user.role !== "seller") {
+  if (!user || normalizeRole(user.role) !== "seller") {
     return (
       <p className="text-sm text-muted-foreground">
         Product management is available for <strong>seller</strong> accounts. Contact an admin to update your

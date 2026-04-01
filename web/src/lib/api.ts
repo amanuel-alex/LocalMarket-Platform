@@ -190,6 +190,28 @@ export async function verifyQrToken(token: string) {
   return data.order;
 }
 
+/* ——— Assistant (OpenAI + tools) ——— */
+export async function fetchAssistantOpenAiStatus(): Promise<boolean> {
+  const { data } = await apiClient.get<{ enabled: boolean }>("/assistant/openai/status");
+  return data.enabled;
+}
+
+export type AssistantOpenAiChatResponse = {
+  reply: string;
+  model: string;
+  usage?: { prompt_tokens?: number; completion_tokens?: number; total_tokens?: number };
+};
+
+export async function postAssistantOpenAiChat(body: {
+  message: string;
+  history: Array<{ role: "user" | "assistant"; content: string }>;
+  lat?: number;
+  lng?: number;
+}) {
+  const { data } = await apiClient.post<AssistantOpenAiChatResponse>("/assistant/openai/chat", body);
+  return data;
+}
+
 /* ——— Auth me ——— */
 export async function fetchMe() {
   const { data } = await apiClient.get<{ user: StoredUser & Record<string, unknown> }>(

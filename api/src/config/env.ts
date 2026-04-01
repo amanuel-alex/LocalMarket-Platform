@@ -30,6 +30,10 @@ const schema = z.object({
   REDIS_URL: z.string().optional().default(""),
   /** Age in days for request/error log retention (background cleanup job). */
   CLEANUP_LOG_RETENTION_DAYS: z.coerce.number().int().min(1).max(3650).default(90),
+  /** If set, POST /assistant/openai/chat uses OpenAI function calling + catalog tools. */
+  OPENAI_API_KEY: z.string().optional().default(""),
+  /** Chat model for assistant (e.g. gpt-4o-mini, gpt-4o). */
+  OPENAI_MODEL: z.string().optional().default("gpt-4o-mini"),
 });
 
 export type Env = z.infer<typeof schema>;

@@ -108,6 +108,9 @@ export function LandingHeader() {
           <LandingThemeToggle />
 
           <Button variant="ghost" asChild className="hidden rounded-xl text-zinc-700 dark:text-zinc-300 md:inline-flex">
+            <Link href="/shop">{messages.header.shop}</Link>
+          </Button>
+          <Button variant="ghost" asChild className="hidden rounded-xl text-zinc-700 dark:text-zinc-300 md:inline-flex">
             <Link href="/login">{messages.header.signIn}</Link>
           </Button>
           <Button
@@ -170,6 +173,13 @@ export function LandingHeader() {
                 </button>
               ))}
             </div>
+            <Link
+              href="/shop"
+              className="rounded-xl px-3 py-3 text-sm font-medium text-zinc-800 dark:text-zinc-200"
+              onClick={() => setOpen(false)}
+            >
+              {messages.header.shop}
+            </Link>
             <Link
               href="/login"
               className="rounded-xl px-3 py-3 text-sm font-medium text-zinc-600 dark:text-zinc-400"

@@ -1,5 +1,5 @@
-import { OrdersClient } from "./orders-client";
+import { OrdersLegacyRedirect } from "@/components/navigation/workspace-redirects";
 
 export default function OrdersPage() {
-  return <OrdersClient />;
+  return <OrdersLegacyRedirect />;
 }

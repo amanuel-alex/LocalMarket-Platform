@@ -7,6 +7,7 @@ import { useCallback, useEffect, useRef, useState } from "react";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { ScrollArea } from "@/components/ui/scroll-area";
+import { fetchAssistantOpenAiStatus, postAssistantOpenAiChat } from "@/lib/api";
 import { useLandingI18n } from "@/lib/i18n/landing-i18n-context";
 import { cn } from "@/lib/utils";
 
@@ -55,7 +56,14 @@ export function LandingAiChat() {
   const [input, setInput] = useState("");
   const [busy, setBusy] = useState(false);
   const [items, setItems] = useState<Msg[]>([]);
+  const [openAiEnabled, setOpenAiEnabled] = useState(false);
   const bottomRef = useRef<HTMLDivElement>(null);
+
+  useEffect(() => {
+    void fetchAssistantOpenAiStatus()
+      .then(setOpenAiEnabled)
+      .catch(() => setOpenAiEnabled(false));
+  }, []);
 
   useEffect(() => {
     if (open && items.length === 0) {
@@ -73,19 +81,39 @@ export function LandingAiChat() {
     bottomRef.current?.scrollIntoView({ behavior: "smooth" });
   }, [items, open, busy]);
 
-  const send = useCallback(() => {
+  const send = useCallback(async () => {
     const text = input.trim();
     if (!text || busy) return;
     const uid = `u-${Date.now()}`;
+    const historyForApi = items.map((m) => ({ role: m.role, content: m.text }));
     setItems((m) => [...m, { id: uid, role: "user", text }]);
     setInput("");
     setBusy(true);
+
+    if (openAiEnabled) {
+      try {
+        const data = await postAssistantOpenAiChat({
+          message: text,
+          history: historyForApi,
+        });
+        setItems((m) => [...m, { id: `a-${Date.now()}`, role: "assistant", text: data.reply }]);
+      } catch {
+        const reply = mockReply(text, locale);
+        setItems((m) => [...m, { id: `a-${Date.now()}`, role: "assistant", text: reply }]);
+      } finally {
+        setBusy(false);
+      }
+      return;
+    }
+
     window.setTimeout(() => {
       const reply = mockReply(text, locale);
       setItems((m) => [...m, { id: `a-${Date.now()}`, role: "assistant", text: reply }]);
       setBusy(false);
     }, 700 + Math.random() * 500);
-  }, [input, busy, locale]);
+  }, [input, busy, locale, items, openAiEnabled]);
+
+  const subtitle = openAiEnabled ? messages.chat.subtitleLive : messages.chat.subtitle;
 
   return (
     <>
@@ -125,7 +153,7 @@ export function LandingAiChat() {
               </div>
               <div className="min-w-0 flex-1">
                 <p className="truncate font-semibold text-zinc-900 dark:text-zinc-50">{messages.chat.title}</p>
-                <p className="truncate text-xs text-zinc-500 dark:text-zinc-400">{messages.chat.subtitle}</p>
+                <p className="truncate text-xs text-zinc-500 dark:text-zinc-400">{subtitle}</p>
               </div>
               <Button
                 type="button"
@@ -167,7 +195,7 @@ export function LandingAiChat() {
               className="flex gap-2 border-t border-zinc-200/80 p-3 dark:border-zinc-800"
               onSubmit={(e) => {
                 e.preventDefault();
-                send();
+                void send();
               }}
             >
               <Input

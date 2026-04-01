@@ -11,6 +11,7 @@ enum Role {
   buyer
   seller
   admin
+  delivery
 }
 
 enum OrderStatus {

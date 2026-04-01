@@ -1,5 +1,5 @@
-import { QrVerifyClient } from "./qr-client";
+import { QrLegacyRedirect } from "@/components/navigation/workspace-redirects";
 
 export default function QrVerifyPage() {
-  return <QrVerifyClient />;
+  return <QrLegacyRedirect />;
 }

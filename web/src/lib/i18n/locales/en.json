@@ -7,6 +7,7 @@
     "trending": "Trending"
   },
   "header": {
+    "shop": "Shop",
     "signIn": "Sign in",
     "getStarted": "Get started",
     "language": "Language",
@@ -123,6 +124,7 @@
     "close": "Close",
     "title": "EthioLocal Assistant",
     "subtitle": "Mock AI · answers are simulated",
+    "subtitleLive": "OpenAI · live catalog & help tools",
     "placeholder": "Ask about prices, nearby shops, or QR pickup…",
     "welcome": "Hi! I can help you compare local prices, find nearby shops, or explain QR pickup. What would you like to know?",
     "thinking": "Thinking…",

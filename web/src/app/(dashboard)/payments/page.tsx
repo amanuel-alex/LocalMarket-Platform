@@ -1,5 +1,5 @@
-import { PaymentsClient } from "./payments-client";
+import { PaymentsLegacyRedirect } from "@/components/navigation/workspace-redirects";
 
 export default function PaymentsPage() {
-  return <PaymentsClient />;
+  return <PaymentsLegacyRedirect />;
 }

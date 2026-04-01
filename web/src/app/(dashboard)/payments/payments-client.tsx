@@ -4,7 +4,6 @@ import { motion } from "framer-motion";
 import { useEffect, useMemo, useState } from "react";
 import { toast } from "sonner";
 
-import { AdminGate } from "@/components/admin/admin-gate";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { Skeleton } from "@/components/ui/skeleton";
 import {
@@ -33,11 +32,7 @@ function PayBadge({ status }: { status: string }) {
 }
 
 export function PaymentsClient() {
-  return (
-    <AdminGate>
-      <PaymentsInner />
-    </AdminGate>
-  );
+  return <PaymentsInner />;
 }
 
 function PaymentsInner() {

@@ -79,7 +79,7 @@ export function LandingHero() {
               asChild
               className="h-12 rounded-2xl border-zinc-200/90 bg-white/60 px-8 text-base font-semibold text-zinc-800 shadow-sm backdrop-blur-sm transition hover:bg-white hover:shadow-md dark:border-zinc-700 dark:bg-zinc-900/60 dark:text-zinc-100 dark:hover:bg-zinc-900"
             >
-              <a href="#features">{h.ctaSecondary}</a>
+              <Link href="/shop">{h.ctaSecondary}</Link>
             </Button>
           </motion.div>
         </motion.div>

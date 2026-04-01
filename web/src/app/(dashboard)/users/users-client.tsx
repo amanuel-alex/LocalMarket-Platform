@@ -4,7 +4,6 @@ import { motion } from "framer-motion";
 import { useCallback, useEffect, useState } from "react";
 import { toast } from "sonner";
 
-import { AdminGate } from "@/components/admin/admin-gate";
 import {
   Select,
   SelectContent,
@@ -24,14 +23,10 @@ import {
 } from "@/components/ui/table";
 import { fetchAdminUsers, patchAdminUser, toastApiError, type AdminUser } from "@/lib/api";
 
-const ROLES = ["buyer", "seller", "admin"] as const;
+const ROLES = ["buyer", "seller", "admin", "delivery"] as const;
 
 export function UsersClient() {
-  return (
-    <AdminGate>
-      <UsersInner />
-    </AdminGate>
-  );
+  return <UsersInner />;
 }
 
 function UsersInner() {
@@ -115,7 +110,7 @@ function UsersInner() {
                           value={u.role}
                           onValueChange={(v) => void updateRole(u.id, v)}
                         >
-                          <SelectTrigger className="w-[120px] rounded-xl">
+                          <SelectTrigger className="w-[132px] rounded-xl">
                             <SelectValue />
                           </SelectTrigger>
                           <SelectContent className="rounded-xl">
