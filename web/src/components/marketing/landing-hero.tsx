@@ -90,49 +90,78 @@ export function LandingHero() {
           transition={{ delay: 0.35, duration: 0.7, ease: [0.22, 1, 0.36, 1] }}
           className="relative mx-auto mt-16 max-w-5xl md:mt-24"
         >
-          <div className="relative aspect-[16/9] overflow-hidden rounded-2xl border border-zinc-200/80 bg-gradient-to-br from-white via-zinc-50/80 to-violet-50/40 p-1 shadow-2xl shadow-zinc-900/10 ring-1 ring-zinc-900/5 dark:border-zinc-800 dark:from-zinc-900 dark:via-zinc-950 dark:to-violet-950/30 dark:shadow-black/40 dark:ring-white/5 md:rounded-3xl">
-            <div className="absolute inset-0 rounded-[0.875rem] bg-[linear-gradient(105deg,transparent_40%,rgba(139,92,246,0.06)_50%,transparent_60%)] dark:rounded-[1.35rem] md:rounded-[1.35rem]" />
-            <div className="relative flex h-full min-h-[200px] flex-col rounded-xl bg-white/90 p-4 shadow-inner dark:bg-zinc-950/90 md:min-h-[280px] md:rounded-[1.25rem] md:p-6">
-              <div className="flex items-center gap-2 border-b border-zinc-100 pb-4 dark:border-zinc-800">
-                <div className="flex gap-1.5">
-                  <span className="size-3 rounded-full bg-red-400/80" />
-                  <span className="size-3 rounded-full bg-amber-400/80" />
-                  <span className="size-3 rounded-full bg-emerald-400/80" />
+          {/* Premium browser mock — Stripe / Linear style */}
+          <div className="relative overflow-hidden rounded-2xl border border-zinc-200/90 bg-white p-2 shadow-[0_24px_80px_-12px_rgba(15,23,42,0.12)] ring-1 ring-zinc-900/[0.04] dark:border-zinc-800 dark:bg-zinc-950 dark:shadow-[0_24px_80px_-12px_rgba(0,0,0,0.45)] dark:ring-white/[0.06] md:rounded-3xl md:p-2.5">
+            <div className="pointer-events-none absolute inset-0 bg-[linear-gradient(120deg,transparent_35%,rgba(139,92,246,0.04)_50%,transparent_65%)]" aria-hidden />
+            <div className="relative flex min-h-[220px] flex-col overflow-hidden rounded-2xl bg-zinc-50/90 dark:bg-zinc-900/95 md:min-h-[300px] md:rounded-[1.35rem]">
+              {/* Title bar */}
+              <div className="flex items-center gap-3 border-b border-zinc-200/80 bg-white/95 px-4 py-3.5 dark:border-zinc-800 dark:bg-zinc-950/90">
+                <div className="flex gap-2">
+                  <span className="size-3 rounded-full bg-[#FF5F57] shadow-sm ring-1 ring-black/[0.06]" />
+                  <span className="size-3 rounded-full bg-[#FEBC2E] shadow-sm ring-1 ring-black/[0.06]" />
+                  <span className="size-3 rounded-full bg-[#28C840] shadow-sm ring-1 ring-black/[0.06]" />
                 </div>
-                <div className="mx-auto h-2 max-w-xs flex-1 rounded-full bg-zinc-100 dark:bg-zinc-800" />
+                <div className="mx-auto hidden h-2 max-w-md flex-1 rounded-full bg-zinc-100 sm:block dark:bg-zinc-800" />
               </div>
-              <div className="mt-4 grid flex-1 gap-4 md:grid-cols-3 md:gap-5">
-                <div className="space-y-3 rounded-2xl border border-zinc-100 bg-gradient-to-b from-violet-50/50 to-white p-4 shadow-sm dark:border-zinc-800 dark:from-violet-950/40 dark:to-zinc-900">
-                  <div className="h-2 w-16 rounded-full bg-violet-200 dark:bg-violet-800" />
-                  <div className="h-16 rounded-xl bg-gradient-to-br from-violet-500/20 to-indigo-500/10 dark:from-violet-600/30 dark:to-indigo-600/20" />
-                  <div className="space-y-2">
+
+              {/* Three-column dashboard */}
+              <div className="grid flex-1 gap-3 p-4 md:grid-cols-3 md:gap-4 md:p-5">
+                {/* Left: featured block + skeleton */}
+                <div className="flex flex-col gap-3 rounded-2xl border border-zinc-200/70 bg-white p-4 shadow-sm dark:border-zinc-800 dark:bg-zinc-950">
+                  <div className="h-24 rounded-2xl bg-gradient-to-br from-violet-200/90 via-violet-100 to-indigo-100/80 shadow-inner dark:from-violet-900/50 dark:via-violet-950/60 dark:to-indigo-950/50 md:h-28" />
+                  <div className="space-y-2.5 pt-1">
+                    <div className="h-2 w-20 rounded-full bg-zinc-200 dark:bg-zinc-700" />
                     <div className="h-2 w-full rounded-full bg-zinc-100 dark:bg-zinc-800" />
-                    <div className="h-2 w-4/5 rounded-full bg-zinc-100 dark:bg-zinc-800" />
+                    <div className="h-2 w-[92%] rounded-full bg-zinc-100 dark:bg-zinc-800" />
+                    <div className="h-2 w-[70%] rounded-full bg-zinc-100 dark:bg-zinc-800" />
                   </div>
                 </div>
-                <div className="hidden space-y-3 rounded-2xl border border-zinc-100 bg-white p-4 shadow-sm dark:border-zinc-800 dark:bg-zinc-900 md:block">
-                  <div className="flex h-28 items-end justify-between gap-1 px-1 pt-4">
-                    {[40, 65, 45, 80, 55, 90, 70].map((height, i) => (
-                      <div
+
+                {/* Middle: gradient bar chart (price comparison metaphor) */}
+                <div className="hidden flex-col rounded-2xl border border-zinc-200/70 bg-white p-4 shadow-sm dark:border-zinc-800 dark:bg-zinc-950 md:flex">
+                  <div className="flex h-36 flex-1 items-end justify-between gap-1.5 px-0.5 pt-2">
+                    {[38, 62, 44, 88, 52, 95, 68, 78].map((height, i) => (
+                      <motion.div
                         key={i}
-                        className="w-full max-w-[14%] rounded-t-md bg-gradient-to-t from-violet-600/80 to-indigo-400/60"
-                        style={{ height: `${height}%` }}
+                        initial={{ height: 0 }}
+                        animate={{ height: `${height}%` }}
+                        transition={{ delay: 0.45 + i * 0.05, duration: 0.55, ease: [0.22, 1, 0.36, 1] }}
+                        className="w-full max-w-[11%] rounded-t-lg bg-gradient-to-t from-violet-700 via-violet-500 to-indigo-400 shadow-sm dark:from-violet-600 dark:via-violet-500 dark:to-indigo-400"
+                        style={{ maxHeight: "100%" }}
                       />
                     ))}
                   </div>
-                  <div className="h-2 w-24 rounded-full bg-zinc-200 dark:bg-zinc-700" />
+                  <div className="mt-4 space-y-2">
+                    <div className="h-2 w-28 rounded-full bg-zinc-200 dark:bg-zinc-700" />
+                    <div className="h-1.5 w-20 rounded-full bg-zinc-100 dark:bg-zinc-800" />
+                  </div>
                 </div>
-                <div className="hidden flex-col justify-between rounded-2xl border border-zinc-100 bg-zinc-50/50 p-4 shadow-sm dark:border-zinc-800 dark:bg-zinc-900/50 md:flex">
-                  <div className="flex items-center gap-3">
-                    <div className="size-10 rounded-xl bg-gradient-to-br from-emerald-400 to-teal-500 shadow-md shadow-emerald-500/20" />
-                    <div className="flex-1 space-y-2">
-                      <div className="h-2 w-3/4 rounded-full bg-zinc-200 dark:bg-zinc-700" />
-                      <div className="h-2 w-1/2 rounded-full bg-zinc-100 dark:bg-zinc-800" />
+
+                {/* Right: status + QR verified */}
+                <div className="flex flex-col justify-between gap-4 rounded-2xl border border-zinc-200/70 bg-white p-4 shadow-sm dark:border-zinc-800 dark:bg-zinc-950 md:min-h-0">
+                  <div className="flex items-start gap-3">
+                    <div className="size-11 shrink-0 rounded-xl bg-gradient-to-br from-emerald-400 to-teal-500 shadow-md shadow-emerald-500/25 ring-1 ring-emerald-500/20" />
+                    <div className="min-w-0 flex-1 space-y-2 pt-1">
+                      <div className="h-2.5 w-full max-w-[140px] rounded-full bg-zinc-200 dark:bg-zinc-700" />
+                      <div className="h-2 w-3/4 rounded-full bg-zinc-100 dark:bg-zinc-800" />
                     </div>
                   </div>
-                  <div className="rounded-xl border border-dashed border-violet-200 bg-violet-50/30 p-3 text-center text-xs font-medium text-violet-700 dark:border-violet-800 dark:bg-violet-950/40 dark:text-violet-300">
+                  <div className="rounded-xl border border-dashed border-violet-300/90 bg-violet-50/80 px-3 py-3 text-center text-[11px] font-semibold leading-snug tracking-wide text-violet-800 shadow-sm dark:border-violet-600/50 dark:bg-violet-950/50 dark:text-violet-200 md:text-xs">
                     {h.mockQr}
                   </div>
+                </div>
+              </div>
+
+              {/* Mobile: compact chart row */}
+              <div className="flex border-t border-zinc-200/80 px-4 pb-4 pt-3 md:hidden dark:border-zinc-800">
+                <div className="flex h-24 w-full items-end justify-between gap-1">
+                  {[38, 62, 44, 88, 52, 95, 68, 78].map((height, i) => (
+                    <div
+                      key={i}
+                      className="w-full max-w-[11%] rounded-t-md bg-gradient-to-t from-violet-700 via-violet-500 to-indigo-400"
+                      style={{ height: `${height}%` }}
+                    />
+                  ))}
                 </div>
               </div>
             </div>
