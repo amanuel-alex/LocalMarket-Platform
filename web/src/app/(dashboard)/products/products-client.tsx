@@ -91,18 +91,21 @@ export function ProductsClient() {
   const [editing, setEditing] = useState<ProductRow | null>(null);
   const [uploading, setUploading] = useState(false);
 
+  const sellerId = user?.id;
+  const isSeller = user?.role === "seller";
+
   const load = useCallback(async () => {
-    if (!user || user.role !== "seller") return;
+    if (!sellerId || !isSeller) return;
     setLoading(true);
     try {
-      const res = await fetchProducts({ sellerId: user.id, limit: 100, page: 1 });
+      const res = await fetchProducts({ sellerId, limit: 100, page: 1 });
       setRows(res.products);
     } catch (e) {
       toast.error(toastApiError(e));
     } finally {
       setLoading(false);
     }
-  }, [user]);
+  }, [sellerId, isSeller]);
 
   useEffect(() => {
     void load();

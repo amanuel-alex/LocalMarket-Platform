@@ -27,6 +27,7 @@ import { fetchOrderById, fetchOrders, toastApiError, type OrderRow } from "@/lib
 
 export function OrdersClient() {
   const user = getStoredUser();
+  const userId = user?.id;
   const [rows, setRows] = useState<OrderRow[]>([]);
   const [loading, setLoading] = useState(true);
   const [detail, setDetail] = useState<OrderRow | null>(null);
@@ -35,7 +36,7 @@ export function OrdersClient() {
   useEffect(() => {
     let c = false;
     (async () => {
-      if (!user) {
+      if (!userId) {
         setLoading(false);
         return;
       }
@@ -51,7 +52,7 @@ export function OrdersClient() {
     return () => {
       c = true;
     };
-  }, [user]);
+  }, [userId]);
 
   async function openDetail(id: string) {
     setDetailLoading(true);

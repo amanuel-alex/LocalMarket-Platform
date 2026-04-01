@@ -38,6 +38,29 @@ import {
 } from "@/lib/api";
 import { Banknote, Package, ShoppingCart } from "lucide-react";
 
+/** Spending or order count by calendar day (UTC) for the last `days` days. */
+function ordersByDay(orders: OrderRow[], days: number): { date: string; amount: number }[] {
+  const amounts = new Map<string, number>();
+  const end = new Date();
+  end.setUTCHours(0, 0, 0, 0);
+  const start = new Date(end);
+  start.setUTCDate(start.getUTCDate() - (days - 1));
+  for (const o of orders) {
+    const d = new Date(o.createdAt);
+    if (d < start) continue;
+    const key = d.toISOString().slice(0, 10);
+    amounts.set(key, (amounts.get(key) ?? 0) + o.totalPrice);
+  }
+  const out: { date: string; amount: number }[] = [];
+  for (let i = 0; i < days; i++) {
+    const dt = new Date(start);
+    dt.setUTCDate(start.getUTCDate() + i);
+    const key = dt.toISOString().slice(0, 10);
+    out.push({ date: key, amount: amounts.get(key) ?? 0 });
+  }
+  return out;
+}
+
 function DashboardSkeleton() {
   return (
     <div className="space-y-8">
@@ -90,30 +113,39 @@ export function DashboardClient() {
   const [sellerInsights, setSellerInsights] = useState<SellerInsights | null>(null);
   const [orders, setOrders] = useState<OrderRow[]>([]);
   const [productTotal, setProductTotal] = useState(0);
+  const [catalogTotal, setCatalogTotal] = useState<number | null>(null);
+
+  const userId = user?.id;
+  const userRole = user?.role;
 
   useEffect(() => {
-    if (!user) {
+    if (!userId || !userRole) {
       setLoading(false);
       return;
     }
     let cancelled = false;
     (async () => {
       setLoading(true);
+      if (userRole !== "buyer") setCatalogTotal(null);
       try {
-        if (user.role === "admin") {
+        if (userRole === "admin") {
           const d = await fetchAdminDashboard();
           if (!cancelled) setAdminData(d);
         } else {
-          const [o, ins] = await Promise.all([
+          const [o, ins, cat] = await Promise.all([
             fetchOrders(),
-            user.role === "seller" ? fetchSellerInsights() : Promise.resolve(null),
+            userRole === "seller" ? fetchSellerInsights() : Promise.resolve(null),
+            userRole === "buyer" ? fetchProducts({ limit: 1, page: 1 }) : Promise.resolve(null),
           ]);
           if (cancelled) return;
           setOrders(o);
           if (ins) setSellerInsights(ins);
-          if (user.role === "seller") {
-            const pr = await fetchProducts({ sellerId: user.id, limit: 1, page: 1 });
+          if (cat) setCatalogTotal(cat.total);
+          if (userRole === "seller") {
+            const pr = await fetchProducts({ sellerId: userId, limit: 1, page: 1 });
             if (!cancelled) setProductTotal(pr.total);
+          } else if (!cancelled) {
+            setProductTotal(0);
           }
         }
       } catch (e) {
@@ -125,7 +157,7 @@ export function DashboardClient() {
     return () => {
       cancelled = true;
     };
-  }, [user]);
+  }, [userId, userRole]);
 
   if (!user) {
     return (
@@ -344,8 +376,12 @@ export function DashboardClient() {
   }
 
   /* Buyer */
-  const buyerOrders = orders.filter((o) => o.buyerId === user.id);
+  const buyerOrders = orders.filter((o) => o.buyerId === user!.id);
   const spent = buyerOrders.reduce((s, o) => s + o.totalPrice, 0);
+  const buyerChartData = ordersByDay(buyerOrders, 14).map((d) => ({
+    date: d.date.slice(5),
+    amount: d.amount,
+  }));
   return (
     <div className="space-y-8">
       <div>
@@ -355,8 +391,47 @@ export function DashboardClient() {
       <div className="grid gap-4 sm:grid-cols-3">
         <StatCard title="Your orders" value={String(buyerOrders.length)} icon={ShoppingCart} />
         <StatCard title="Total spent" value={`ETB ${spent.toLocaleString()}`} icon={Banknote} />
-        <StatCard title="Products" value="—" icon={Package} />
+        <StatCard
+          title="In marketplace"
+          value={catalogTotal !== null ? String(catalogTotal) : "—"}
+          icon={Package}
+        />
       </div>
+      <Card className="rounded-2xl border-border/60 shadow-sm">
+        <CardHeader>
+          <CardTitle>Spending trend</CardTitle>
+          <CardDescription>Your order totals by day · last 14 days</CardDescription>
+        </CardHeader>
+        <CardContent className="h-72 pl-0">
+          <ResponsiveContainer width="100%" height="100%">
+            <AreaChart data={buyerChartData} margin={{ left: 8, right: 8 }}>
+              <defs>
+                <linearGradient id="fillBuyer" x1="0" y1="0" x2="0" y2="1">
+                  <stop offset="0%" stopColor="hsl(280 65% 48%)" stopOpacity={0.28} />
+                  <stop offset="100%" stopColor="hsl(280 65% 48%)" stopOpacity={0} />
+                </linearGradient>
+              </defs>
+              <CartesianGrid strokeDasharray="3 3" className="stroke-border/60" />
+              <XAxis dataKey="date" tick={{ fontSize: 11 }} stroke="hsl(var(--muted-foreground))" />
+              <YAxis tick={{ fontSize: 11 }} stroke="hsl(var(--muted-foreground))" />
+              <Tooltip
+                contentStyle={{
+                  borderRadius: 12,
+                  border: "1px solid hsl(var(--border))",
+                  background: "hsl(var(--card))",
+                }}
+              />
+              <Area
+                type="monotone"
+                dataKey="amount"
+                stroke="hsl(280 65% 48%)"
+                fill="url(#fillBuyer)"
+                strokeWidth={2}
+              />
+            </AreaChart>
+          </ResponsiveContainer>
+        </CardContent>
+      </Card>
       <Card className="rounded-2xl border-border/60 shadow-sm">
         <CardHeader>
           <CardTitle>Recent orders</CardTitle>
