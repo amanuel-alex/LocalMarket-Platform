@@ -12,6 +12,7 @@ import {
   Settings,
   ShieldAlert,
   ShoppingBag,
+  Megaphone,
   ShoppingCart,
   Store,
   Users,
@@ -46,11 +47,12 @@ const ADMIN_NAV: NavItem[] = [
 ];
 
 const SELLER_NAV: NavItem[] = [
-  { title: "Overview", href: "/seller/dashboard", icon: LayoutDashboard },
+  { title: "Dashboard", href: "/seller/dashboard", icon: LayoutDashboard },
   { title: "Products", href: "/seller/products", icon: Package },
   { title: "Orders", href: "/seller/orders", icon: ShoppingCart },
   { title: "Payouts", href: "/seller/payouts", icon: Banknote },
-  { title: "QR verify", href: "/seller/qr-verify", icon: QrCode },
+  { title: "QR verification", href: "/seller/qr-verify", icon: QrCode },
+  { title: "Promotions", href: "/seller/promotions", icon: Megaphone },
   { title: "Settings", href: "/settings", icon: Settings },
 ];
 
@@ -72,7 +74,7 @@ function navForRole(role: UserRole | null): { label: string; items: NavItem[] } 
     case "admin":
       return { label: "Admin", items: ADMIN_NAV };
     case "seller":
-      return { label: "Seller", items: SELLER_NAV };
+      return { label: "Organizer", items: SELLER_NAV };
     case "delivery":
       return { label: "Delivery", items: DELIVERY_NAV };
     default:
