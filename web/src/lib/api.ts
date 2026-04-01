@@ -12,7 +12,12 @@ export function toastApiError(e: unknown, fallback = "Request failed") {
 
 /* ——— Admin ——— */
 export type AdminDashboard = {
-  totals: { products: number; orders: number; revenue: number };
+  totals: {
+    products: number;
+    orders: number;
+    revenue: number;
+    activeUsersLast30Days: number;
+  };
   recentOrders: Array<{
     id: string;
     status: string;
@@ -23,6 +28,12 @@ export type AdminDashboard = {
     sellerName: string;
   }>;
   salesByDay: Array<{ date: string; amount: number }>;
+  topProducts: Array<{
+    productId: string;
+    title: string;
+    orderCount: number;
+    unitsSold: number;
+  }>;
 };
 
 export async function fetchAdminDashboard() {
@@ -40,19 +51,34 @@ export type AdminUser = {
   createdAt: string;
 };
 
-export async function fetchAdminUsers(limit = 50, offset = 0) {
+export async function fetchAdminUsers(params?: {
+  limit?: number;
+  offset?: number;
+  q?: string;
+  role?: string;
+}) {
   const { data } = await apiClient.get<{ users: AdminUser[]; total: number }>("/admin/users", {
-    params: { limit, offset },
+    params: {
+      limit: params?.limit ?? 50,
+      offset: params?.offset ?? 0,
+      ...(params?.q ? { q: params.q } : {}),
+      ...(params?.role ? { role: params.role } : {}),
+    },
   });
   return data;
 }
 
-export async function patchAdminUser(
-  id: string,
-  body: { role?: string; active?: boolean },
-) {
+export async function patchAdminUser(id: string, body: { role?: string; active?: boolean }) {
   const { data } = await apiClient.patch<{ user: AdminUser }>(`/admin/users/${id}`, body);
   return data.user;
+}
+
+export async function postAdminBanUser(id: string, body?: { reason?: string }) {
+  await apiClient.post(`/admin/users/${id}/ban`, body ?? {});
+}
+
+export async function postAdminUnbanUser(id: string) {
+  await apiClient.post(`/admin/users/${id}/unban`, {});
 }
 
 export type AdminPayment = {
@@ -71,6 +97,145 @@ export async function fetchAdminPayments(limit = 50, offset = 0) {
     { params: { limit, offset } },
   );
   return data;
+}
+
+export type AdminPayoutRow = {
+  id: string;
+  userId: string;
+  userName: string;
+  userPhone: string;
+  amount: number;
+  status: string;
+  requestedAt: string;
+  completedAt: string | null;
+  note: string | null;
+};
+
+export async function fetchAdminPayouts(limit = 50, offset = 0) {
+  const { data } = await apiClient.get<{ payouts: AdminPayoutRow[]; total: number }>("/admin/payouts", {
+    params: { limit, offset },
+  });
+  return data;
+}
+
+export async function postAdminPayoutMarkPaid(id: string) {
+  await apiClient.post(`/payouts/${id}/mark-paid`);
+}
+
+export async function postAdminPayoutCancel(id: string) {
+  await apiClient.post(`/payouts/${id}/cancel`);
+}
+
+export async function fetchAdminProducts(params?: {
+  limit?: number;
+  offset?: number;
+  q?: string;
+  category?: string;
+}) {
+  const { data } = await apiClient.get<ProductListResult>("/admin/products", {
+    params: {
+      limit: params?.limit ?? 50,
+      offset: params?.offset ?? 0,
+      ...(params?.q ? { q: params.q } : {}),
+      ...(params?.category ? { category: params.category } : {}),
+    },
+  });
+  return data;
+}
+
+export async function fetchAdminCategoryStats() {
+  const { data } = await apiClient.get<{ categories: Array<{ category: string; count: number }> }>(
+    "/admin/analytics/categories",
+  );
+  return data.categories;
+}
+
+export type SystemAnalytics = {
+  totalSales: number;
+  activeUsersLast30Days: number;
+  popularProducts: Array<{
+    productId: string;
+    title: string;
+    orderCount: number;
+    unitsSold: number;
+  }>;
+};
+
+export async function fetchAdminSystemAnalytics() {
+  const { data } = await apiClient.get<{ analytics: SystemAnalytics }>("/admin/analytics");
+  return data.analytics;
+}
+
+export type HttpMetricsSummary = {
+  windowHours: number;
+  since: string;
+  totalRequests: number;
+  countStatus5xx: number;
+  countStatus4xx: number;
+  serverErrorRate: number;
+  clientErrorRate: number;
+  avgDurationMs: number;
+};
+
+export async function fetchAdminMetricsSummary(windowHours = 24) {
+  const { data } = await apiClient.get<{ metrics: HttpMetricsSummary }>("/admin/metrics/summary", {
+    params: { windowHours },
+  });
+  return data.metrics;
+}
+
+export type AdminRequestLogItem = {
+  id: string;
+  method: string;
+  path: string;
+  statusCode: number;
+  durationMs: number;
+  userId: string | null;
+  ip: string | null;
+  createdAt: string;
+};
+
+export type AdminErrorLogItem = {
+  id: string;
+  message: string;
+  stack: string | null;
+  code: string | null;
+  path: string | null;
+  method: string | null;
+  userId: string | null;
+  statusCode: number | null;
+  createdAt: string;
+};
+
+export async function fetchAdminRequestLogs(limit = 50, offset = 0) {
+  const { data } = await apiClient.get<{ items: AdminRequestLogItem[]; total: number }>(
+    "/admin/logs/requests",
+    { params: { limit, offset } },
+  );
+  return data;
+}
+
+export async function fetchAdminErrorLogs(limit = 50, offset = 0) {
+  const { data } = await apiClient.get<{ items: AdminErrorLogItem[]; total: number }>(
+    "/admin/logs/errors",
+    { params: { limit, offset } },
+  );
+  return data;
+}
+
+export async function fetchAdminSettings() {
+  const { data } = await apiClient.get<{ settings: { commissionRateBps: number; updatedAt: string } }>(
+    "/admin/settings",
+  );
+  return data.settings;
+}
+
+export async function patchAdminCommission(commissionRateBps: number) {
+  const { data } = await apiClient.patch<{ settings: { commissionRateBps: number; updatedAt: string } }>(
+    "/admin/settings/commission",
+    { commissionRateBps },
+  );
+  return data.settings;
 }
 
 /* ——— Seller insights ——— */
@@ -173,6 +338,29 @@ export async function updateProduct(
 
 export async function deleteProduct(id: string) {
   await apiClient.delete(`/products/${id}`);
+}
+
+export async function adminOverrideOrder(
+  orderId: string,
+  body: { status?: string; clearPickupQr?: boolean; adminNote?: string },
+) {
+  const { data } = await apiClient.patch<{ order: OrderRow }>(`/admin/orders/${orderId}`, body);
+  return data.order;
+}
+
+export async function createAdminProductGroup(label?: string) {
+  const { data } = await apiClient.post<{ group: { id: string; label: string | null } }>(
+    "/admin/product-groups",
+    { label },
+  );
+  return data.group;
+}
+
+export async function assignAdminProductGroup(productId: string, productGroupId: string | null) {
+  const { data } = await apiClient.patch<{ product: ProductRow }>(`/admin/products/${productId}/group`, {
+    productGroupId,
+  });
+  return data.product;
 }
 
 export async function uploadProductImage(file: File) {

@@ -79,6 +79,7 @@ export async function getAdminDashboard(): Promise<AdminDashboardPayload> {
       products: productCount,
       orders: orderCount,
       revenue: Math.round((salesAgg._sum.totalPrice?.toNumber() ?? 0) * 100) / 100,
+      activeUsersLast30Days: analyticsSnap.activeUsersLast30Days,
     },
     recentOrders: recentRaw.map((o) => ({
       id: o.id,

@@ -50,6 +50,48 @@ export const getDashboard: RequestHandler = asyncHandler(async (_req, res) => {
   res.json({ dashboard });
 });
 
+export const listProducts: RequestHandler = asyncHandler(async (req, res, next) => {
+  const parsed = adminProductsQuerySchema.safeParse(req.query);
+  if (!parsed.success) {
+    next(parsed.error);
+    return;
+  }
+  const { limit, offset, q, category } = parsed.data;
+  const result = await productService.adminListProductsForAdmin({
+    limit,
+    offset,
+    q,
+    category,
+  });
+  res.json({
+    products: result.products.map((p) => ({
+      ...p,
+      createdAt: p.createdAt.toISOString(),
+      updatedAt: p.updatedAt.toISOString(),
+    })),
+    page: result.page,
+    limit: result.limit,
+    total: result.total,
+    totalPages: result.totalPages,
+  });
+});
+
+export const getCategoryStats: RequestHandler = asyncHandler(async (_req, res) => {
+  const categories = await productService.getAdminCategoryStats();
+  res.json({ categories });
+});
+
+export const listPayouts: RequestHandler = asyncHandler(async (req, res, next) => {
+  const parsed = adminPayoutsQuerySchema.safeParse(req.query);
+  if (!parsed.success) {
+    next(parsed.error);
+    return;
+  }
+  const { limit, offset } = parsed.data;
+  const result = await payoutService.listAllPayoutsForAdmin(limit, offset);
+  res.json(result);
+});
+
 export const listUsers: RequestHandler = asyncHandler(async (req, res, next) => {
   const parsed = adminUsersQuerySchema.safeParse(req.query);
   if (!parsed.success) {

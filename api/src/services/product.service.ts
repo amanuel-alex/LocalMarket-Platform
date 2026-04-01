@@ -17,6 +17,7 @@ import type {
   ProductSearchQuery,
   UpdateProductInput,
 } from "../schemas/product.schemas.js";
+import { prisma } from "../prisma/client.js";
 import * as productRepo from "../repositories/product.repository.js";
 import type { ProductCatalogRecord, ProductWithSellerCoords } from "../repositories/product.repository.js";
 import { haversineDistanceKm } from "../utils/haversine.js";
@@ -146,6 +147,54 @@ export async function listProducts(params: ProductListQuery): Promise<ProductLis
       totalPages,
     };
   });
+}
+
+/** Admin catalog browser (bypasses public catalog cache). */
+export async function adminListProductsForAdmin(params: {
+  limit: number;
+  offset: number;
+  q?: string;
+  category?: string;
+}): Promise<ProductListResult> {
+  const where: Prisma.ProductWhereInput = {};
+  if (params.category) {
+    where.category = params.category;
+  }
+  if (params.q) {
+    where.OR = [
+      { title: { contains: params.q, mode: "insensitive" } },
+      { description: { contains: params.q, mode: "insensitive" } },
+      { category: { contains: params.q, mode: "insensitive" } },
+    ];
+  }
+  const [rows, total] = await Promise.all([
+    prisma.product.findMany({
+      where,
+      orderBy: { updatedAt: "desc" },
+      take: params.limit,
+      skip: params.offset,
+    }),
+    prisma.product.count({ where }),
+  ]);
+  const limit = params.limit;
+  const totalPages = total === 0 ? 0 : Math.ceil(total / limit);
+  return {
+    products: rows.map(toProductJson),
+    page: Math.floor(params.offset / limit) + 1,
+    limit,
+    total,
+    totalPages,
+  };
+}
+
+export async function getAdminCategoryStats(): Promise<Array<{ category: string; count: number }>> {
+  const rows = await prisma.product.groupBy({
+    by: ["category"],
+    _count: { id: true },
+  });
+  return rows
+    .map((r) => ({ category: r.category, count: r._count.id }))
+    .sort((a, b) => b.count - a.count);
 }
 
 function computeNearbyProducts(query: NearbyProductsQuery, rows: ProductWithSellerCoords[]): NearbyProductJson[] {

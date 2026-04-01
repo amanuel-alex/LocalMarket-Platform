@@ -13,6 +13,9 @@ router.get("/dashboard", adminController.getDashboard);
 router.get("/users", adminController.listUsers);
 router.patch("/users/:id", adminController.patchUser);
 router.get("/payments", adminController.listPayments);
+router.get("/payouts", adminController.listPayouts);
+router.get("/products", adminController.listProducts);
+router.get("/analytics/categories", adminController.getCategoryStats);
 
 router.post("/orders/:id/release-escrow", adminController.releaseOrderEscrow);
 router.patch("/orders/:id", adminController.overrideOrder);

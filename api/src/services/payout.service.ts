@@ -48,6 +48,48 @@ export async function listPayoutsForUser(userId: string): Promise<Payout[]> {
   });
 }
 
+export async function listAllPayoutsForAdmin(
+  limit: number,
+  offset: number,
+): Promise<{
+  payouts: Array<{
+    id: string;
+    userId: string;
+    userName: string;
+    userPhone: string;
+    amount: number;
+    status: string;
+    requestedAt: string;
+    completedAt: string | null;
+    note: string | null;
+  }>;
+  total: number;
+}> {
+  const [rows, total] = await Promise.all([
+    prisma.payout.findMany({
+      orderBy: { requestedAt: "desc" },
+      take: limit,
+      skip: offset,
+      include: { user: { select: { name: true, phone: true } } },
+    }),
+    prisma.payout.count(),
+  ]);
+  return {
+    payouts: rows.map((p) => ({
+      id: p.id,
+      userId: p.userId,
+      userName: p.user.name,
+      userPhone: p.user.phone,
+      amount: p.amount.toNumber(),
+      status: p.status,
+      requestedAt: p.requestedAt.toISOString(),
+      completedAt: p.completedAt?.toISOString() ?? null,
+      note: p.note,
+    })),
+    total,
+  };
+}
+
 export async function adminMarkPayoutPaid(payoutId: string): Promise<Payout> {
   const p = await prisma.payout.findUnique({ where: { id: payoutId } });
   if (!p) throw new AppError(404, "NOT_FOUND", "Payout not found");

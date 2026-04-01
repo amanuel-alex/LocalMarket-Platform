@@ -4,13 +4,16 @@ import Link from "next/link";
 import { usePathname } from "next/navigation";
 import {
   Banknote,
+  BarChart3,
   CreditCard,
   LayoutDashboard,
   Package,
   QrCode,
   Settings,
+  ShieldAlert,
   ShoppingBag,
   ShoppingCart,
+  Store,
   Users,
 } from "lucide-react";
 
@@ -32,9 +35,13 @@ import { normalizeRole, type UserRole } from "@/lib/roles";
 type NavItem = { title: string; href: string; icon: typeof LayoutDashboard };
 
 const ADMIN_NAV: NavItem[] = [
-  { title: "Overview", href: "/admin/dashboard", icon: LayoutDashboard },
+  { title: "Dashboard", href: "/admin/dashboard", icon: LayoutDashboard },
   { title: "Users", href: "/admin/users", icon: Users },
-  { title: "Payments & commission", href: "/admin/payments", icon: CreditCard },
+  { title: "Sellers", href: "/admin/sellers", icon: Store },
+  { title: "Products", href: "/admin/products", icon: Package },
+  { title: "Payments", href: "/admin/payments", icon: CreditCard },
+  { title: "Analytics", href: "/admin/analytics", icon: BarChart3 },
+  { title: "Security", href: "/admin/security", icon: ShieldAlert },
   { title: "Settings", href: "/settings", icon: Settings },
 ];
 
