@@ -49,10 +49,28 @@ import {
 const productFormSchema = z.object({
   title: z.string().min(1, "Required").max(200),
   description: z.string().max(10_000),
-  price: z.coerce.number().positive(),
+  price: z
+    .string()
+    .min(1, "Required")
+    .refine((s) => !Number.isNaN(Number(s)), "Invalid number")
+    .refine((s) => Number(s) > 0, "Must be positive"),
   category: z.string().min(1).max(120),
-  lat: z.coerce.number().min(-90).max(90),
-  lng: z.coerce.number().min(-180).max(180),
+  lat: z
+    .string()
+    .min(1, "Required")
+    .refine((s) => !Number.isNaN(Number(s)), "Invalid latitude")
+    .refine((s) => {
+      const n = Number(s);
+      return n >= -90 && n <= 90;
+    }, "Latitude must be between -90 and 90"),
+  lng: z
+    .string()
+    .min(1, "Required")
+    .refine((s) => !Number.isNaN(Number(s)), "Invalid longitude")
+    .refine((s) => {
+      const n = Number(s);
+      return n >= -180 && n <= 180;
+    }, "Longitude must be between -180 and 180"),
   imageUrl: z
     .string()
     .max(2048)
@@ -95,10 +113,10 @@ export function ProductsClient() {
     defaultValues: {
       title: "",
       description: "",
-      price: 1,
+      price: "1",
       category: "",
-      lat: 9.03,
-      lng: 38.75,
+      lat: "9.03",
+      lng: "38.75",
       imageUrl: "",
     },
   });
@@ -108,10 +126,10 @@ export function ProductsClient() {
     form.reset({
       title: "",
       description: "",
-      price: 1,
+      price: "1",
       category: "",
-      lat: 9.03,
-      lng: 38.75,
+      lat: "9.03",
+      lng: "38.75",
       imageUrl: "",
     });
     setOpen(true);
@@ -122,10 +140,10 @@ export function ProductsClient() {
     form.reset({
       title: p.title,
       description: p.description,
-      price: p.price,
+      price: String(p.price),
       category: p.category,
-      lat: p.location.lat,
-      lng: p.location.lng,
+      lat: String(p.location.lat),
+      lng: String(p.location.lng),
       imageUrl: p.imageUrl ?? "",
     });
     setOpen(true);
@@ -133,15 +151,18 @@ export function ProductsClient() {
 
   async function onSubmit(values: ProductFormValues) {
     if (!user || user.role !== "seller") return;
+    const price = Number(values.price);
+    const lat = Number(values.lat);
+    const lng = Number(values.lng);
     try {
       const imageUrl = values.imageUrl?.trim() || undefined;
       if (editing) {
         await updateProduct(editing.id, {
           title: values.title,
           description: values.description,
-          price: values.price,
+          price,
           category: values.category,
-          location: { lat: values.lat, lng: values.lng },
+          location: { lat, lng },
           imageUrl: imageUrl ?? null,
         });
         toast.success("Product updated");
@@ -149,9 +170,9 @@ export function ProductsClient() {
         await createProduct({
           title: values.title,
           description: values.description,
-          price: values.price,
+          price,
           category: values.category,
-          location: { lat: values.lat, lng: values.lng },
+          location: { lat, lng },
           imageUrl,
         });
         toast.success("Product created");
@@ -316,7 +337,7 @@ export function ProductsClient() {
                     <FormItem>
                       <FormLabel>Price</FormLabel>
                       <FormControl>
-                        <Input type="number" step="0.01" className="rounded-xl" {...field} />
+                        <Input type="text" inputMode="decimal" className="rounded-xl" {...field} />
                       </FormControl>
                       <FormMessage />
                     </FormItem>
@@ -344,7 +365,7 @@ export function ProductsClient() {
                     <FormItem>
                       <FormLabel>Latitude</FormLabel>
                       <FormControl>
-                        <Input type="number" step="any" className="rounded-xl" {...field} />
+                        <Input type="text" inputMode="decimal" className="rounded-xl" {...field} />
                       </FormControl>
                       <FormMessage />
                     </FormItem>
@@ -357,7 +378,7 @@ export function ProductsClient() {
                     <FormItem>
                       <FormLabel>Longitude</FormLabel>
                       <FormControl>
-                        <Input type="number" step="any" className="rounded-xl" {...field} />
+                        <Input type="text" inputMode="decimal" className="rounded-xl" {...field} />
                       </FormControl>
                       <FormMessage />
                     </FormItem>
