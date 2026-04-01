@@ -11,7 +11,7 @@ import {
   YAxis,
 } from "recharts";
 import { toast } from "sonner";
-import { useMemo, useState } from "react";
+import { useEffect, useMemo, useState } from "react";
 
 import { DashboardSkeleton, StatCard } from "@/components/dashboard/dashboard-shared";
 import { Badge } from "@/components/ui/badge";
@@ -36,7 +36,6 @@ import {
 import { getStoredUser } from "@/lib/auth-storage";
 import { fetchAdminDashboard, toastApiError, type AdminDashboard } from "@/lib/api";
 import { Banknote, Package, ShoppingCart, TrendingUp, Users } from "lucide-react";
-import { useEffect } from "react";
 
 type SortKey = "createdAt" | "totalPrice" | "status" | "productTitle";
 

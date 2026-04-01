@@ -36,7 +36,7 @@ function UsersInner() {
   const load = useCallback(async () => {
     setLoading(true);
     try {
-      const d = await fetchAdminUsers(100, 0);
+      const d = await fetchAdminUsers({ limit: 100, offset: 0 });
       setUsers(d.users);
     } catch (e) {
       toast.error(toastApiError(e));
