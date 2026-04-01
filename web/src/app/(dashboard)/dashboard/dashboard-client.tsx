@@ -143,7 +143,18 @@ export function DashboardClient() {
     );
   }
 
-  if (user.role === "admin" && adminData) {
+  if (loading) {
+    return <DashboardSkeleton />;
+  }
+
+  if (user.role === "admin") {
+    if (!adminData) {
+      return (
+        <p className="text-sm text-muted-foreground">
+          Could not load admin dashboard. Ensure you have admin access.
+        </p>
+      );
+    }
     const chartData = adminData.salesByDay.map((d) => ({
       date: d.date.slice(5),
       amount: d.amount,
@@ -155,23 +166,12 @@ export function DashboardClient() {
           <p className="text-sm text-muted-foreground">Platform-wide overview</p>
         </div>
         <div className="grid gap-4 sm:grid-cols-3">
-          <StatCard
-            title="Total products"
-            value={String(adminData.totals.products)}
-            icon={Package}
-            loading={loading}
-          />
-          <StatCard
-            title="Total orders"
-            value={String(adminData.totals.orders)}
-            icon={ShoppingCart}
-            loading={loading}
-          />
+          <StatCard title="Total products" value={String(adminData.totals.products)} icon={Package} />
+          <StatCard title="Total orders" value={String(adminData.totals.orders)} icon={ShoppingCart} />
           <StatCard
             title="Revenue"
             value={`ETB ${adminData.totals.revenue.toLocaleString()}`}
             icon={Banknote}
-            loading={loading}
           />
         </div>
         <Card className="rounded-2xl border-border/60 shadow-sm">
@@ -245,7 +245,14 @@ export function DashboardClient() {
     );
   }
 
-  if (user.role === "seller" && sellerInsights) {
+  if (user.role === "seller") {
+    if (!sellerInsights) {
+      return (
+        <p className="text-sm text-muted-foreground">
+          Could not load seller insights. You need a seller account.
+        </p>
+      );
+    }
     const myOrders = orders.filter((o) => o.sellerId === user.id).slice(0, 10);
     const chartData = sellerInsights.revenueByDay.map((d) => ({
       date: d.date.slice(5),
@@ -258,18 +265,16 @@ export function DashboardClient() {
           <p className="text-sm text-muted-foreground">Your shop performance</p>
         </div>
         <div className="grid gap-4 sm:grid-cols-3">
-          <StatCard title="Products" value={String(productTotal)} icon={Package} loading={loading} />
+          <StatCard title="Products" value={String(productTotal)} icon={Package} />
           <StatCard
             title="Orders (you)"
             value={String(orders.filter((o) => o.sellerId === user.id).length)}
             icon={ShoppingCart}
-            loading={loading}
           />
           <StatCard
             title="Revenue (completed)"
             value={`ETB ${sellerInsights.summary.revenueCompleted.toLocaleString()}`}
             icon={Banknote}
-            loading={loading}
           />
         </div>
         <Card className="rounded-2xl border-border/60 shadow-sm">
@@ -348,9 +353,9 @@ export function DashboardClient() {
         <p className="text-sm text-muted-foreground">Your buyer activity</p>
       </div>
       <div className="grid gap-4 sm:grid-cols-3">
-        <StatCard title="Your orders" value={String(buyerOrders.length)} icon={ShoppingCart} loading={loading} />
-        <StatCard title="Total spent" value={`ETB ${spent.toLocaleString()}`} icon={Banknote} loading={loading} />
-        <StatCard title="Products" value="—" icon={Package} loading={loading} />
+        <StatCard title="Your orders" value={String(buyerOrders.length)} icon={ShoppingCart} />
+        <StatCard title="Total spent" value={`ETB ${spent.toLocaleString()}`} icon={Banknote} />
+        <StatCard title="Products" value="—" icon={Package} />
       </div>
       <Card className="rounded-2xl border-border/60 shadow-sm">
         <CardHeader>
