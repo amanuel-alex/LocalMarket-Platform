@@ -1,4 +1,4 @@
-import { OrderStatus } from "@prisma/client";
+import { OrderStatus, Role } from "@prisma/client";
 import { z } from "zod";
 
 export const logQuerySchema = z.object({
@@ -51,4 +51,29 @@ export const adminCreateProductGroupBodySchema = z.object({
 
 export const adminAssignProductGroupBodySchema = z.object({
   productGroupId: z.string().cuid().nullable(),
+});
+
+export const adminUsersQuerySchema = z.object({
+  limit: z.coerce.number().int().min(1).max(100).optional().default(50),
+  offset: z.coerce.number().int().min(0).optional().default(0),
+});
+
+export const adminUserPatchBodySchema = z
+  .object({
+    role: z.nativeEnum(Role).optional(),
+    /** `true` = active (unban), `false` = suspended (ban). */
+    active: z.boolean().optional(),
+  })
+  .superRefine((data, ctx) => {
+    if (data.role === undefined && data.active === undefined) {
+      ctx.addIssue({
+        code: z.ZodIssueCode.custom,
+        message: "Provide at least one of: role, active",
+      });
+    }
+  });
+
+export const adminPaymentsQuerySchema = z.object({
+  limit: z.coerce.number().int().min(1).max(200).optional().default(50),
+  offset: z.coerce.number().int().min(0).optional().default(0),
 });

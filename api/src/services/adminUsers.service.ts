@@ -1,6 +1,17 @@
+import type { Role } from "@prisma/client";
 import { prisma } from "../prisma/client.js";
 import { AppError } from "../utils/errors.js";
 import * as auditService from "./audit.service.js";
+
+export type AdminUserRow = {
+  id: string;
+  name: string;
+  phone: string;
+  role: Role;
+  bannedAt: Date | null;
+  banReason: string | null;
+  createdAt: Date;
+};
 
 export async function banUserByAdmin(
   adminId: string,
@@ -58,4 +69,85 @@ export async function unbanUserByAdmin(adminId: string, targetUserId: string): P
     targetType: "User",
     targetId: targetUserId,
   });
+}
+
+export async function listUsersForAdmin(
+  limit: number,
+  offset: number,
+): Promise<{ users: AdminUserRow[]; total: number }> {
+  const [users, total] = await Promise.all([
+    prisma.user.findMany({
+      select: {
+        id: true,
+        name: true,
+        phone: true,
+        role: true,
+        bannedAt: true,
+        banReason: true,
+        createdAt: true,
+      },
+      orderBy: { createdAt: "desc" },
+      take: limit,
+      skip: offset,
+    }),
+    prisma.user.count(),
+  ]);
+  return { users, total };
+}
+
+export async function patchUserByAdmin(
+  adminId: string,
+  targetUserId: string,
+  body: { role?: Role; active?: boolean },
+): Promise<AdminUserRow> {
+  if (adminId === targetUserId) {
+    if (body.role !== undefined && body.role !== "admin") {
+      throw new AppError(400, "INVALID_OPERATION", "Cannot change your own role");
+    }
+  }
+
+  const target = await prisma.user.findUnique({ where: { id: targetUserId } });
+  if (!target) {
+    throw new AppError(404, "NOT_FOUND", "User not found");
+  }
+
+  if (body.active === false) {
+    await banUserByAdmin(adminId, targetUserId, "Deactivated by admin");
+  } else if (body.active === true) {
+    await unbanUserByAdmin(adminId, targetUserId);
+  }
+
+  if (body.role !== undefined) {
+    if (targetUserId !== adminId && target.role === "admin" && body.role !== "admin") {
+      const adminCount = await prisma.user.count({ where: { role: "admin", bannedAt: null } });
+      if (adminCount <= 1) {
+        throw new AppError(400, "INVALID_OPERATION", "Cannot remove the last admin role");
+      }
+    }
+    await prisma.user.update({
+      where: { id: targetUserId },
+      data: { role: body.role },
+    });
+    await auditService.recordAudit({
+      actorId: adminId,
+      action: "user.role",
+      targetType: "User",
+      targetId: targetUserId,
+      meta: { role: body.role },
+    });
+  }
+
+  const updated = await prisma.user.findUniqueOrThrow({
+    where: { id: targetUserId },
+    select: {
+      id: true,
+      name: true,
+      phone: true,
+      role: true,
+      bannedAt: true,
+      banReason: true,
+      createdAt: true,
+    },
+  });
+  return updated;
 }

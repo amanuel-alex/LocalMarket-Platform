@@ -9,6 +9,11 @@ const router = Router();
 router.use(requireAuth);
 router.use(requireRoles("admin"));
 
+router.get("/dashboard", adminController.getDashboard);
+router.get("/users", adminController.listUsers);
+router.patch("/users/:id", adminController.patchUser);
+router.get("/payments", adminController.listPayments);
+
 router.post("/orders/:id/release-escrow", adminController.releaseOrderEscrow);
 router.patch("/orders/:id", adminController.overrideOrder);
 router.patch("/disputes/:id", disputeController.adminUpdateStatus);

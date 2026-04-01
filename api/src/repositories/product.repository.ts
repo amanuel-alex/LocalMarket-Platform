@@ -148,3 +148,17 @@ export async function createProductGroupRow(label: string | null) {
     data: { label },
   });
 }
+
+export async function updateProductRecord(
+  id: string,
+  data: Prisma.ProductUncheckedUpdateInput,
+): Promise<Product> {
+  return prisma.product.update({
+    where: { id },
+    data,
+  });
+}
+
+export async function deleteProductById(id: string): Promise<void> {
+  await prisma.product.delete({ where: { id } });
+}

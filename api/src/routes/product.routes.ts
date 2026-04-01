@@ -13,5 +13,7 @@ router.get("/:id/compare", productController.compare);
 router.get("/:id/related", productController.related);
 router.get("/:id", productController.getById);
 router.post("/", requireAuth, requireRoles("seller"), productController.create);
+router.patch("/:id", requireAuth, requireRoles("seller"), productController.update);
+router.delete("/:id", requireAuth, requireRoles("seller"), productController.remove);
 
 export default router;

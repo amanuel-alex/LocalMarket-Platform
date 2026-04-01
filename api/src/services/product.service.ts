@@ -11,7 +11,12 @@ import {
   shortStableHash,
 } from "../cache/productCatalog.cache.js";
 import type { NearbyProductsQuery } from "../schemas/location.schemas.js";
-import type { CreateProductInput, ProductListQuery, ProductSearchQuery } from "../schemas/product.schemas.js";
+import type {
+  CreateProductInput,
+  ProductListQuery,
+  ProductSearchQuery,
+  UpdateProductInput,
+} from "../schemas/product.schemas.js";
 import * as productRepo from "../repositories/product.repository.js";
 import type { ProductCatalogRecord, ProductWithSellerCoords } from "../repositories/product.repository.js";
 import { haversineDistanceKm } from "../utils/haversine.js";
@@ -345,4 +350,58 @@ export async function adminAssignProductGroup(
 export async function createProductGroup(label?: string | null): Promise<{ id: string; label: string | null }> {
   const row = await productRepo.createProductGroupRow(label?.trim() ? label.trim() : null);
   return { id: row.id, label: row.label };
+}
+
+export async function updateProductForSeller(
+  sellerId: string,
+  productId: string,
+  input: UpdateProductInput,
+): Promise<ProductJson> {
+  const existing = await productRepo.findProductById(productId);
+  if (!existing || existing.sellerId !== sellerId) {
+    throw new AppError(404, "NOT_FOUND", "Product not found");
+  }
+  if (input.productGroupId !== undefined && input.productGroupId !== null) {
+    const g = await productRepo.findProductGroupById(input.productGroupId);
+    if (!g) {
+      throw new AppError(404, "NOT_FOUND", "Product group not found");
+    }
+  }
+
+  const data: Prisma.ProductUncheckedUpdateInput = {};
+  if (input.title !== undefined) data.title = input.title;
+  if (input.description !== undefined) data.description = input.description;
+  if (input.price !== undefined) data.price = input.price;
+  if (input.category !== undefined) data.category = input.category;
+  if (input.location !== undefined) {
+    data.lat = input.location.lat;
+    data.lng = input.location.lng;
+  }
+  if (input.imageUrl !== undefined) data.imageUrl = input.imageUrl;
+  if (input.productGroupId !== undefined) {
+    data.productGroupId = input.productGroupId;
+  }
+
+  const row = await productRepo.updateProductRecord(productId, data);
+  await bumpProductCatalogCacheEpoch();
+  return toProductJson(row);
+}
+
+export async function deleteProductForSeller(sellerId: string, productId: string): Promise<void> {
+  const existing = await productRepo.findProductById(productId);
+  if (!existing || existing.sellerId !== sellerId) {
+    throw new AppError(404, "NOT_FOUND", "Product not found");
+  }
+  try {
+    await productRepo.deleteProductById(productId);
+  } catch (e: unknown) {
+    if (
+      e instanceof Prisma.PrismaClientKnownRequestError &&
+      (e.code === "P2003" || e.code === "P2014")
+    ) {
+      throw new AppError(409, "CONFLICT", "Product has existing orders and cannot be deleted");
+    }
+    throw e;
+  }
+  await bumpProductCatalogCacheEpoch();
 }

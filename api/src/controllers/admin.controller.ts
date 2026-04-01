@@ -8,10 +8,15 @@ import {
   adminCommissionBodySchema,
   adminCreateProductGroupBodySchema,
   adminOrderOverrideBodySchema,
+  adminPaymentsQuerySchema,
+  adminUserPatchBodySchema,
+  adminUsersQuerySchema,
   logQuerySchema,
   metricsWindowQuerySchema,
   userIdParamSchema,
 } from "../schemas/admin.schemas.js";
+import * as adminDashboardService from "../services/adminDashboard.service.js";
+import * as adminPaymentsService from "../services/adminPayments.service.js";
 import * as adminUsersService from "../services/adminUsers.service.js";
 import * as analyticsService from "../services/analytics.service.js";
 import * as auditService from "../services/audit.service.js";
@@ -35,6 +40,65 @@ export const releaseOrderEscrow: RequestHandler = asyncHandler(async (req, res, 
 export const getSystemAnalytics: RequestHandler = asyncHandler(async (_req, res) => {
   const analytics = await analyticsService.getSystemAnalytics();
   res.json({ analytics });
+});
+
+export const getDashboard: RequestHandler = asyncHandler(async (_req, res) => {
+  const dashboard = await adminDashboardService.getAdminDashboard();
+  res.json({ dashboard });
+});
+
+export const listUsers: RequestHandler = asyncHandler(async (req, res, next) => {
+  const parsed = adminUsersQuerySchema.safeParse(req.query);
+  if (!parsed.success) {
+    next(parsed.error);
+    return;
+  }
+  const { limit, offset } = parsed.data;
+  const result = await adminUsersService.listUsersForAdmin(limit, offset);
+  res.json({
+    users: result.users.map((u) => ({
+      ...u,
+      bannedAt: u.bannedAt?.toISOString() ?? null,
+      createdAt: u.createdAt.toISOString(),
+    })),
+    total: result.total,
+  });
+});
+
+export const patchUser: RequestHandler = asyncHandler(async (req, res, next) => {
+  const parsedParams = userIdParamSchema.safeParse(req.params);
+  if (!parsedParams.success) {
+    next(parsedParams.error);
+    return;
+  }
+  const parsedBody = adminUserPatchBodySchema.safeParse(req.body);
+  if (!parsedBody.success) {
+    next(parsedBody.error);
+    return;
+  }
+  const updated = await adminUsersService.patchUserByAdmin(
+    req.user!.id,
+    parsedParams.data.id,
+    parsedBody.data,
+  );
+  res.json({
+    user: {
+      ...updated,
+      bannedAt: updated.bannedAt?.toISOString() ?? null,
+      createdAt: updated.createdAt.toISOString(),
+    },
+  });
+});
+
+export const listPayments: RequestHandler = asyncHandler(async (req, res, next) => {
+  const parsed = adminPaymentsQuerySchema.safeParse(req.query);
+  if (!parsed.success) {
+    next(parsed.error);
+    return;
+  }
+  const { limit, offset } = parsed.data;
+  const result = await adminPaymentsService.listPaymentsForAdmin(limit, offset);
+  res.json(result);
 });
 
 /** Rolling HTTP observability from persisted request logs (latency + error rates). */

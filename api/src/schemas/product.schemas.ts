@@ -18,6 +18,20 @@ export const createProductSchema = z.object({
 
 export type CreateProductInput = z.infer<typeof createProductSchema>;
 
+export const updateProductBodySchema = createProductSchema
+  .partial()
+  .superRefine((data, ctx) => {
+    const keys = Object.keys(data).filter((k) => data[k as keyof typeof data] !== undefined);
+    if (keys.length === 0) {
+      ctx.addIssue({
+        code: z.ZodIssueCode.custom,
+        message: "Provide at least one field to update",
+      });
+    }
+  });
+
+export type UpdateProductInput = z.infer<typeof updateProductBodySchema>;
+
 export const productIdParamSchema = z.object({
   id: z.string().cuid(),
 });

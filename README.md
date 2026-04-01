@@ -8,4 +8,10 @@
 1. Start API: `cd api && npm run dev`
 2. Start dashboard: `cd web && npm run dev` → open [http://localhost:3000](http://localhost:3000) (redirects to `/dashboard`).
 
+### Auth (dashboard)
+
+- [http://localhost:3000/login](http://localhost:3000/login) — sign in (`POST /api/v1/auth/login`).
+- [http://localhost:3000/register](http://localhost:3000/register) — register (`POST /api/v1/auth/register`).
+- Access JWT and refresh token are stored in **localStorage** after success; the axios client attaches `Authorization: Bearer` for API calls.
+
 Build order for the dashboard: Layout → Auth → Dashboard → Products → … (see project plan).

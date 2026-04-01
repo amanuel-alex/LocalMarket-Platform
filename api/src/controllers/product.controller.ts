@@ -7,6 +7,7 @@ import {
   productListQuerySchema,
   productRankedQuerySchema,
   productSearchQuerySchema,
+  updateProductBodySchema,
 } from "../schemas/product.schemas.js";
 import * as productService from "../services/product.service.js";
 import * as rankingService from "../services/ranking.service.js";
@@ -103,4 +104,33 @@ export const compare: RequestHandler = asyncHandler(async (req, res, next) => {
   }
   const result = await productService.listProductGroupComparisons(parsed.data.id);
   res.json(result);
+});
+
+export const update: RequestHandler = asyncHandler(async (req, res, next) => {
+  const parsedParams = productIdParamSchema.safeParse(req.params);
+  if (!parsedParams.success) {
+    next(parsedParams.error);
+    return;
+  }
+  const parsedBody = updateProductBodySchema.safeParse(req.body);
+  if (!parsedBody.success) {
+    next(parsedBody.error);
+    return;
+  }
+  const product = await productService.updateProductForSeller(
+    req.user!.id,
+    parsedParams.data.id,
+    parsedBody.data,
+  );
+  res.json({ product });
+});
+
+export const remove: RequestHandler = asyncHandler(async (req, res, next) => {
+  const parsedParams = productIdParamSchema.safeParse(req.params);
+  if (!parsedParams.success) {
+    next(parsedParams.error);
+    return;
+  }
+  await productService.deleteProductForSeller(req.user!.id, parsedParams.data.id);
+  res.status(204).send();
 });
