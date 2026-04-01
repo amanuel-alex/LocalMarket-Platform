@@ -1,5 +1,7 @@
 import axios from "axios";
 
+import { getStoredUser } from "@/lib/auth-storage";
+
 /**
  * Same-origin `/api/v1` — Next.js rewrites `/api/*` to the Express API (see next.config.ts).
  * For a split deployment, set `NEXT_PUBLIC_API_ORIGIN` (e.g. https://api.example.com) and we prefix paths.
@@ -23,6 +25,10 @@ apiClient.interceptors.request.use((config) => {
     const token = localStorage.getItem("ethiolocal_access_token");
     if (token) {
       config.headers.Authorization = `Bearer ${token}`;
+    }
+    const loc = getStoredUser()?.preferredLocale;
+    if (loc) {
+      config.headers["X-Locale"] = loc;
     }
   }
   return config;

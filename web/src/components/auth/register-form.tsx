@@ -25,7 +25,7 @@ import {
 } from "@/components/ui/form";
 import { Input } from "@/components/ui/input";
 import { parseApiError, registerRequest } from "@/lib/auth-api";
-import { setSession } from "@/lib/auth-storage";
+import { parsePreferredLocale, setSession } from "@/lib/auth-storage";
 import { getPostLoginPath } from "@/lib/roles";
 import { registerFormSchema, type RegisterFormValues } from "@/lib/validations/auth";
 
@@ -51,6 +51,7 @@ export function RegisterForm() {
         phone: values.phone,
         password: values.password,
       });
+      const preferredLocale = parsePreferredLocale(data.user.preferredLocale);
       setSession({
         accessToken: data.accessToken,
         refreshToken: data.refreshToken,
@@ -59,6 +60,7 @@ export function RegisterForm() {
           name: data.user.name,
           phone: data.user.phone,
           role: String(data.user.role),
+          ...(preferredLocale ? { preferredLocale } : {}),
         },
       });
       router.push(getPostLoginPath(String(data.user.role)));

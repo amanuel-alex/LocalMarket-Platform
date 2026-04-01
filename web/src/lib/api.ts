@@ -1,7 +1,7 @@
 import type { AxiosError } from "axios";
 
 import { apiClient } from "@/lib/axios-instance";
-import type { StoredUser } from "@/lib/auth-storage";
+import type { PreferredLocale, StoredUser } from "@/lib/auth-storage";
 
 export type ApiErr = { error?: { message?: string } };
 
@@ -213,9 +213,14 @@ export async function postAssistantOpenAiChat(body: {
 }
 
 /* ——— Auth me ——— */
-export async function fetchMe() {
-  const { data } = await apiClient.get<{ user: StoredUser & Record<string, unknown> }>(
-    "/auth/me",
-  );
+export type MeUser = StoredUser & Record<string, unknown>;
+
+export async function fetchMe(): Promise<MeUser> {
+  const { data } = await apiClient.get<{ user: MeUser }>("/auth/me");
+  return data.user;
+}
+
+export async function patchMeLocale(locale: PreferredLocale): Promise<MeUser> {
+  const { data } = await apiClient.patch<{ user: MeUser }>("/auth/me/locale", { locale });
   return data.user;
 }
