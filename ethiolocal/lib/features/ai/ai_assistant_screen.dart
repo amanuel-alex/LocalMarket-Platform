@@ -6,6 +6,7 @@ import '../../core/api/api_exception.dart';
 import '../../core/config/api_config.dart';
 import '../../core/models/product.dart';
 import '../../core/providers/api_providers.dart';
+import '../../core/providers/assistant_provider.dart';
 import 'widgets/ai_chat_widgets.dart';
 
 sealed class _Msg {
@@ -38,7 +39,7 @@ class _AiAssistantScreenState extends ConsumerState<AiAssistantScreen> {
   final _messages = <_Msg>[
     const _TextMsg(
       text:
-          'Hi — I query your live LocalMarket catalog (POST /assistant/chat). Try “cheap”, “near me”, “best coffee”, or a category name.',
+          'Hi — ask in plain language and I’ll search your live EthioLocal catalog. Try “cheap”, “near me”, “best coffee”, or a category name.',
       fromUser: false,
     ),
   ];
@@ -62,9 +63,23 @@ class _AiAssistantScreenState extends ConsumerState<AiAssistantScreen> {
     });
   }
 
+  List<Map<String, dynamic>> _geminiHistoryBeforeSend() {
+    final list = <Map<String, dynamic>>[];
+    for (final m in _messages) {
+      if (m is _TextMsg) {
+        list.add({
+          'role': m.fromUser ? 'user' : 'assistant',
+          'content': m.text,
+        });
+      }
+    }
+    return list;
+  }
+
   Future<void> _send() async {
     final t = _input.text.trim();
     if (t.isEmpty) return;
+    final historyForGemini = _geminiHistoryBeforeSend();
     setState(() {
       _messages.add(_TextMsg(text: t, fromUser: true));
       _input.clear();
@@ -73,6 +88,43 @@ class _AiAssistantScreenState extends ConsumerState<AiAssistantScreen> {
     _scrollBottom();
     try {
       final api = ref.read(localMarketApiProvider);
+      final useGemini = await ref.read(assistantGeminiEnabledProvider.future);
+
+      if (useGemini) {
+        final res = await api.assistantGeminiChat(
+          message: t,
+          history: historyForGemini,
+          lat: ApiConfig.defaultLat,
+          lng: ApiConfig.defaultLng,
+        );
+        if (!mounted) return;
+        final reply = (res['reply'] as String?)?.trim() ?? '';
+        final productsRaw = res['products'] as List<dynamic>? ?? [];
+        final products = productsRaw
+            .map((e) => Product.fromCatalogJson(e as Map<String, dynamic>))
+            .toList();
+
+        setState(() {
+          _typing = false;
+          if (reply.isNotEmpty) {
+            _messages.add(_TextMsg(text: reply, fromUser: false));
+          }
+          for (final p in products.take(8)) {
+            _messages.add(_ProductMsg(product: p));
+          }
+          if (reply.isEmpty && products.isEmpty) {
+            _messages.add(
+              const _TextMsg(
+                text: 'I could not generate a reply. Try rephrasing or use a product search keyword.',
+                fromUser: false,
+              ),
+            );
+          }
+        });
+        _scrollBottom();
+        return;
+      }
+
       final res = await api.assistantChat(
         message: t,
         lat: ApiConfig.defaultLat,
@@ -119,6 +171,12 @@ class _AiAssistantScreenState extends ConsumerState<AiAssistantScreen> {
   @override
   Widget build(BuildContext context) {
     final scheme = Theme.of(context).colorScheme;
+    final geminiAsync = ref.watch(assistantGeminiEnabledProvider);
+    final subtitle = geminiAsync.when(
+      data: (on) => on ? 'Google Gemini + live catalog' : 'Rules engine + live catalog',
+      loading: () => 'Checking assistant mode…',
+      error: (_, _) => 'Live catalog',
+    );
 
     return Scaffold(
       appBar: AppBar(
@@ -126,7 +184,7 @@ class _AiAssistantScreenState extends ConsumerState<AiAssistantScreen> {
           crossAxisAlignment: CrossAxisAlignment.start,
           children: [
             Text('EthioLocal AI', style: Theme.of(context).textTheme.titleMedium?.copyWith(fontWeight: FontWeight.w800)),
-            Text('Contextual shopping', style: Theme.of(context).textTheme.labelSmall?.copyWith(color: scheme.onSurface.withValues(alpha: 0.55))),
+            Text(subtitle, style: Theme.of(context).textTheme.labelSmall?.copyWith(color: scheme.onSurface.withValues(alpha: 0.55))),
           ],
         ),
         leading: IconButton(icon: const Icon(Icons.arrow_back_rounded), onPressed: () => context.pop()),

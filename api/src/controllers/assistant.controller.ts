@@ -1,6 +1,7 @@
 import type { RequestHandler } from "express";
 import { assistantChatSchema, assistantOpenaiChatSchema } from "../schemas/assistant.schemas.js";
 import { asyncHandler } from "../utils/asyncHandler.js";
+import * as assistantGeminiService from "../services/assistant.gemini.service.js";
 import * as assistantOpenAiService from "../services/assistant.openai.service.js";
 import * as assistantService from "../services/assistant.service.js";
 
@@ -29,5 +30,25 @@ export const openaiChat: RequestHandler = asyncHandler(async (req, res, next) =>
     reply: result.reply,
     model: result.model,
     usage: result.usage,
+  });
+});
+
+export const geminiStatus: RequestHandler = asyncHandler(async (_req, res) => {
+  res.json({ enabled: assistantGeminiService.isGeminiAssistantEnabled() });
+});
+
+export const geminiChat: RequestHandler = asyncHandler(async (req, res, next) => {
+  const parsed = assistantOpenaiChatSchema.safeParse(req.body);
+  if (!parsed.success) {
+    next(parsed.error);
+    return;
+  }
+  const result = await assistantGeminiService.runGeminiAssistantChat(parsed.data);
+  res.json({
+    reply: result.reply,
+    model: result.model,
+    usage: result.usage,
+    products: result.products,
+    assistantMode: "gemini",
   });
 });

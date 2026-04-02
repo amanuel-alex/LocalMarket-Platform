@@ -127,6 +127,26 @@ class LocalMarketApi {
     return _client.postJson('/assistant/chat', body);
   }
 
+  Future<Map<String, dynamic>> assistantGeminiStatus() async {
+    return _client.getJson('/assistant/gemini/status');
+  }
+
+  /// Google AI Studio (Gemini) on the server — same tools as OpenAI: live catalog + platform facts.
+  Future<Map<String, dynamic>> assistantGeminiChat({
+    required String message,
+    List<Map<String, dynamic>> history = const [],
+    double? lat,
+    double? lng,
+  }) async {
+    final body = <String, dynamic>{
+      'message': message,
+      'history': history,
+    };
+    if (lat != null) body['lat'] = lat;
+    if (lng != null) body['lng'] = lng;
+    return _client.postJson('/assistant/gemini/chat', body);
+  }
+
   static double _numToDouble(dynamic v) {
     if (v is num) return v.toDouble();
     return double.tryParse('$v') ?? 0;

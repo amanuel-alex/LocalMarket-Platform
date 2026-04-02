@@ -34,6 +34,10 @@ const schema = z.object({
   OPENAI_API_KEY: z.string().optional().default(""),
   /** Chat model for assistant (e.g. gpt-4o-mini, gpt-4o). */
   OPENAI_MODEL: z.string().optional().default("gpt-4o-mini"),
+  /** Google AI Studio / Gemini API key for POST /assistant/gemini/chat (function calling + catalog tools). */
+  GOOGLE_AI_API_KEY: z.string().optional().default(""),
+  /** Gemini model id (e.g. gemini-2.0-flash, gemini-1.5-flash). */
+  GEMINI_MODEL: z.string().optional().default("gemini-1.5-flash"),
 });
 
 export type Env = z.infer<typeof schema>;

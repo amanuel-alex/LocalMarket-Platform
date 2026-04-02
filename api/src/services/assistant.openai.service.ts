@@ -1,34 +1,11 @@
 import OpenAI from "openai";
-import { z } from "zod";
 
 import { getEnv } from "../config/env.js";
 import type { AssistantOpenaiChatInput } from "../schemas/assistant.schemas.js";
 import { AppError } from "../utils/errors.js";
-import { runAssistantChat } from "./assistant.service.js";
+import { runAssistantTool } from "./assistant.tools.executor.js";
 
 const MAX_TOOL_ROUNDS = 6;
-
-const searchArgsSchema = z.object({
-  shopping_query: z.string().min(1).max(2000),
-});
-
-const factArgsSchema = z.object({
-  topic: z.enum(["qr_pickup", "escrow", "compare_prices", "general"]),
-});
-
-function platformFact(topic: z.infer<typeof factArgsSchema>["topic"]): string {
-  switch (topic) {
-    case "qr_pickup":
-      return "After payment, EthioLocal issues a QR token for the order. At pickup, the buyer presents it; the seller verifies in the app so the handoff is recorded and escrow can complete safely.";
-    case "escrow":
-      return "Payments follow order states: pending → paid → completed after verified pickup. Sellers track payouts from the dashboard; buyers see clear status in their orders.";
-    case "compare_prices":
-      return "You can browse by category and compare ETB prices across sellers. Ask for “cheap”, “near me”, or “best picks” and I can query live listings for you.";
-    case "general":
-    default:
-      return "EthioLocal links buyers with nearby sellers, highlights competitive prices, and uses QR verification at pickup for trust.";
-  }
-}
 
 const tools: OpenAI.Chat.Completions.ChatCompletionTool[] = [
   {
@@ -79,56 +56,6 @@ function buildSystemPrompt(): string {
     "After tool results: summarize in plain language; if products were returned, mention a few titles with ETB prices and one useful tip (e.g. distance or “lowest price”).",
     "If the catalog is empty, explain briefly and suggest broadening the search or checking back later.",
   ].join(" ");
-}
-
-async function executeToolCall(
-  name: string,
-  rawArgs: string,
-  geo: { lat?: number; lng?: number },
-): Promise<string> {
-  let parsed: unknown;
-  try {
-    parsed = JSON.parse(rawArgs || "{}") as unknown;
-  } catch {
-    return JSON.stringify({ error: "invalid_tool_arguments" });
-  }
-
-  if (name === "search_local_marketplace") {
-    const args = searchArgsSchema.safeParse(parsed);
-    if (!args.success) {
-      return JSON.stringify({ error: "invalid_arguments", details: args.error.flatten() });
-    }
-    const result = await runAssistantChat({
-      message: args.data.shopping_query,
-      lat: geo.lat,
-      lng: geo.lng,
-    });
-    const products = result.products.slice(0, 14).map((p) => ({
-      id: p.id,
-      title: p.title,
-      price: p.price,
-      category: p.category,
-      currency: "ETB",
-      distanceKm: p.distanceKm,
-      rankScore: p.rankScore,
-    }));
-    return JSON.stringify({
-      assistantMode: result.assistantMode,
-      intents: result.intents,
-      productCount: result.products.length,
-      products,
-    });
-  }
-
-  if (name === "get_platform_fact") {
-    const args = factArgsSchema.safeParse(parsed);
-    if (!args.success) {
-      return JSON.stringify({ error: "invalid_arguments", details: args.error.flatten() });
-    }
-    return JSON.stringify({ fact: platformFact(args.data.topic) });
-  }
-
-  return JSON.stringify({ error: "unknown_tool", name });
 }
 
 export function isOpenAiAssistantEnabled(): boolean {
@@ -202,11 +129,11 @@ export async function runOpenAiAssistantChat(
 
     for (const call of toolCalls) {
       if (call.type !== "function") continue;
-      const output = await executeToolCall(call.function.name, call.function.arguments, geo);
+      const { content } = await runAssistantTool(call.function.name, call.function.arguments, geo);
       messages.push({
         role: "tool",
         tool_call_id: call.id,
-        content: output,
+        content,
       });
     }
   }
