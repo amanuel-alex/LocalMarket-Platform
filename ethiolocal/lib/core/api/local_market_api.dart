@@ -14,6 +14,11 @@ class LocalMarketApi {
     return AuthSession.fromLoginJson(json);
   }
 
+  Future<AuthSession> refreshSession({required String refreshToken}) async {
+    final json = await _client.postJson('/auth/refresh', {'refreshToken': refreshToken});
+    return AuthSession.fromLoginJson(json);
+  }
+
   Future<List<Product>> fetchRankedProducts({
     double? lat,
     double? lng,

@@ -174,12 +174,24 @@ export async function runGeminiAssistantChat(
 
     throw new AppError(502, "GEMINI_TOOL_LOOP", "Assistant exceeded maximum tool rounds.");
   } catch (e: unknown) {
+    if (e instanceof AppError) throw e;
     const msg = e instanceof Error ? e.message : String(e);
     if (/404|not found/i.test(msg) && /models\//i.test(msg)) {
       throw new AppError(
         502,
         "GEMINI_MODEL_NOT_FOUND",
-        `Gemini model "${modelName}" is not available on the Generative Language API. Set GEMINI_MODEL in api/.env — try gemini-2.0-flash or gemini-1.5-flash-002.`,
+        `Gemini model "${modelName}" is not available on the Generative Language API. Set GEMINI_MODEL in api/.env — try gemini-1.5-flash-002 or gemini-2.0-flash (paid tier may be required for 2.x).`,
+      );
+    }
+    if (/429|Too Many Requests|quota exceeded|Quota exceeded/i.test(msg)) {
+      throw new AppError(
+        429,
+        "GEMINI_QUOTA_EXCEEDED",
+        [
+          "Gemini API quota exceeded or this model has no free-tier allowance for your project.",
+          "Try again later, set GEMINI_MODEL=gemini-1.5-flash-002 in api/.env, or enable billing / raise limits:",
+          "https://ai.google.dev/gemini-api/docs/rate-limits",
+        ].join(" "),
       );
     }
     throw e;

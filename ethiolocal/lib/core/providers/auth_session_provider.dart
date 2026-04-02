@@ -13,6 +13,9 @@ const _kRole = 'ethiolocal_user_role';
 final authSessionProvider = NotifierProvider<AuthSessionNotifier, AuthSession?>(AuthSessionNotifier.new);
 
 class AuthSessionNotifier extends Notifier<AuthSession?> {
+  /// Public read for other providers (Notifier.state is protected outside the package).
+  AuthSession? get session => state;
+
   @override
   AuthSession? build() {
     _restore();
@@ -63,5 +66,22 @@ class AuthSessionNotifier extends Notifier<AuthSession?> {
     await p.remove(_kPhone);
     await p.remove(_kRole);
     state = null;
+  }
+
+  /// When access JWT expires (~15m), exchange refresh token for a new session.
+  /// Returns false and signs out if refresh fails.
+  Future<bool> tryRefreshOrSignOut() async {
+    final current = state;
+    if (current == null || current.refreshToken.isEmpty) return false;
+    try {
+      final api = ref.read(localMarketApiProvider);
+      final session = await api.refreshSession(refreshToken: current.refreshToken);
+      await _persist(session);
+      state = session;
+      return true;
+    } catch (_) {
+      await signOut();
+      return false;
+    }
   }
 }
