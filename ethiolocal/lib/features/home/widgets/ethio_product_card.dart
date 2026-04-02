@@ -42,8 +42,8 @@ class EthioProductCard extends StatelessWidget {
                   child: CachedNetworkImage(
                     imageUrl: product.imageUrl,
                     fit: BoxFit.cover,
-                    placeholder: (_, __) => Container(color: scheme.surfaceContainerHighest),
-                    errorWidget: (_, __, ___) => Container(
+                    placeholder: (_, progress) => Container(color: scheme.surfaceContainerHighest),
+                    errorWidget: (_, err, st) => Container(
                       color: scheme.surfaceContainerHighest,
                       child: Icon(Icons.image_not_supported_outlined, color: scheme.onSurfaceVariant),
                     ),

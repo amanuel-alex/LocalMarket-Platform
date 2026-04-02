@@ -42,7 +42,7 @@ class _AiAssistantScreenState extends ConsumerState<AiAssistantScreen> {
   final _messages = <_Msg>[
     const _TextMsg(
       text:
-          'Hi Amanuel — I am your EthioLocal assistant. Ask for deals near you, compare staples, or say “show me coffee”.',
+          'Hi — I query your live LocalMarket catalog (POST /assistant/chat). Try “cheap”, “near me”, “best coffee”, or a category name.',
       fromUser: false,
     ),
   ];
@@ -75,33 +75,48 @@ class _AiAssistantScreenState extends ConsumerState<AiAssistantScreen> {
       _typing = true;
     });
     _scrollBottom();
-    await Future<void>.delayed(const Duration(milliseconds: 900));
+    try {
+      final api = ref.read(localMarketApiProvider);
+      final res = await api.assistantChat(
+        message: t,
+        lat: ApiConfig.defaultLat,
+        lng: ApiConfig.defaultLng,
+      );
+      if (!mounted) return;
+      final productsRaw = res['products'] as List<dynamic>? ?? [];
+      final products = productsRaw
+          .map((e) => Product.fromCatalogJson(e as Map<String, dynamic>))
+          .toList();
+      final intents = res['intents'] as Map<String, dynamic>?;
+      final mode = res['assistantMode'] as String? ?? 'rules';
 
-    if (!mounted) return;
-    final lower = t.toLowerCase();
-    Product? card;
-    if (lower.contains('coffee') || lower.contains('buna')) {
-      card = mockProducts.firstWhere((p) => p.id == 'p1', orElse: () => mockProducts.first);
-    } else if (lower.contains('teff') || lower.contains('flour')) {
-      card = mockProducts.firstWhere((p) => p.id == 'p2', orElse: () => mockProducts.first);
-    }
-
-    setState(() {
-      _typing = false;
-      if (card != null) {
-        _messages.add(_TextMsg(
-          text: 'Here is a strong match near you — tap the card to open details.',
-          fromUser: false,
-        ));
-        _messages.add(_ProductMsg(product: card));
-      } else {
-        _messages.add(_TextMsg(
-          text:
-              'I can surface local listings, compare prices, and suggest sellers. Try “coffee under 900 birr” or “teff flour near Bole”.',
-          fromUser: false,
-        ));
+      var text = products.isEmpty
+          ? 'No listings matched. Try real category names from your database, or keywords like “cheap”, “near me”, “best”.'
+          : 'Found ${products.length} listing${products.length == 1 ? '' : 's'}${mode == 'hybrid_ranking' ? ' (smart-ranked)' : ''}. Tap a card for details.';
+      if (intents?['nearbyMissingCoordinates'] == true) {
+        text += ' (Nearby intent needs lat/lng — using app defaults.)';
       }
-    });
+
+      setState(() {
+        _typing = false;
+        _messages.add(_TextMsg(text: text, fromUser: false));
+        for (final p in products.take(8)) {
+          _messages.add(_ProductMsg(product: p));
+        }
+      });
+    } on ApiException catch (e) {
+      if (!mounted) return;
+      setState(() {
+        _typing = false;
+        _messages.add(_TextMsg(text: e.message, fromUser: false));
+      });
+    } catch (e) {
+      if (!mounted) return;
+      setState(() {
+        _typing = false;
+        _messages.add(_TextMsg(text: e.toString(), fromUser: false));
+      });
+    }
     _scrollBottom();
   }
 

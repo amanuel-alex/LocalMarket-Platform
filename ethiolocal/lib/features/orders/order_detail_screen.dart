@@ -38,17 +38,16 @@ class OrderDetailScreen extends ConsumerWidget {
             body: const Center(child: Text('Order not found')),
           );
         }
-        return _OrderDetailBody(order: order, orderId: orderId);
+        return _OrderDetailBody(order: order);
       },
     );
   }
 }
 
 class _OrderDetailBody extends StatelessWidget {
-  const _OrderDetailBody({required this.order, required this.orderId});
+  const _OrderDetailBody({required this.order});
 
   final ShopOrder order;
-  final String orderId;
 
   @override
   Widget build(BuildContext context) {
@@ -123,7 +122,7 @@ class _OrderDetailBody extends StatelessWidget {
             GradientCta(
               label: 'Show delivery QR',
               icon: Icons.qr_code_2_rounded,
-              onPressed: () => context.push('/qr/$orderId'),
+              onPressed: () => context.push('/qr/${order.id}'),
             ),
         ],
       ),

@@ -25,7 +25,7 @@ class _PressableScaleState extends State<PressableScale> with SingleTickerProvid
   }
 
   void _down(TapDownDetails _) => _c.forward();
-  void _up([Object? _, Object? __]) => _c.reverse();
+  void _up([Object? a, Object? b]) => _c.reverse();
   void _cancel() => _c.reverse();
 
   @override
