@@ -1,19 +1,11 @@
 "use client";
 
-import { Bell, Truck } from "lucide-react";
+import { Truck } from "lucide-react";
 import Link from "next/link";
 
 import { NavbarAccount } from "@/components/layout/navbar-account";
-import { Button } from "@/components/ui/button";
+import { NavbarNotificationsMenu } from "@/components/layout/navbar-notifications-menu";
 import { SidebarTrigger } from "@/components/ui/sidebar";
-import {
-  DropdownMenu,
-  DropdownMenuContent,
-  DropdownMenuItem,
-  DropdownMenuLabel,
-  DropdownMenuSeparator,
-  DropdownMenuTrigger,
-} from "@/components/ui/dropdown-menu";
 
 export function DeliveryNavbar() {
   return (
@@ -33,27 +25,11 @@ export function DeliveryNavbar() {
       </Link>
 
       <div className="ml-auto flex items-center gap-1 sm:gap-2">
-        <DropdownMenu>
-          <DropdownMenuTrigger asChild>
-            <Button
-              type="button"
-              variant="ghost"
-              size="icon"
-              className="relative rounded-xl text-muted-foreground"
-              aria-label="Notifications"
-            >
-              <Bell className="size-5" />
-              <span className="absolute right-2 top-2 size-2 rounded-full bg-cyan-500" aria-hidden />
-            </Button>
-          </DropdownMenuTrigger>
-          <DropdownMenuContent align="end" className="w-72 rounded-2xl">
-            <DropdownMenuLabel>Notifications</DropdownMenuLabel>
-            <DropdownMenuSeparator />
-            <DropdownMenuItem disabled className="rounded-lg text-muted-foreground">
-              New assignments and route updates will appear here.
-            </DropdownMenuItem>
-          </DropdownMenuContent>
-        </DropdownMenu>
+        <NavbarNotificationsMenu
+          emptyDescription="New assignments and route updates will appear here."
+          tone="cyan"
+          triggerClassName="hover:text-foreground"
+        />
 
         <NavbarAccount />
       </div>

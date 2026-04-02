@@ -1,19 +1,11 @@
 "use client";
 
-import { Bell } from "lucide-react";
 import Link from "next/link";
 import type { ReactNode } from "react";
 
 import { NavbarAccount } from "@/components/layout/navbar-account";
+import { NavbarNotificationsMenu } from "@/components/layout/navbar-notifications-menu";
 import { Button } from "@/components/ui/button";
-import {
-  DropdownMenu,
-  DropdownMenuContent,
-  DropdownMenuItem,
-  DropdownMenuLabel,
-  DropdownMenuSeparator,
-  DropdownMenuTrigger,
-} from "@/components/ui/dropdown-menu";
 import { getStoredUser } from "@/lib/auth-storage";
 import { normalizeRole } from "@/lib/roles";
 
@@ -46,27 +38,11 @@ export function ShopChrome({ children }: { children: ReactNode }) {
                 <Link href="/shop/my-orders">My orders</Link>
               </Button>
             ) : null}
-            <DropdownMenu>
-              <DropdownMenuTrigger asChild>
-                <Button
-                  type="button"
-                  variant="ghost"
-                  size="icon"
-                  className="relative rounded-xl text-muted-foreground"
-                  aria-label="Notifications"
-                >
-                  <Bell className="size-5" />
-                  <span className="absolute right-2 top-2 size-2 rounded-full bg-violet-500" />
-                </Button>
-              </DropdownMenuTrigger>
-              <DropdownMenuContent align="end" className="w-72 rounded-2xl">
-                <DropdownMenuLabel>Notifications</DropdownMenuLabel>
-                <DropdownMenuSeparator />
-                <DropdownMenuItem disabled className="rounded-lg text-muted-foreground">
-                  Order updates and payment receipts will show here.
-                </DropdownMenuItem>
-              </DropdownMenuContent>
-            </DropdownMenu>
+            <NavbarNotificationsMenu
+              emptyDescription="Order updates and payment receipts will show here."
+              tone="violet"
+              triggerClassName="text-muted-foreground"
+            />
             <Link
               href="/"
               className="hidden text-sm text-muted-foreground hover:text-foreground lg:inline"

@@ -1,9 +1,7 @@
 "use client";
 
-import { Bell } from "lucide-react";
-
-import { Button } from "@/components/ui/button";
 import { NavbarAccount } from "@/components/layout/navbar-account";
+import { NavbarNotificationsMenu } from "@/components/layout/navbar-notifications-menu";
 import { SidebarTrigger } from "@/components/ui/sidebar";
 
 export function AppNavbar() {
@@ -12,16 +10,10 @@ export function AppNavbar() {
       <SidebarTrigger className="-ml-1 rounded-xl" />
 
       <div className="ml-auto flex items-center gap-1 sm:gap-2">
-        <Button
-          type="button"
-          variant="ghost"
-          size="icon"
-          className="relative rounded-xl text-muted-foreground hover:text-foreground"
-          aria-label="Notifications"
-        >
-          <Bell className="size-5" />
-          <span className="absolute right-1.5 top-1.5 size-2 rounded-full bg-primary" aria-hidden />
-        </Button>
+        <NavbarNotificationsMenu
+          emptyDescription="Order updates, delivery status, and payment receipts will appear here."
+          tone="default"
+        />
 
         <NavbarAccount />
       </div>

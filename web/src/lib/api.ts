@@ -553,6 +553,12 @@ export async function postAssistantOpenAiChat(body: {
   return data;
 }
 
+/* ——— Notifications ——— */
+export async function fetchNotificationUnreadCount(): Promise<number> {
+  const { data } = await apiClient.get<{ unreadCount: number }>("/notifications/unread-count");
+  return typeof data.unreadCount === "number" ? data.unreadCount : 0;
+}
+
 /* ——— Auth me ——— */
 export type MeUser = StoredUser & Record<string, unknown>;
 

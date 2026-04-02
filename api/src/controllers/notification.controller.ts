@@ -8,6 +8,11 @@ export const list: RequestHandler = asyncHandler(async (req, res) => {
   res.json({ notifications });
 });
 
+export const unreadCount: RequestHandler = asyncHandler(async (req, res) => {
+  const unreadCount = await notificationService.countUnreadForUser(req.user!.id);
+  res.json({ unreadCount });
+});
+
 export const markRead: RequestHandler = asyncHandler(async (req, res, next) => {
   const parsed = notificationIdParamSchema.safeParse(req.params);
   if (!parsed.success) {

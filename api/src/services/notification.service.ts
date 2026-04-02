@@ -33,6 +33,12 @@ export async function listForUser(userId: string, limit = 100): Promise<Notifica
   return rows.map(toJson);
 }
 
+export async function countUnreadForUser(userId: string): Promise<number> {
+  return prisma.notification.count({
+    where: { userId, readAt: null },
+  });
+}
+
 export async function markReadForUser(userId: string, notificationId: string): Promise<NotificationJson> {
   const row = await prisma.notification.findUnique({ where: { id: notificationId } });
   if (!row || row.userId !== userId) {

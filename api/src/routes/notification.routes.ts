@@ -6,6 +6,7 @@ const router = Router();
 
 router.use(requireAuth);
 
+router.get("/unread-count", notificationController.unreadCount);
 router.get("/", notificationController.list);
 router.patch("/:id/read", notificationController.markRead);
 
