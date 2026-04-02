@@ -132,7 +132,7 @@ export function BuyerOrderDetailClient({ orderId }: { orderId: string }) {
             <CardDescription>Present at the counter for the seller to scan or verify.</CardDescription>
           </CardHeader>
           <CardContent className="flex flex-col items-center">
-            <div className="rounded-2xl border border-border/60 bg-white p-4 dark:bg-zinc-900">
+            <div className="rounded-2xl border border-border/60 bg-card p-4 dark:bg-zinc-900">
               <QRCodeSVG value={qr} size={200} level="M" includeMargin />
             </div>
           </CardContent>

@@ -198,7 +198,7 @@ export function BuyerCheckoutClient({ orderId }: { orderId: string }) {
               <CardDescription>Show this QR at pickup.</CardDescription>
             </CardHeader>
             <CardContent className="flex flex-col items-center gap-4">
-              <div className="rounded-2xl border border-border/60 bg-white p-4 shadow-inner dark:bg-zinc-900">
+              <div className="rounded-2xl border border-border/60 bg-card p-4 shadow-inner dark:bg-zinc-900">
                 <QRCodeSVG value={qrValue} size={220} level="M" includeMargin />
               </div>
               <p className="text-center text-xs text-muted-foreground">
