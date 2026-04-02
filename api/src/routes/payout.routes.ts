@@ -2,11 +2,12 @@ import { Router } from "express";
 import * as payoutController from "../controllers/payout.controller.js";
 import { requireAuth } from "../middlewares/auth.middleware.js";
 import { requireRoles } from "../middlewares/role.middleware.js";
+import { requireApprovedSeller } from "../middlewares/sellerApproval.middleware.js";
 
 const router = Router();
 
-router.post("/", requireAuth, requireRoles("seller"), payoutController.requestPayout);
-router.get("/", requireAuth, requireRoles("seller"), payoutController.listMine);
+router.post("/", requireAuth, requireRoles("seller"), requireApprovedSeller, payoutController.requestPayout);
+router.get("/", requireAuth, requireRoles("seller"), requireApprovedSeller, payoutController.listMine);
 
 router.post(
   "/:id/mark-paid",

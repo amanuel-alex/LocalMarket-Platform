@@ -120,6 +120,8 @@ class _HomeScreenState extends ConsumerState<HomeScreen> {
     final auth = ref.watch(authSessionProvider);
     final greet = auth?.userName.split(' ').first ?? 'there';
 
+    final isDark = Theme.of(context).brightness == Brightness.dark;
+
     return Scaffold(
       floatingActionButton: FloatingActionButton.extended(
         elevation: 6,
@@ -137,78 +139,25 @@ class _HomeScreenState extends ConsumerState<HomeScreen> {
               SliverToBoxAdapter(
                 child: Padding(
                   padding: const EdgeInsets.fromLTRB(20, 8, 20, 0),
-                  child: Column(
-                    crossAxisAlignment: CrossAxisAlignment.start,
-                    children: [
-                      Row(
-                        crossAxisAlignment: CrossAxisAlignment.start,
-                        children: [
-                          Expanded(
-                            child: Column(
-                              crossAxisAlignment: CrossAxisAlignment.start,
-                              children: [
-                                Text(
-                                  'Hi, $greet 👋',
-                                  style: Theme.of(context).textTheme.headlineSmall?.copyWith(fontWeight: FontWeight.w800, letterSpacing: -0.3),
-                                ),
-                                const SizedBox(height: 6),
-                                Row(
-                                  children: [
-                                    Icon(Icons.near_me_rounded, size: 17, color: scheme.primary),
-                                    const SizedBox(width: 6),
-                                    Expanded(
-                                      child: Text(
-                                        'Curated near ${ApiConfig.defaultLat.toStringAsFixed(2)}°, ${ApiConfig.defaultLng.toStringAsFixed(2)}°',
-                                        style: Theme.of(context).textTheme.bodyMedium?.copyWith(
-                                              color: scheme.onSurface.withValues(alpha: 0.62),
-                                            ),
-                                      ),
-                                    ),
-                                  ],
-                                ),
-                              ],
-                            ),
-                          ),
-                          Material(
-                            color: scheme.surfaceContainerHighest.withValues(alpha: 0.6),
-                            borderRadius: BorderRadius.circular(16),
-                            child: InkWell(
-                              borderRadius: BorderRadius.circular(16),
-                              onTap: () => context.push('/cart'),
-                              child: Padding(
-                                padding: const EdgeInsets.all(12),
-                                child: Badge(
-                                  isLabelVisible: cartQty > 0,
-                                  label: Text('$cartQty'),
-                                  child: Icon(Icons.shopping_bag_outlined, color: scheme.onSurface),
-                                ),
-                              ),
-                            ),
-                          ),
-                        ],
-                      ),
-                      const SizedBox(height: 20),
-                      TextField(
-                        controller: _searchCtrl,
-                        textInputAction: TextInputAction.search,
-                        onSubmitted: _searchCatalog,
-                        decoration: InputDecoration(
-                          hintText: 'Search products, categories…',
-                          prefixIcon: Icon(Icons.search_rounded, color: scheme.primary.withValues(alpha: 0.85)),
-                          suffixIcon: IconButton(
-                            icon: const Icon(Icons.tune_rounded),
-                            onPressed: () => _searchCatalog(_searchCtrl.text),
-                          ),
-                          filled: true,
-                          fillColor: scheme.surface,
-                          contentPadding: const EdgeInsets.symmetric(vertical: 16),
-                        ),
-                      ),
-                    ],
+                  child: _HomeGradientHero(
+                    isDark: isDark,
+                    greet: greet,
+                    cartQty: cartQty,
+                    searchCtrl: _searchCtrl,
+                    onCart: () => context.push('/cart'),
+                    onSearchSubmitted: _searchCatalog,
+                    onSearchPressed: () => _searchCatalog(_searchCtrl.text),
                   ),
                 ),
               ),
-              const SliverToBoxAdapter(child: SizedBox(height: 16)),
+              const SliverToBoxAdapter(child: SizedBox(height: 20)),
+              SliverToBoxAdapter(
+                child: Padding(
+                  padding: const EdgeInsets.symmetric(horizontal: 20),
+                  child: _HomeFeaturesCluster(scheme: scheme, isDark: isDark),
+                ),
+              ),
+              const SliverToBoxAdapter(child: SizedBox(height: 20)),
               SliverToBoxAdapter(
                 child: Padding(
                   padding: const EdgeInsets.symmetric(horizontal: 20),
@@ -248,7 +197,7 @@ class _HomeScreenState extends ConsumerState<HomeScreen> {
                 sliver: SliverToBoxAdapter(
                   child: SectionHeader(
                     title: 'Trending near you',
-                    subtitle: 'Ranked by price, distance, trust & popularity',
+                    subtitle: 'Ranked by price, distance & popularity',
                     actionLabel: 'Refresh',
                     onAction: _refresh,
                     icon: Icons.local_fire_department_rounded,
@@ -324,6 +273,235 @@ class _HomeScreenState extends ConsumerState<HomeScreen> {
               ),
             ],
           ),
+        ),
+      ),
+    );
+  }
+}
+
+/// Primary (large) + secondary (accent rail) headings for long home sections.
+class _HomePrimaryHeading extends StatelessWidget {
+  const _HomePrimaryHeading({required this.title, this.subtitle});
+
+  final String title;
+  final String? subtitle;
+
+  @override
+  Widget build(BuildContext context) {
+    final scheme = Theme.of(context).colorScheme;
+    return Column(
+      crossAxisAlignment: CrossAxisAlignment.start,
+      children: [
+        Text(
+          title,
+          style: Theme.of(context).textTheme.titleLarge?.copyWith(
+                fontWeight: FontWeight.w800,
+                letterSpacing: -0.2,
+                color: scheme.onSurface,
+              ),
+        ),
+        if (subtitle != null) ...[
+          const SizedBox(height: 6),
+          Text(
+            subtitle!,
+            style: Theme.of(context).textTheme.bodySmall?.copyWith(
+                  color: scheme.onSurfaceVariant,
+                  height: 1.4,
+                ),
+          ),
+        ],
+      ],
+    );
+  }
+}
+
+class _HomeFeatureHighlights extends StatelessWidget {
+  const _HomeFeatureHighlights({required this.scheme, required this.isDark});
+
+  final ColorScheme scheme;
+  final bool isDark;
+
+  @override
+  Widget build(BuildContext context) {
+    const items = [
+      (Icons.storefront_rounded, 'Local sellers'),
+      (Icons.shield_rounded, 'Protected pay'),
+      (Icons.currency_exchange_rounded, 'ETB prices'),
+      (Icons.auto_awesome_rounded, 'Ask AI'),
+    ];
+    return Wrap(
+      spacing: 10,
+      runSpacing: 10,
+      children: [
+        for (final it in items)
+          Container(
+            padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 10),
+            decoration: BoxDecoration(
+              color: scheme.surfaceContainerHighest.withValues(alpha: isDark ? 0.5 : 0.9),
+              borderRadius: BorderRadius.circular(14),
+              border: Border.all(color: scheme.outline.withValues(alpha: isDark ? 0.22 : 0.1)),
+            ),
+            child: Row(
+              mainAxisSize: MainAxisSize.min,
+              children: [
+                Icon(it.$1, size: 18, color: scheme.primary),
+                const SizedBox(width: 8),
+                Text(
+                  it.$2,
+                  style: Theme.of(context).textTheme.labelLarge?.copyWith(fontWeight: FontWeight.w700),
+                ),
+              ],
+            ),
+          ),
+      ],
+    );
+  }
+}
+
+class _HomeFeaturesCluster extends StatelessWidget {
+  const _HomeFeaturesCluster({required this.scheme, required this.isDark});
+
+  final ColorScheme scheme;
+  final bool isDark;
+
+  @override
+  Widget build(BuildContext context) {
+    return Column(
+      crossAxisAlignment: CrossAxisAlignment.start,
+      children: [
+        const _HomePrimaryHeading(
+          title: 'Features',
+          subtitle:
+              'Everything on one screen — browse nearby listings, compare prices, and checkout safely.',
+        ),
+        const SizedBox(height: 14),
+        _HomeFeatureHighlights(scheme: scheme, isDark: isDark),
+      ],
+    );
+  }
+}
+
+/// Indigo → violet hero with search (original EthioLocal home look).
+class _HomeGradientHero extends StatelessWidget {
+  const _HomeGradientHero({
+    required this.isDark,
+    required this.greet,
+    required this.cartQty,
+    required this.searchCtrl,
+    required this.onCart,
+    required this.onSearchSubmitted,
+    required this.onSearchPressed,
+  });
+
+  final bool isDark;
+  final String greet;
+  final int cartQty;
+  final TextEditingController searchCtrl;
+  final VoidCallback onCart;
+  final void Function(String) onSearchSubmitted;
+  final VoidCallback onSearchPressed;
+
+  /// Same indigo→violet accent as light mode (no extra-deep dark-only gradient).
+  LinearGradient get _gradient => AppColors.accentGradient;
+
+  @override
+  Widget build(BuildContext context) {
+    final subtle = Colors.white.withValues(alpha: 0.88);
+    return Container(
+      decoration: BoxDecoration(
+        gradient: _gradient,
+        borderRadius: BorderRadius.circular(28),
+        boxShadow: [
+          BoxShadow(
+            color: Colors.black.withValues(alpha: isDark ? 0.35 : 0.0),
+            blurRadius: isDark ? 20 : 0,
+            offset: const Offset(0, 12),
+          ),
+          BoxShadow(
+            color: const Color(0xFF4F46E5).withValues(alpha: isDark ? 0.12 : 0.28),
+            blurRadius: 24,
+            offset: const Offset(0, 14),
+          ),
+        ],
+      ),
+      child: Padding(
+        padding: const EdgeInsets.fromLTRB(20, 22, 20, 22),
+        child: Column(
+          crossAxisAlignment: CrossAxisAlignment.start,
+          children: [
+            Row(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                Expanded(
+                  child: Column(
+                    crossAxisAlignment: CrossAxisAlignment.start,
+                    children: [
+                      Text(
+                        'Hi, $greet 👋',
+                        style: Theme.of(context).textTheme.headlineSmall?.copyWith(
+                              fontWeight: FontWeight.w800,
+                              letterSpacing: -0.35,
+                              color: Colors.white,
+                            ),
+                      ),
+                      const SizedBox(height: 8),
+                      Row(
+                        children: [
+                          Icon(Icons.near_me_rounded, size: 17, color: subtle),
+                          const SizedBox(width: 6),
+                          Expanded(
+                            child: Text(
+                              'Curated near ${ApiConfig.defaultLat.toStringAsFixed(2)}°, ${ApiConfig.defaultLng.toStringAsFixed(2)}°',
+                              style: Theme.of(context).textTheme.bodyMedium?.copyWith(color: subtle, height: 1.35),
+                            ),
+                          ),
+                        ],
+                      ),
+                    ],
+                  ),
+                ),
+                Material(
+                  color: Colors.white.withValues(alpha: 0.2),
+                  borderRadius: BorderRadius.circular(16),
+                  child: InkWell(
+                    borderRadius: BorderRadius.circular(16),
+                    onTap: onCart,
+                    child: Padding(
+                      padding: const EdgeInsets.all(12),
+                      child: Badge(
+                        isLabelVisible: cartQty > 0,
+                        backgroundColor: Colors.white,
+                        textColor: const Color(0xFF4F46E5),
+                        label: Text('$cartQty'),
+                        child: const Icon(Icons.shopping_bag_outlined, color: Colors.white),
+                      ),
+                    ),
+                  ),
+                ),
+              ],
+            ),
+            const SizedBox(height: 18),
+            TextField(
+              controller: searchCtrl,
+              textInputAction: TextInputAction.search,
+              onSubmitted: onSearchSubmitted,
+              style: const TextStyle(color: Colors.white, fontWeight: FontWeight.w500),
+              cursorColor: Colors.white,
+              decoration: InputDecoration(
+                hintText: 'Search products, categories…',
+                hintStyle: TextStyle(color: Colors.white.withValues(alpha: 0.78)),
+                prefixIcon: Icon(Icons.search_rounded, color: Colors.white.withValues(alpha: 0.9)),
+                suffixIcon: IconButton(
+                  icon: Icon(Icons.tune_rounded, color: Colors.white.withValues(alpha: 0.9)),
+                  onPressed: onSearchPressed,
+                ),
+                filled: true,
+                fillColor: Colors.white.withValues(alpha: 0.2),
+                border: OutlineInputBorder(borderRadius: BorderRadius.circular(20), borderSide: BorderSide.none),
+                contentPadding: const EdgeInsets.symmetric(vertical: 16),
+              ),
+            ),
+          ],
         ),
       ),
     );

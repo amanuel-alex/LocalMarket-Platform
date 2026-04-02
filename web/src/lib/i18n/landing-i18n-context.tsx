@@ -64,7 +64,14 @@ export function LandingI18nProvider({ children }: { children: ReactNode }) {
     }
   }, []);
 
-  const messages = bundles[locale];
+  const messages = useMemo((): LandingMessages => {
+    const bundle = bundles[locale] ?? bundles.en;
+    return {
+      ...bundle,
+      // Deep-merge marketplace so missing keys (or stale bundles) never yield undefined at runtime.
+      marketplace: { ...en.marketplace, ...(bundle.marketplace ?? {}) },
+    };
+  }, [locale]);
 
   const t = useCallback(
     (path: string) => {

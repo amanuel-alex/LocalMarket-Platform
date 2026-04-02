@@ -3,6 +3,7 @@ import multer from "multer";
 import * as uploadController from "../controllers/upload.controller.js";
 import { requireAuth } from "../middlewares/auth.middleware.js";
 import { requireRoles } from "../middlewares/role.middleware.js";
+import { requireApprovedSeller } from "../middlewares/sellerApproval.middleware.js";
 import { AppError } from "../utils/errors.js";
 
 const router = Router();
@@ -15,6 +16,7 @@ router.post(
   "/product-image",
   requireAuth,
   requireRoles("seller"),
+  requireApprovedSeller,
   (req, res, next) => {
     upload.single("image")(req, res, (err: unknown) => {
       if (err instanceof multer.MulterError) {

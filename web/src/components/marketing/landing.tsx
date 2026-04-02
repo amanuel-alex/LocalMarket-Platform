@@ -2,9 +2,11 @@
 
 import { LandingAiChat } from "@/components/marketing/landing-ai-chat";
 import { LandingCta } from "@/components/marketing/landing-cta";
+import { LandingFeatures } from "@/components/marketing/landing-features";
 import { LandingFooter } from "@/components/marketing/landing-footer";
 import { LandingHeader } from "@/components/marketing/landing-header";
 import { LandingHero } from "@/components/marketing/landing-hero";
+import { LandingHowItWorks } from "@/components/marketing/landing-how-it-works";
 import { LandingTrending } from "@/components/marketing/landing-trending";
 import { LandingTrust } from "@/components/marketing/landing-trust";
 import { LandingCategoriesSection } from "@/components/marketplace/landing-categories-section";
@@ -15,7 +17,7 @@ function LandingInner() {
   return (
     <div className="relative min-h-svh overflow-x-hidden bg-zinc-50 text-zinc-900 dark:bg-zinc-950 dark:text-zinc-100">
       <div
-        className="pointer-events-none fixed inset-0 -z-10 bg-[radial-gradient(ellipse_100%_60%_at_50%_-25%,rgba(251,191,36,0.08),transparent_55%)] dark:bg-[radial-gradient(ellipse_100%_60%_at_50%_-25%,rgba(251,191,36,0.12),transparent_55%)]"
+        className="pointer-events-none fixed inset-0 -z-10 bg-[radial-gradient(ellipse_100%_60%_at_50%_-25%,rgba(251,191,36,0.06),transparent_55%)] dark:bg-[radial-gradient(ellipse_100%_60%_at_50%_-25%,rgba(251,191,36,0.1),transparent_55%)]"
         aria-hidden
       />
 
@@ -25,6 +27,8 @@ function LandingInner() {
         <LandingTrending />
         <LandingCategoriesSection />
         <LandingShopLocalSection />
+        <LandingFeatures />
+        <LandingHowItWorks />
         <LandingTrust />
         <LandingCta />
       </main>

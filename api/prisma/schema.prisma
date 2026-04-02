@@ -113,6 +113,11 @@ model User {
   status              UserStatus      @default(active)
   isVerified          Boolean         @default(false)
   /**
+   * Sellers who self-register stay pending until an admin sets this true.
+   * Promoting a user to seller via admin may set this in the same update.
+   */
+  sellerApproved        Boolean       @default(false)
+  /**
    * Logistics staff: admin must approve before agent routes are usable.
    */
   deliveryAgentApproved Boolean       @default(false)

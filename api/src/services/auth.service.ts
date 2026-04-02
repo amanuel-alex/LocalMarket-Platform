@@ -35,19 +35,61 @@ async function buildAuthResponse(user: User): Promise<AuthTokenPair> {
 
 export async function register(input: RegisterInput): Promise<AuthTokenPair> {
   const passwordHash = await hashPassword(input.password);
+  const accountType = input.accountType ?? "buyer";
+
+  const walletCreate = {
+    wallet: {
+      create: {
+        isPlatform: false,
+        availableBalance: 0,
+        pendingBalance: 0,
+      },
+    },
+  } as const;
+
+  const localeData = input.locale != null ? { preferredLocale: input.locale } : {};
+
+  if (accountType === "buyer") {
+    const user = await prisma.user.create({
+      data: {
+        name: input.name,
+        phone: input.phone,
+        passwordHash,
+        role: "buyer",
+        sellerApproved: false,
+        ...localeData,
+        ...walletCreate,
+      },
+    });
+    return buildAuthResponse(user);
+  }
+
+  if (accountType === "seller") {
+    const user = await prisma.user.create({
+      data: {
+        name: input.name,
+        phone: input.phone,
+        passwordHash,
+        role: "seller",
+        sellerApproved: false,
+        ...localeData,
+        ...walletCreate,
+      },
+    });
+    return buildAuthResponse(user);
+  }
+
   const user = await prisma.user.create({
     data: {
       name: input.name,
       phone: input.phone,
       passwordHash,
-      ...(input.locale != null ? { preferredLocale: input.locale } : {}),
-      wallet: {
-        create: {
-          isPlatform: false,
-          availableBalance: 0,
-          pendingBalance: 0,
-        },
-      },
+      role: "delivery_agent",
+      deliveryAgentApproved: false,
+      deliveryAgentActive: false,
+      sellerApproved: false,
+      ...localeData,
+      ...walletCreate,
     },
   });
   return buildAuthResponse(user);

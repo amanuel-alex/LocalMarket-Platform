@@ -14,8 +14,8 @@ export function LandingFeatures() {
   const items = messages.features.items;
 
   return (
-    <section id="features" className="scroll-mt-24 py-20 md:py-28">
-      <div className="mx-auto max-w-6xl px-4 sm:px-6 lg:px-8">
+    <section id="features" className="scroll-mt-32 py-20 md:scroll-mt-36 md:py-28">
+      <div className="mx-auto max-w-7xl px-4 sm:px-6 lg:px-8">
         <motion.div
           initial="hidden"
           whileInView="visible"

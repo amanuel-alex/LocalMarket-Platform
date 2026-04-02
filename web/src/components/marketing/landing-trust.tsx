@@ -14,9 +14,9 @@ export function LandingTrust() {
   return (
     <section
       id="trust"
-      className="scroll-mt-24 border-t border-zinc-200/80 bg-gradient-to-br from-zinc-50 via-white to-indigo-50/30 py-20 dark:border-zinc-800 dark:from-zinc-950 dark:via-zinc-950 dark:to-indigo-950/20 md:py-28"
+      className="scroll-mt-32 border-t border-zinc-200/80 bg-gradient-to-br from-zinc-50 via-white to-indigo-50/30 py-20 dark:border-zinc-800 dark:from-zinc-950 dark:via-zinc-950 dark:to-indigo-950/20 md:scroll-mt-36 md:py-28"
     >
-      <div className="mx-auto max-w-6xl px-4 sm:px-6 lg:px-8">
+      <div className="mx-auto max-w-7xl px-4 sm:px-6 lg:px-8">
         <div className="grid items-center gap-12 lg:grid-cols-2 lg:gap-20">
           <motion.div
             initial="hidden"

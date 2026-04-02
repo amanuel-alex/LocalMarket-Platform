@@ -22,9 +22,9 @@ export function LandingHowItWorks() {
   return (
     <section
       id="how-it-works"
-      className="scroll-mt-24 border-y border-zinc-200/80 bg-gradient-to-b from-zinc-50/80 via-white to-violet-50/20 py-20 dark:border-zinc-800 dark:from-zinc-950 dark:via-zinc-950 dark:to-violet-950/20 md:py-28"
+      className="scroll-mt-32 border-y border-zinc-200/80 bg-gradient-to-b from-zinc-50/80 via-white to-violet-50/20 py-20 dark:border-zinc-800 dark:from-zinc-950 dark:via-zinc-950 dark:to-violet-950/20 md:scroll-mt-36 md:py-28"
     >
-      <div className="mx-auto max-w-6xl px-4 sm:px-6 lg:px-8">
+      <div className="mx-auto max-w-7xl px-4 sm:px-6 lg:px-8">
         <motion.div
           initial="hidden"
           whileInView="visible"

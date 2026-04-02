@@ -3,9 +3,9 @@ import type { Metadata } from "next";
 import { Landing } from "@/components/marketing/landing";
 
 export const metadata: Metadata = {
-  title: "EthioLocal — Shop trending, categories & local listings",
+  title: "EthioLocal — Discover, compare & buy from local markets",
   description:
-    "Browse EthioLocal like a marketplace: search products, trending picks, categories, and listings ranked by your real location.",
+    "EthioLocal connects buyers with nearby sellers, compares prices, and secures transactions with QR verification.",
 };
 
 export default function HomePage() {
