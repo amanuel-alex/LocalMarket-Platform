@@ -65,13 +65,19 @@ class _AiAssistantScreenState extends ConsumerState<AiAssistantScreen> {
 
   List<Map<String, dynamic>> _geminiHistoryBeforeSend() {
     final list = <Map<String, dynamic>>[];
+    var skippedWelcome = false;
     for (final m in _messages) {
-      if (m is _TextMsg) {
-        list.add({
-          'role': m.fromUser ? 'user' : 'assistant',
-          'content': m.text,
-        });
+      if (m is! _TextMsg) continue;
+      // Gemini chat history should start with a user turn; skip the static welcome bubble.
+      if (!skippedWelcome && !m.fromUser) {
+        skippedWelcome = true;
+        continue;
       }
+      skippedWelcome = true;
+      list.add({
+        'role': m.fromUser ? 'user' : 'assistant',
+        'content': m.text,
+      });
     }
     return list;
   }
