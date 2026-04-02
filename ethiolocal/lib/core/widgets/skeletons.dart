@@ -30,6 +30,32 @@ class ProductCardSkeleton extends StatelessWidget {
   }
 }
 
+class CategoryStripSkeleton extends StatelessWidget {
+  const CategoryStripSkeleton({super.key});
+
+  @override
+  Widget build(BuildContext context) {
+    final base = Theme.of(context).colorScheme.surfaceContainerHighest;
+    return SizedBox(
+      height: 100,
+      child: Shimmer.fromColors(
+        baseColor: base.withValues(alpha: 0.5),
+        highlightColor: base.withValues(alpha: 0.12),
+        child: ListView.separated(
+          padding: const EdgeInsets.symmetric(horizontal: 20),
+          scrollDirection: Axis.horizontal,
+          itemCount: 6,
+          separatorBuilder: (_, unusedIndex) => const SizedBox(width: 10),
+          itemBuilder: (_, unusedIndex) => Container(
+            width: 88,
+            decoration: BoxDecoration(color: Colors.white, borderRadius: BorderRadius.circular(18)),
+          ),
+        ),
+      ),
+    );
+  }
+}
+
 class HomeHeaderSkeleton extends StatelessWidget {
   const HomeHeaderSkeleton({super.key});
 

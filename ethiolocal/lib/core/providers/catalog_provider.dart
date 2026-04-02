@@ -2,6 +2,7 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 
 import '../config/api_config.dart';
 import '../models/product.dart';
+import '../models/product_detail_bundle.dart';
 import 'api_providers.dart';
 
 final productsProvider = FutureProvider<List<Product>>((ref) async {
@@ -13,9 +14,9 @@ final productsProvider = FutureProvider<List<Product>>((ref) async {
   );
 });
 
-final productWithCompareProvider = FutureProvider.family<Product, String>((ref, id) async {
+/// Full product detail: compare prices + related lists (GET /products/:id + /compare + /related).
+final productDetailBundleProvider = FutureProvider.family<ProductDetailBundle, String>((ref, id) async {
   final api = ref.read(localMarketApiProvider);
-  final product = await api.fetchProduct(id);
-  final compare = await api.fetchCompare(id);
-  return product.copyWith(comparePrices: compare);
+  return api.fetchProductDetailBundle(id);
 });
+

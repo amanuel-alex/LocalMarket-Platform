@@ -9,6 +9,7 @@ class Product {
     required this.sellerRating,
     required this.locationLabel,
     required this.description,
+    this.category = '',
     this.comparePrices = const [],
   });
 
@@ -21,6 +22,7 @@ class Product {
   final double sellerRating;
   final String locationLabel;
   final String description;
+  final String category;
   final List<CompareOffer> comparePrices;
 
   static String _placeholderImage(String id) =>
@@ -50,6 +52,7 @@ class Product {
           ? '${(lat as num).toStringAsFixed(2)}, ${(lng as num).toStringAsFixed(2)}'
           : 'Local',
       description: j['description'] as String? ?? '',
+      category: (j['category'] as String?) ?? '',
       comparePrices: const [],
     );
   }
@@ -73,11 +76,12 @@ class Product {
           ? '${(lat as num).toStringAsFixed(2)}, ${(lng as num).toStringAsFixed(2)}'
           : 'Local',
       description: j['description'] as String? ?? '',
+      category: (j['category'] as String?) ?? '',
       comparePrices: const [],
     );
   }
 
-  Product copyWith({List<CompareOffer>? comparePrices}) {
+  Product copyWith({List<CompareOffer>? comparePrices, String? category}) {
     return Product(
       id: id,
       title: title,
@@ -88,6 +92,7 @@ class Product {
       sellerRating: sellerRating,
       locationLabel: locationLabel,
       description: description,
+      category: category ?? this.category,
       comparePrices: comparePrices ?? this.comparePrices,
     );
   }
