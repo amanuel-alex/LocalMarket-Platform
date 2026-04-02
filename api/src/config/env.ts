@@ -38,8 +38,8 @@ const schema = z.object({
   GOOGLE_AI_API_KEY: z.string().optional().default(""),
   /** Same as GOOGLE_AI_API_KEY if you prefer this name in .env (either one works). */
   GEMINI_API_KEY: z.string().optional().default(""),
-  /** Gemini model id for generateContent (AI Studio). Default targets free-tier; 2.0-flash often has quota limit 0 on free tier — override with GEMINI_MODEL. */
-  GEMINI_MODEL: z.string().optional().default("gemini-1.5-flash-002"),
+  /** Gemini model id for generateContent (AI Studio). Use a current stable id — see https://ai.google.dev/gemini-api/docs/models */
+  GEMINI_MODEL: z.string().optional().default("gemini-2.5-flash"),
 });
 
 export type Env = z.infer<typeof schema>;

@@ -180,7 +180,7 @@ export async function runGeminiAssistantChat(
       throw new AppError(
         502,
         "GEMINI_MODEL_NOT_FOUND",
-        `Gemini model "${modelName}" is not available on the Generative Language API. Set GEMINI_MODEL in api/.env — try gemini-1.5-flash-002 or gemini-2.0-flash (paid tier may be required for 2.x).`,
+        `Gemini model "${modelName}" is not available on the Generative Language API. Set GEMINI_MODEL in api/.env — try gemini-2.5-flash, gemini-2.5-flash-lite, or gemini-flash-latest (see https://ai.google.dev/gemini-api/docs/models).`,
       );
     }
     if (/429|Too Many Requests|quota exceeded|Quota exceeded/i.test(msg)) {

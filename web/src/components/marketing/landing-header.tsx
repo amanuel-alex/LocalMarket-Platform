@@ -25,8 +25,15 @@ const LANGS: { code: LandingLocale; label: string }[] = [
   { code: "om", label: "Afaan Oromoo" },
 ];
 
+const NAV_DESKTOP =
+  "rounded-lg px-2 py-2 text-sm font-medium text-zinc-600 transition-colors hover:bg-zinc-100/80 hover:text-zinc-900 dark:text-zinc-400 dark:hover:bg-zinc-800/80 dark:hover:text-zinc-50 xl:px-2.5";
+
+const NAV_CTA =
+  "rounded-lg px-2 py-2 text-sm font-semibold text-amber-800 transition-colors hover:bg-amber-100/90 hover:text-amber-950 dark:text-amber-300 dark:hover:bg-amber-950/50 dark:hover:text-amber-100 xl:px-2.5";
+
 export function LandingHeader() {
   const { locale, setLocale, messages } = useLandingI18n();
+  const n = messages.nav;
   const [open, setOpen] = useState(false);
   const [scrolled, setScrolled] = useState(false);
 
@@ -37,22 +44,13 @@ export function LandingHeader() {
     return () => window.removeEventListener("scroll", onScroll);
   }, []);
 
-  type NavEntry =
-    | { type: "section"; label: string; href: string }
-    | { type: "shop"; label: string; href: string; title: string };
-
-  const nav: NavEntry[] = [
-    { type: "section", label: messages.nav.features, href: "#features" },
-    { type: "section", label: messages.nav.howItWorks, href: "#how-it-works" },
-    { type: "section", label: messages.nav.product, href: "#preview" },
-    {
-      type: "shop",
-      label: messages.nav.shopLocal,
-      href: "/shop",
-      title: messages.nav.shopLocalHint,
-    },
-    { type: "section", label: messages.nav.trending, href: "#trending" },
-    { type: "section", label: messages.nav.trust, href: "#trust" },
+  const links: { label: string; href: string; className?: string }[] = [
+    { label: n.home, href: "/" },
+    { label: n.shop, href: "/shop" },
+    { label: n.categories, href: "/#categories" },
+    { label: n.trending, href: "/#trending" },
+    { label: n.becomeSeller, href: "/register?seller=1", className: NAV_CTA },
+    { label: n.becomeDelivery, href: "/register?delivery=1", className: NAV_CTA },
   ];
 
   return (
@@ -60,13 +58,13 @@ export function LandingHeader() {
       className={cn(
         "fixed inset-x-0 top-0 z-50 transition-[background-color,box-shadow,backdrop-filter,border-color] duration-300",
         scrolled
-          ? "border-b border-zinc-200/80 bg-white/90 shadow-sm shadow-zinc-900/5 backdrop-blur-xl dark:border-zinc-800 dark:bg-zinc-950/90 dark:shadow-black/20"
-          : "border-b border-transparent bg-white/50 backdrop-blur-md dark:bg-zinc-950/50",
+          ? "border-b border-zinc-200/80 bg-white/95 shadow-sm shadow-zinc-900/5 backdrop-blur-xl dark:border-zinc-800 dark:bg-zinc-950/95 dark:shadow-black/20"
+          : "border-b border-transparent bg-white/80 backdrop-blur-md dark:bg-zinc-950/80",
       )}
     >
-      <div className="mx-auto flex h-16 max-w-6xl items-center justify-between gap-2 px-4 sm:px-6 lg:px-8">
+      <div className="mx-auto flex h-16 max-w-7xl items-center justify-between gap-2 px-4 sm:px-6 lg:px-8">
         <Link href="/" className="flex min-w-0 items-center gap-2">
-          <span className="flex size-9 shrink-0 items-center justify-center rounded-xl bg-gradient-to-br from-violet-600 to-indigo-600 text-sm font-bold text-white shadow-lg shadow-violet-500/25">
+          <span className="flex size-9 shrink-0 items-center justify-center rounded-lg bg-gradient-to-br from-amber-500 to-amber-600 text-sm font-bold text-zinc-950 shadow-md shadow-amber-500/25">
             E
           </span>
           <span className="truncate text-lg font-semibold tracking-tight text-zinc-900 dark:text-zinc-50">
@@ -75,27 +73,15 @@ export function LandingHeader() {
         </Link>
 
         <nav className="hidden items-center gap-0.5 lg:flex" aria-label="Primary">
-          {nav.map((item) =>
-            item.type === "shop" ? (
-              <Link
-                key={item.href}
-                href={item.href}
-                title={item.title}
-                aria-label={item.title}
-                className="rounded-lg px-2.5 py-2 text-sm font-semibold text-violet-700 transition-colors hover:bg-violet-100/90 hover:text-violet-900 dark:text-violet-300 dark:hover:bg-violet-950/60 dark:hover:text-violet-100 xl:px-3"
-              >
-                {item.label}
-              </Link>
-            ) : (
-              <a
-                key={item.href}
-                href={item.href}
-                className="rounded-lg px-2.5 py-2 text-sm font-medium text-zinc-600 transition-colors hover:bg-zinc-100/80 hover:text-zinc-900 dark:text-zinc-400 dark:hover:bg-zinc-800/80 dark:hover:text-zinc-50 xl:px-3"
-              >
-                {item.label}
-              </a>
-            ),
-          )}
+          {links.map((item) => (
+            <Link
+              key={item.href + item.label}
+              href={item.href}
+              className={item.className ?? NAV_DESKTOP}
+            >
+              {item.label}
+            </Link>
+          ))}
         </nav>
 
         <div className="hidden items-center gap-1.5 sm:flex">
@@ -104,7 +90,7 @@ export function LandingHeader() {
               <Button
                 variant="outline"
                 size="sm"
-                className="gap-2 rounded-xl border-zinc-200 bg-white/80 dark:border-zinc-700 dark:bg-zinc-900/80"
+                className="gap-2 rounded-lg border-zinc-200 bg-white/80 dark:border-zinc-700 dark:bg-zinc-900/80"
               >
                 <Globe className="size-4" />
                 <span className="hidden md:inline">{messages.header.language}</span>
@@ -120,7 +106,7 @@ export function LandingHeader() {
                   className="gap-2 rounded-lg"
                   onClick={() => setLocale(l.code)}
                 >
-                  {locale === l.code ? <Check className="size-4 text-violet-600" /> : <span className="size-4" />}
+                  {locale === l.code ? <Check className="size-4 text-amber-600" /> : <span className="size-4" />}
                   {l.label}
                 </DropdownMenuItem>
               ))}
@@ -129,12 +115,12 @@ export function LandingHeader() {
 
           <LandingThemeToggle />
 
-          <Button variant="ghost" asChild className="hidden rounded-xl text-zinc-700 dark:text-zinc-300 md:inline-flex">
+          <Button variant="ghost" asChild className="hidden rounded-lg text-zinc-700 dark:text-zinc-300 md:inline-flex">
             <Link href="/login">{messages.header.signIn}</Link>
           </Button>
           <Button
             asChild
-            className="rounded-xl bg-gradient-to-r from-violet-600 to-indigo-600 px-4 text-white shadow-md shadow-violet-500/25 transition hover:opacity-95 hover:shadow-lg hover:shadow-violet-500/30"
+            className="rounded-lg bg-zinc-900 px-4 text-white shadow-sm transition hover:bg-zinc-800 dark:bg-zinc-100 dark:text-zinc-900 dark:hover:bg-white"
           >
             <Link href="/register">{messages.header.getStarted}</Link>
           </Button>
@@ -144,7 +130,7 @@ export function LandingHeader() {
           <LandingThemeToggle />
           <button
             type="button"
-            className="flex size-10 items-center justify-center rounded-xl border border-zinc-200 bg-white/80 dark:border-zinc-700 dark:bg-zinc-900/80"
+            className="flex size-10 items-center justify-center rounded-lg border border-zinc-200 bg-white/80 dark:border-zinc-700 dark:bg-zinc-900/80"
             aria-label={open ? "Close menu" : "Open menu"}
             onClick={() => setOpen((o) => !o)}
           >
@@ -160,29 +146,19 @@ export function LandingHeader() {
           className="border-t border-zinc-200/80 bg-white/98 px-4 py-4 dark:border-zinc-800 dark:bg-zinc-950/98 sm:hidden"
         >
           <div className="flex flex-col gap-1">
-            {nav.map((item) =>
-              item.type === "shop" ? (
-                <Link
-                  key={item.href}
-                  href={item.href}
-                  title={item.title}
-                  aria-label={item.title}
-                  className="rounded-xl px-3 py-3 text-sm font-semibold text-violet-700 dark:text-violet-300"
-                  onClick={() => setOpen(false)}
-                >
-                  {item.label}
-                </Link>
-              ) : (
-                <a
-                  key={item.href}
-                  href={item.href}
-                  className="rounded-xl px-3 py-3 text-sm font-medium text-zinc-800 dark:text-zinc-200"
-                  onClick={() => setOpen(false)}
-                >
-                  {item.label}
-                </a>
-              ),
-            )}
+            {links.map((item) => (
+              <Link
+                key={item.href + item.label}
+                href={item.href}
+                className={cn(
+                  "rounded-xl px-3 py-3 text-sm font-medium text-zinc-800 dark:text-zinc-200",
+                  item.className?.includes("amber") && "font-semibold text-amber-800 dark:text-amber-300",
+                )}
+                onClick={() => setOpen(false)}
+              >
+                {item.label}
+              </Link>
+            ))}
             <hr className="my-2 border-zinc-200 dark:border-zinc-800" />
             <p className="px-3 text-xs font-semibold uppercase tracking-wide text-zinc-500">{messages.header.language}</p>
             <div className="flex flex-wrap gap-2 px-2 pb-2">
@@ -193,7 +169,7 @@ export function LandingHeader() {
                   className={cn(
                     "rounded-lg px-3 py-2 text-sm font-medium",
                     locale === l.code
-                      ? "bg-violet-100 text-violet-800 dark:bg-violet-950 dark:text-violet-200"
+                      ? "bg-amber-100 text-amber-900 dark:bg-amber-950 dark:text-amber-200"
                       : "bg-zinc-100 text-zinc-700 dark:bg-zinc-800 dark:text-zinc-300",
                   )}
                   onClick={() => {
@@ -214,7 +190,7 @@ export function LandingHeader() {
             </Link>
             <Link
               href="/register"
-              className="mt-1 rounded-xl bg-gradient-to-r from-violet-600 to-indigo-600 py-3 text-center text-sm font-semibold text-white"
+              className="mt-1 rounded-xl bg-zinc-900 py-3 text-center text-sm font-semibold text-white dark:bg-zinc-100 dark:text-zinc-900"
               onClick={() => setOpen(false)}
             >
               {messages.header.getStarted}

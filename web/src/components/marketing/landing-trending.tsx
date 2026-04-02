@@ -1,19 +1,22 @@
 "use client";
 
-import { motion } from "framer-motion";
-import { MapPin } from "lucide-react";
 import { useEffect, useState } from "react";
 
-import { fetchProducts, type ProductRow } from "@/lib/api";
+import { MarketplaceProductCard } from "@/components/marketplace/marketplace-product-card";
+import { MarketplaceProductShelf } from "@/components/marketplace/marketplace-product-shelf";
+import { fetchRankedProducts, type RankedProduct } from "@/lib/api";
 import { useLandingI18n } from "@/lib/i18n/landing-i18n-context";
-import { cn } from "@/lib/utils";
 
-const MOCK: ProductRow[] = [
+const MOCK: RankedProduct[] = [
   {
     id: "m1",
     title: "Teff flour · premium",
     description: "",
     price: 890,
+    quantity: 20,
+    sold: 2,
+    isSoldOut: false,
+    availableStock: 18,
     category: "Grains",
     location: { lat: 9.03, lng: 38.75 },
     imageUrl: null,
@@ -21,12 +24,20 @@ const MOCK: ProductRow[] = [
     sellerId: "s1",
     createdAt: new Date().toISOString(),
     updatedAt: new Date().toISOString(),
+    rankScore: 0.9,
+    distanceKm: 2.4,
+    locationSource: "mock",
+    sellerTrustScore: 4.6,
   },
   {
     id: "m2",
     title: "Roasted coffee · 500g",
     description: "",
     price: 450,
+    quantity: 30,
+    sold: 5,
+    isSoldOut: false,
+    availableStock: 25,
     category: "Beverages",
     location: { lat: 9.02, lng: 38.74 },
     imageUrl: null,
@@ -34,12 +45,20 @@ const MOCK: ProductRow[] = [
     sellerId: "s2",
     createdAt: new Date().toISOString(),
     updatedAt: new Date().toISOString(),
+    rankScore: 0.88,
+    distanceKm: 3.1,
+    locationSource: "mock",
+    sellerTrustScore: 4.4,
   },
   {
     id: "m3",
     title: "Local honey · jar",
     description: "",
     price: 620,
+    quantity: 15,
+    sold: 1,
+    isSoldOut: false,
+    availableStock: 14,
     category: "Pantry",
     location: { lat: 9.04, lng: 38.76 },
     imageUrl: null,
@@ -47,12 +66,20 @@ const MOCK: ProductRow[] = [
     sellerId: "s3",
     createdAt: new Date().toISOString(),
     updatedAt: new Date().toISOString(),
+    rankScore: 0.85,
+    distanceKm: 4.0,
+    locationSource: "mock",
+    sellerTrustScore: 4.7,
   },
   {
     id: "m4",
     title: "Fresh injera pack",
     description: "",
     price: 180,
+    quantity: 40,
+    sold: 12,
+    isSoldOut: false,
+    availableStock: 28,
     category: "Bakery",
     location: { lat: 9.01, lng: 38.73 },
     imageUrl: null,
@@ -60,12 +87,20 @@ const MOCK: ProductRow[] = [
     sellerId: "s4",
     createdAt: new Date().toISOString(),
     updatedAt: new Date().toISOString(),
+    rankScore: 0.82,
+    distanceKm: 5.2,
+    locationSource: "mock",
+    sellerTrustScore: 4.2,
   },
   {
     id: "m5",
     title: "Berbere spice blend",
     description: "",
     price: 320,
+    quantity: 25,
+    sold: 3,
+    isSoldOut: false,
+    availableStock: 22,
     category: "Spices",
     location: { lat: 9.05, lng: 38.77 },
     imageUrl: null,
@@ -73,18 +108,18 @@ const MOCK: ProductRow[] = [
     sellerId: "s5",
     createdAt: new Date().toISOString(),
     updatedAt: new Date().toISOString(),
+    rankScore: 0.8,
+    distanceKm: 6.0,
+    locationSource: "mock",
+    sellerTrustScore: 4.5,
   },
 ];
 
-function formatLocation(p: ProductRow, fallback: string) {
-  const { lat, lng } = p.location;
-  if (lat && lng) return `${lat.toFixed(2)}°, ${lng.toFixed(2)}°`;
-  return fallback;
-}
-
 export function LandingTrending() {
   const { messages } = useLandingI18n();
-  const [rows, setRows] = useState<ProductRow[]>([]);
+  const m = messages.marketplace;
+  const t = messages.trending;
+  const [rows, setRows] = useState<RankedProduct[]>([]);
   const [loading, setLoading] = useState(true);
   const [showSamplesNote, setShowSamplesNote] = useState(false);
 
@@ -92,10 +127,10 @@ export function LandingTrending() {
     let c = false;
     (async () => {
       try {
-        const d = await fetchProducts({ limit: 12, page: 1 });
+        const { products } = await fetchRankedProducts({ limit: 12 });
         if (c) return;
-        if (d.products.length > 0) {
-          setRows(d.products);
+        if (products.length > 0) {
+          setRows(products);
           setShowSamplesNote(false);
         } else {
           setRows(MOCK);
@@ -115,79 +150,46 @@ export function LandingTrending() {
     };
   }, []);
 
-  const display = loading ? [] : rows;
+  if (loading) {
+    return (
+      <section id="trending" className="scroll-mt-24 border-y border-zinc-200/80 bg-zinc-50 py-14 dark:border-zinc-800 dark:bg-zinc-950">
+        <div className="mx-auto max-w-7xl px-4 sm:px-6 lg:px-8">
+          <p className="text-center text-sm text-zinc-500">{t.loading}</p>
+        </div>
+      </section>
+    );
+  }
+
+  if (rows.length === 0) {
+    return (
+      <section id="trending" className="scroll-mt-24 border-y border-zinc-200/80 bg-zinc-50 py-14 dark:border-zinc-800 dark:bg-zinc-950">
+        <div className="mx-auto max-w-7xl px-4 sm:px-6 lg:px-8">
+          <p className="text-center text-sm text-zinc-500">{t.empty}</p>
+        </div>
+      </section>
+    );
+  }
 
   return (
-    <section id="trending" className="scroll-mt-24 border-y border-zinc-200/80 py-20 dark:border-zinc-800 md:py-28">
-      <div className="mx-auto max-w-6xl px-4 sm:px-6 lg:px-8">
-        <div className="mx-auto max-w-2xl text-center">
-          <p className="text-sm font-semibold uppercase tracking-widest text-violet-600 dark:text-violet-400">
-            {messages.trending.eyebrow}
-          </p>
-          <h2 className="mt-3 text-balance text-3xl font-semibold tracking-tight text-zinc-900 dark:text-zinc-50 md:text-4xl">
-            {messages.trending.title}
-          </h2>
-          <p className="mt-4 text-pretty text-lg text-zinc-600 dark:text-zinc-400">{messages.trending.subtitle}</p>
-          {showSamplesNote && !loading ? (
-            <p className="mx-auto mt-3 max-w-xl text-pretty text-xs leading-relaxed text-zinc-500 dark:text-zinc-500">
-              {messages.trending.samplesNote}
-            </p>
-          ) : null}
-        </div>
-
-        {loading ? (
-          <p className="mt-12 text-center text-sm text-zinc-500">{messages.trending.loading}</p>
-        ) : display.length === 0 ? (
-          <p className="mt-12 text-center text-sm text-zinc-500">{messages.trending.empty}</p>
-        ) : (
-          <div className="relative mt-12">
-            <div className="pointer-events-none absolute inset-y-0 left-0 z-10 w-12 bg-gradient-to-r from-zinc-50 to-transparent dark:from-zinc-950" />
-            <div className="pointer-events-none absolute inset-y-0 right-0 z-10 w-12 bg-gradient-to-l from-zinc-50 to-transparent dark:from-zinc-950" />
-            <div
-              className="-mx-4 flex snap-x snap-mandatory gap-4 overflow-x-auto pb-4 pt-2 scrollbar-thin sm:mx-0 sm:px-1"
-              style={{ scrollbarWidth: "thin" }}
-            >
-              {display.map((p, i) => (
-                <motion.article
-                  key={p.id}
-                  initial={{ opacity: 0, x: 24 }}
-                  whileInView={{ opacity: 1, x: 0 }}
-                  viewport={{ once: true, margin: "-40px" }}
-                  transition={{ delay: i * 0.05, duration: 0.45, ease: [0.22, 1, 0.36, 1] }}
-                  whileHover={{ y: -6, transition: { type: "spring", stiffness: 400, damping: 22 } }}
-                  className={cn(
-                    "w-[min(85vw,280px)] shrink-0 snap-start overflow-hidden rounded-2xl border border-zinc-200/90 bg-white shadow-md",
-                    "dark:border-zinc-800 dark:bg-zinc-900/80 dark:shadow-zinc-950/50",
-                  )}
-                >
-                  <div className="relative aspect-[4/3] bg-gradient-to-br from-violet-100 to-indigo-50 dark:from-violet-950/50 dark:to-indigo-950/40">
-                    {p.imageUrl ? (
-                      // eslint-disable-next-line @next/next/no-img-element
-                      <img src={p.imageUrl} alt="" className="size-full object-cover" />
-                    ) : (
-                      <div className="flex size-full items-center justify-center text-4xl font-semibold text-violet-300/80 dark:text-violet-700/50">
-                        {p.title.slice(0, 1)}
-                      </div>
-                    )}
-                  </div>
-                  <div className="space-y-2 p-4">
-                    <h3 className="line-clamp-2 text-sm font-semibold leading-snug text-zinc-900 dark:text-zinc-50">
-                      {p.title}
-                    </h3>
-                    <p className="text-lg font-bold tracking-tight text-violet-700 dark:text-violet-400">
-                      ETB {p.price.toLocaleString()}
-                    </p>
-                    <p className="flex items-center gap-1.5 text-xs text-zinc-500 dark:text-zinc-400">
-                      <MapPin className="size-3.5 shrink-0 text-violet-500" />
-                      {formatLocation(p, messages.trending.locationFallback)}
-                    </p>
-                  </div>
-                </motion.article>
-              ))}
-            </div>
+    <div className="border-y border-zinc-200/80 bg-zinc-50 dark:border-zinc-800 dark:bg-zinc-950">
+      <MarketplaceProductShelf
+        id="trending"
+        title={t.title}
+        subtitle={t.subtitle}
+        viewAllHref="/shop"
+        viewAllLabel={m.trendingSeeAll}
+        announcement={
+          showSamplesNote ? (
+            <p className="text-center text-xs text-zinc-500 dark:text-zinc-400">{t.samplesNote}</p>
+          ) : undefined
+        }
+      >
+        {rows.map((p) => (
+          <div key={p.id} className="shrink-0">
+            <MarketplaceProductCard product={p} href={`/shop/product/${p.id}`} badge="Trending" />
           </div>
-        )}
-      </div>
-    </section>
+        ))}
+      </MarketplaceProductShelf>
+    </div>
   );
 }

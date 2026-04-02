@@ -41,7 +41,11 @@ class AiChatBubble extends StatelessWidget {
                 ? LinearGradient(colors: [scheme.primary, scheme.primary.withValues(alpha: 0.88)])
                 : null,
             color: fromUser ? null : scheme.surfaceContainerHighest.withValues(alpha: 0.72),
-            border: Border.all(color: fromUser ? Colors.transparent : scheme.outline.withValues(alpha: 0.08)),
+            border: Border.all(
+              color: fromUser
+                  ? Colors.transparent
+                  : scheme.outline.withValues(alpha: Theme.of(context).brightness == Brightness.dark ? 0.35 : 0.12),
+            ),
             boxShadow: [
               if (!fromUser)
                 BoxShadow(
@@ -56,6 +60,7 @@ class AiChatBubble extends StatelessWidget {
             style: Theme.of(context).textTheme.bodyMedium?.copyWith(
                   color: fromUser ? Colors.white : scheme.onSurface,
                   height: 1.45,
+                  fontWeight: fromUser ? null : FontWeight.w500,
                 ),
           ),
         ),
@@ -238,11 +243,13 @@ class AiChatComposer extends StatelessWidget {
                   maxLines: 5,
                   textInputAction: TextInputAction.send,
                   onSubmitted: (_) => onSend(),
+                  style: TextStyle(color: scheme.onSurface, fontSize: 16),
+                  cursorColor: scheme.primary,
                   decoration: InputDecoration(
                     hintText: 'Ask EthioLocal…',
                     border: InputBorder.none,
                     contentPadding: const EdgeInsets.symmetric(horizontal: 18, vertical: 14),
-                    hintStyle: TextStyle(color: scheme.onSurface.withValues(alpha: 0.45)),
+                    hintStyle: TextStyle(color: scheme.onSurfaceVariant, fontSize: 16),
                   ),
                 ),
               ),
