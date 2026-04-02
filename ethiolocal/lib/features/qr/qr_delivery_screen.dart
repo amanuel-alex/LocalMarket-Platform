@@ -4,6 +4,7 @@ import 'package:go_router/go_router.dart';
 import 'package:qr_flutter/qr_flutter.dart';
 
 import '../../core/providers/orders_provider.dart';
+import '../../core/widgets/error_retry.dart';
 import '../../core/widgets/glass_card.dart';
 
 class QrDeliveryScreen extends ConsumerWidget {
@@ -23,81 +24,146 @@ class QrDeliveryScreen extends ConsumerWidget {
       ),
       body: async.when(
         loading: () => const Center(child: CircularProgressIndicator.adaptive()),
-        error: (e, _) => Center(child: Padding(padding: const EdgeInsets.all(24), child: Text(e.toString()))),
+        error: (e, _) => ErrorRetryView(
+          message: e.toString(),
+          onRetry: () => ref.invalidate(orderDetailProvider(orderId)),
+        ),
         data: (order) {
           final payload = order?.pickupQrToken ?? order?.deliveryQrPayload ?? 'ETHIOLOCAL|$orderId';
-          return Center(
-            child: SingleChildScrollView(
-              padding: const EdgeInsets.all(28),
-              child: Column(
-                children: [
-                  Text(
-                    'Almost there',
-                    style: Theme.of(context).textTheme.headlineSmall?.copyWith(fontWeight: FontWeight.w800),
-                  ),
-                  const SizedBox(height: 10),
-                  Text(
-                    'Show this to the seller to confirm delivery',
-                    textAlign: TextAlign.center,
-                    style: Theme.of(context).textTheme.bodyLarge?.copyWith(
-                          color: scheme.onSurface.withValues(alpha: 0.65),
-                          height: 1.5,
-                        ),
-                  ),
-                  const SizedBox(height: 36),
-                  GlassCard(
-                    padding: const EdgeInsets.all(28),
-                    borderRadius: 28,
-                    child: Column(
-                      children: [
-                        Container(
-                          padding: const EdgeInsets.all(16),
-                          decoration: BoxDecoration(
-                            color: Colors.white,
-                            borderRadius: BorderRadius.circular(20),
-                            boxShadow: [
-                              BoxShadow(
-                                color: Colors.black.withValues(alpha: 0.06),
-                                blurRadius: 24,
-                                offset: const Offset(0, 12),
+          return LayoutBuilder(
+            builder: (context, constraints) {
+              return SingleChildScrollView(
+                padding: const EdgeInsets.symmetric(horizontal: 24, vertical: 20),
+                child: ConstrainedBox(
+                  constraints: BoxConstraints(minHeight: constraints.maxHeight - 40),
+                  child: Column(
+                    mainAxisAlignment: MainAxisAlignment.center,
+                    children: [
+                      Text(
+                        'Delivery QR',
+                        style: Theme.of(context).textTheme.headlineSmall?.copyWith(fontWeight: FontWeight.w800),
+                      ),
+                      const SizedBox(height: 8),
+                      Text(
+                        'The seller scans this code to verify your order.',
+                        textAlign: TextAlign.center,
+                        style: Theme.of(context).textTheme.bodyLarge?.copyWith(
+                              color: scheme.onSurface.withValues(alpha: 0.65),
+                              height: 1.45,
+                            ),
+                      ),
+                      const SizedBox(height: 28),
+                      _QrInstructionStep(number: 1, text: 'Keep brightness up so the code scans clearly.'),
+                      const SizedBox(height: 10),
+                      _QrInstructionStep(number: 2, text: 'Hand your phone to the seller or hold it steady.'),
+                      const SizedBox(height: 10),
+                      _QrInstructionStep(number: 3, text: 'Wait for confirmation before leaving.'),
+                      const SizedBox(height: 32),
+                      Center(
+                        child: GlassCard(
+                          padding: const EdgeInsets.all(24),
+                          borderRadius: 28,
+                          child: Column(
+                            mainAxisSize: MainAxisSize.min,
+                            children: [
+                              Container(
+                                padding: const EdgeInsets.all(18),
+                                decoration: BoxDecoration(
+                                  color: Theme.of(context).brightness == Brightness.dark ? scheme.surface : Colors.white,
+                                  borderRadius: BorderRadius.circular(22),
+                                  boxShadow: [
+                                    BoxShadow(
+                                      color: Colors.black.withValues(alpha: 0.08),
+                                      blurRadius: 28,
+                                      offset: const Offset(0, 14),
+                                    ),
+                                  ],
+                                ),
+                                child: QrImageView(
+                                  data: payload,
+                                  version: QrVersions.auto,
+                                  size: 240,
+                                  eyeStyle: QrEyeStyle(
+                                    eyeShape: QrEyeShape.square,
+                                    color: scheme.primary,
+                                  ),
+                                  dataModuleStyle: QrDataModuleStyle(
+                                    dataModuleShape: QrDataModuleShape.square,
+                                    color: scheme.onSurface.withValues(alpha: 0.9),
+                                  ),
+                                  gapless: true,
+                                ),
+                              ),
+                              const SizedBox(height: 18),
+                              Text(
+                                'Order · ${orderId.length > 10 ? orderId.substring(orderId.length - 8) : orderId}',
+                                style: Theme.of(context).textTheme.labelLarge?.copyWith(
+                                      color: scheme.onSurface.withValues(alpha: 0.55),
+                                      letterSpacing: 0.2,
+                                    ),
                               ),
                             ],
                           ),
-                          child: QrImageView(
-                            data: payload,
-                            version: QrVersions.auto,
-                            size: 220,
-                            eyeStyle: const QrEyeStyle(eyeShape: QrEyeShape.square, color: Color(0xFF312E81)),
-                            dataModuleStyle: const QrDataModuleStyle(dataModuleShape: QrDataModuleShape.square, color: Color(0xFF1E1B4B)),
-                            gapless: true,
-                          ),
                         ),
-                        const SizedBox(height: 20),
-                        Text(
-                          'Order ${orderId.length > 10 ? orderId.substring(orderId.length - 8) : orderId}',
-                          style: Theme.of(context).textTheme.labelLarge?.copyWith(
-                                color: scheme.onSurface.withValues(alpha: 0.55),
-                              ),
+                      ),
+                      const SizedBox(height: 32),
+                      FilledButton.tonalIcon(
+                        onPressed: () => context.pop(),
+                        icon: const Icon(Icons.check_circle_outline_rounded),
+                        label: const Text('Done'),
+                        style: FilledButton.styleFrom(
+                          padding: const EdgeInsets.symmetric(horizontal: 28, vertical: 14),
+                          shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(16)),
                         ),
-                      ],
-                    ),
+                      ),
+                    ],
                   ),
-                  const SizedBox(height: 28),
-                  FilledButton.tonalIcon(
-                    onPressed: () => context.pop(),
-                    icon: const Icon(Icons.check_circle_outline_rounded),
-                    label: const Text('Done'),
-                    style: FilledButton.styleFrom(
-                      padding: const EdgeInsets.symmetric(horizontal: 28, vertical: 14),
-                      shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(16)),
-                    ),
-                  ),
-                ],
-              ),
-            ),
+                ),
+              );
+            },
           );
         },
       ),
+    );
+  }
+}
+
+class _QrInstructionStep extends StatelessWidget {
+  const _QrInstructionStep({required this.number, required this.text});
+
+  final int number;
+  final String text;
+
+  @override
+  Widget build(BuildContext context) {
+    final scheme = Theme.of(context).colorScheme;
+    return Row(
+      crossAxisAlignment: CrossAxisAlignment.start,
+      children: [
+        Container(
+          width: 28,
+          height: 28,
+          alignment: Alignment.center,
+          decoration: BoxDecoration(
+            color: scheme.primary.withValues(alpha: 0.12),
+            borderRadius: BorderRadius.circular(10),
+          ),
+          child: Text(
+            '$number',
+            style: Theme.of(context).textTheme.labelLarge?.copyWith(fontWeight: FontWeight.w800, color: scheme.primary),
+          ),
+        ),
+        const SizedBox(width: 12),
+        Expanded(
+          child: Text(
+            text,
+            style: Theme.of(context).textTheme.bodyMedium?.copyWith(
+                  color: scheme.onSurface.withValues(alpha: 0.72),
+                  height: 1.4,
+                ),
+          ),
+        ),
+      ],
     );
   }
 }

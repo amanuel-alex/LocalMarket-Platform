@@ -4,10 +4,12 @@ import 'package:go_router/go_router.dart';
 import 'package:intl/intl.dart';
 
 import '../../core/api/api_exception.dart';
+import '../../core/config/order_fees.dart';
 import '../../core/providers/api_providers.dart';
 import '../../core/providers/auth_session_provider.dart';
 import '../../core/providers/cart_provider.dart';
 import '../../core/providers/orders_provider.dart';
+import '../../core/widgets/empty_state.dart';
 import '../../core/widgets/glass_card.dart';
 import '../../core/widgets/gradient_cta.dart';
 
@@ -67,17 +69,19 @@ class _CheckoutScreenState extends ConsumerState<CheckoutScreen> {
   Widget build(BuildContext context) {
     final lines = ref.watch(cartProvider);
     final subtotal = lines.subtotal;
-    const commissionRate = 0.03;
-    const deliveryFlat = 85.0;
-    final commission = subtotal * commissionRate;
-    final total = subtotal + commission + deliveryFlat;
+    final platformFee = platformFeeEtb(subtotal);
+    final total = estimatedOrderTotalEtb(subtotal);
     final pay = ref.watch(_paymentProvider);
 
     if (lines.isEmpty) {
       return Scaffold(
         appBar: AppBar(title: const Text('Checkout')),
-        body: Center(
-          child: TextButton(onPressed: () => context.go('/home'), child: const Text('Back to shopping')),
+        body: EthioEmptyState(
+          title: 'Nothing to checkout',
+          subtitle: 'Add items from the home feed or AI assistant, then return here.',
+          icon: Icons.shopping_cart_outlined,
+          actionLabel: 'Browse',
+          onAction: () => context.go('/home'),
         ),
       );
     }
@@ -110,9 +114,9 @@ class _CheckoutScreenState extends ConsumerState<CheckoutScreen> {
                 const Divider(height: 28),
                 _PriceRow(label: 'Product total', value: _etb.format(subtotal)),
                 const SizedBox(height: 8),
-                _PriceRow(label: 'Platform commission (3%)', value: _etb.format(commission)),
+                _PriceRow(label: 'Platform fee (${(kPlatformFeeRate * 100).toStringAsFixed(0)}%)', value: _etb.format(platformFee)),
                 const SizedBox(height: 8),
-                _PriceRow(label: 'Delivery estimate', value: _etb.format(deliveryFlat)),
+                _PriceRow(label: 'Delivery estimate', value: _etb.format(kDeliveryEstimateEtb)),
                 const Divider(height: 28),
                 Row(
                   children: [

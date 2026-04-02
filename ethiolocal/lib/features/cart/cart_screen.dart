@@ -4,8 +4,10 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
 import 'package:intl/intl.dart';
 
+import '../../core/config/order_fees.dart';
 import '../../core/providers/cart_provider.dart';
 import '../../core/widgets/empty_state.dart';
+import '../../core/widgets/glass_card.dart';
 import '../../core/widgets/gradient_cta.dart';
 
 final _etb = NumberFormat.currency(symbol: 'Br ', decimalDigits: 0);
@@ -17,6 +19,8 @@ class CartScreen extends ConsumerWidget {
   Widget build(BuildContext context, WidgetRef ref) {
     final lines = ref.watch(cartProvider);
     final subtotal = lines.subtotal;
+    final fee = platformFeeEtb(subtotal);
+    final estTotal = estimatedOrderTotalEtb(subtotal);
 
     return Scaffold(
       appBar: AppBar(
@@ -115,13 +119,43 @@ class CartScreen extends ConsumerWidget {
                 Padding(
                   padding: const EdgeInsets.fromLTRB(20, 0, 20, 24),
                   child: Column(
+                    crossAxisAlignment: CrossAxisAlignment.stretch,
                     children: [
-                      Row(
-                        children: [
-                          Text('Subtotal', style: Theme.of(context).textTheme.titleMedium),
-                          const Spacer(),
-                          Text(_etb.format(subtotal), style: Theme.of(context).textTheme.titleMedium?.copyWith(fontWeight: FontWeight.w800)),
-                        ],
+                      GlassCard(
+                        padding: const EdgeInsets.all(18),
+                        child: Column(
+                          crossAxisAlignment: CrossAxisAlignment.start,
+                          children: [
+                            Text('Price breakdown', style: Theme.of(context).textTheme.titleSmall?.copyWith(fontWeight: FontWeight.w800)),
+                            const SizedBox(height: 12),
+                            _CartPriceRow(label: 'Products', value: _etb.format(subtotal)),
+                            const SizedBox(height: 8),
+                            _CartPriceRow(
+                              label: 'Platform fee (${(kPlatformFeeRate * 100).toStringAsFixed(0)}%)',
+                              value: _etb.format(fee),
+                            ),
+                            const SizedBox(height: 8),
+                            _CartPriceRow(label: 'Delivery (est.)', value: _etb.format(kDeliveryEstimateEtb)),
+                            const Divider(height: 22),
+                            Row(
+                              children: [
+                                Text('Estimated total', style: Theme.of(context).textTheme.titleSmall?.copyWith(fontWeight: FontWeight.w800)),
+                                const Spacer(),
+                                Text(
+                                  _etb.format(estTotal),
+                                  style: Theme.of(context).textTheme.titleMedium?.copyWith(fontWeight: FontWeight.w900),
+                                ),
+                              ],
+                            ),
+                            const SizedBox(height: 8),
+                            Text(
+                              'Final amounts are confirmed at checkout and payment.',
+                              style: Theme.of(context).textTheme.labelSmall?.copyWith(
+                                    color: Theme.of(context).colorScheme.onSurface.withValues(alpha: 0.5),
+                                  ),
+                            ),
+                          ],
+                        ),
                       ),
                       const SizedBox(height: 14),
                       GradientCta(
@@ -134,6 +168,29 @@ class CartScreen extends ConsumerWidget {
                 ),
               ],
             ),
+    );
+  }
+}
+
+class _CartPriceRow extends StatelessWidget {
+  const _CartPriceRow({required this.label, required this.value});
+
+  final String label;
+  final String value;
+
+  @override
+  Widget build(BuildContext context) {
+    final scheme = Theme.of(context).colorScheme;
+    return Row(
+      children: [
+        Expanded(
+          child: Text(
+            label,
+            style: Theme.of(context).textTheme.bodyMedium?.copyWith(color: scheme.onSurface.withValues(alpha: 0.65)),
+          ),
+        ),
+        Text(value, style: Theme.of(context).textTheme.bodyLarge?.copyWith(fontWeight: FontWeight.w600)),
+      ],
     );
   }
 }

@@ -7,6 +7,7 @@ import '../../core/models/order.dart';
 import '../../core/providers/orders_provider.dart';
 import '../../core/widgets/empty_state.dart';
 import '../../core/widgets/error_retry.dart';
+import '../../core/widgets/skeletons.dart';
 
 final _etb = NumberFormat.currency(symbol: 'Br ', decimalDigits: 0);
 final _dateFmt = DateFormat.MMMd();
@@ -21,7 +22,12 @@ class OrdersScreen extends ConsumerWidget {
     return Scaffold(
       appBar: AppBar(title: const Text('Orders')),
       body: async.when(
-        loading: () => const Center(child: CircularProgressIndicator.adaptive()),
+        loading: () => ListView.separated(
+              padding: const EdgeInsets.all(20),
+              itemCount: 6,
+              separatorBuilder: (_, unusedIndex) => const SizedBox(height: 12),
+              itemBuilder: (_, unusedIndex) => const OrderTileSkeleton(),
+            ),
         error: (e, _) => ErrorRetryView(
           message: e.toString(),
           onRetry: () => ref.invalidate(ordersProvider),

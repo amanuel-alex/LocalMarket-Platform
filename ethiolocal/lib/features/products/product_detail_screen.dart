@@ -96,8 +96,8 @@ class _ProductDetailBody extends ConsumerWidget {
                     CachedNetworkImage(
                       imageUrl: product.imageUrl,
                       fit: BoxFit.cover,
-                      placeholder: (_, __) => Container(color: scheme.surfaceContainerHighest),
-                      errorWidget: (_, __, ___) => Container(color: scheme.surfaceContainerHighest),
+                      placeholder: (context, progress) => Container(color: scheme.surfaceContainerHighest),
+                      errorWidget: (context, url, stackTrace) => Container(color: scheme.surfaceContainerHighest),
                     ),
                     DecoratedBox(
                       decoration: BoxDecoration(

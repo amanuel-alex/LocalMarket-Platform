@@ -85,8 +85,8 @@ class _StripCard extends StatelessWidget {
                 imageUrl: product.imageUrl,
                 width: double.infinity,
                 fit: BoxFit.cover,
-                placeholder: (_, __) => Container(color: scheme.surfaceContainerHighest),
-                errorWidget: (_, __, ___) => Container(
+                placeholder: (context, progress) => Container(color: scheme.surfaceContainerHighest),
+                errorWidget: (context, url, stackTrace) => Container(
                   color: scheme.surfaceContainerHighest,
                   child: Icon(Icons.image_not_supported_outlined, color: scheme.onSurfaceVariant, size: 28),
                 ),
