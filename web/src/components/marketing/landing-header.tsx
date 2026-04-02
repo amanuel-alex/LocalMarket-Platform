@@ -37,12 +37,22 @@ export function LandingHeader() {
     return () => window.removeEventListener("scroll", onScroll);
   }, []);
 
-  const nav = [
-    { label: messages.nav.features, href: "#features" },
-    { label: messages.nav.howItWorks, href: "#how-it-works" },
-    { label: messages.nav.product, href: "#preview" },
-    { label: messages.nav.trending, href: "#trending" },
-    { label: messages.nav.trust, href: "#trust" },
+  type NavEntry =
+    | { type: "section"; label: string; href: string }
+    | { type: "shop"; label: string; href: string; title: string };
+
+  const nav: NavEntry[] = [
+    { type: "section", label: messages.nav.features, href: "#features" },
+    { type: "section", label: messages.nav.howItWorks, href: "#how-it-works" },
+    { type: "section", label: messages.nav.product, href: "#preview" },
+    {
+      type: "shop",
+      label: messages.nav.shopLocal,
+      href: "/shop",
+      title: messages.nav.shopLocalHint,
+    },
+    { type: "section", label: messages.nav.trending, href: "#trending" },
+    { type: "section", label: messages.nav.trust, href: "#trust" },
   ];
 
   return (
@@ -64,16 +74,28 @@ export function LandingHeader() {
           </span>
         </Link>
 
-        <nav className="hidden items-center gap-0.5 lg:flex">
-          {nav.map((item) => (
-            <a
-              key={item.href}
-              href={item.href}
-              className="rounded-lg px-2.5 py-2 text-sm font-medium text-zinc-600 transition-colors hover:bg-zinc-100/80 hover:text-zinc-900 dark:text-zinc-400 dark:hover:bg-zinc-800/80 dark:hover:text-zinc-50 xl:px-3"
-            >
-              {item.label}
-            </a>
-          ))}
+        <nav className="hidden items-center gap-0.5 lg:flex" aria-label="Primary">
+          {nav.map((item) =>
+            item.type === "shop" ? (
+              <Link
+                key={item.href}
+                href={item.href}
+                title={item.title}
+                aria-label={item.title}
+                className="rounded-lg px-2.5 py-2 text-sm font-semibold text-violet-700 transition-colors hover:bg-violet-100/90 hover:text-violet-900 dark:text-violet-300 dark:hover:bg-violet-950/60 dark:hover:text-violet-100 xl:px-3"
+              >
+                {item.label}
+              </Link>
+            ) : (
+              <a
+                key={item.href}
+                href={item.href}
+                className="rounded-lg px-2.5 py-2 text-sm font-medium text-zinc-600 transition-colors hover:bg-zinc-100/80 hover:text-zinc-900 dark:text-zinc-400 dark:hover:bg-zinc-800/80 dark:hover:text-zinc-50 xl:px-3"
+              >
+                {item.label}
+              </a>
+            ),
+          )}
         </nav>
 
         <div className="hidden items-center gap-1.5 sm:flex">
@@ -108,9 +130,6 @@ export function LandingHeader() {
           <LandingThemeToggle />
 
           <Button variant="ghost" asChild className="hidden rounded-xl text-zinc-700 dark:text-zinc-300 md:inline-flex">
-            <Link href="/shop">{messages.header.shop}</Link>
-          </Button>
-          <Button variant="ghost" asChild className="hidden rounded-xl text-zinc-700 dark:text-zinc-300 md:inline-flex">
             <Link href="/login">{messages.header.signIn}</Link>
           </Button>
           <Button
@@ -141,16 +160,29 @@ export function LandingHeader() {
           className="border-t border-zinc-200/80 bg-white/98 px-4 py-4 dark:border-zinc-800 dark:bg-zinc-950/98 sm:hidden"
         >
           <div className="flex flex-col gap-1">
-            {nav.map((item) => (
-              <a
-                key={item.href}
-                href={item.href}
-                className="rounded-xl px-3 py-3 text-sm font-medium text-zinc-800 dark:text-zinc-200"
-                onClick={() => setOpen(false)}
-              >
-                {item.label}
-              </a>
-            ))}
+            {nav.map((item) =>
+              item.type === "shop" ? (
+                <Link
+                  key={item.href}
+                  href={item.href}
+                  title={item.title}
+                  aria-label={item.title}
+                  className="rounded-xl px-3 py-3 text-sm font-semibold text-violet-700 dark:text-violet-300"
+                  onClick={() => setOpen(false)}
+                >
+                  {item.label}
+                </Link>
+              ) : (
+                <a
+                  key={item.href}
+                  href={item.href}
+                  className="rounded-xl px-3 py-3 text-sm font-medium text-zinc-800 dark:text-zinc-200"
+                  onClick={() => setOpen(false)}
+                >
+                  {item.label}
+                </a>
+              ),
+            )}
             <hr className="my-2 border-zinc-200 dark:border-zinc-800" />
             <p className="px-3 text-xs font-semibold uppercase tracking-wide text-zinc-500">{messages.header.language}</p>
             <div className="flex flex-wrap gap-2 px-2 pb-2">
@@ -173,13 +205,6 @@ export function LandingHeader() {
                 </button>
               ))}
             </div>
-            <Link
-              href="/shop"
-              className="rounded-xl px-3 py-3 text-sm font-medium text-zinc-800 dark:text-zinc-200"
-              onClick={() => setOpen(false)}
-            >
-              {messages.header.shop}
-            </Link>
             <Link
               href="/login"
               className="rounded-xl px-3 py-3 text-sm font-medium text-zinc-600 dark:text-zinc-400"
