@@ -4,8 +4,10 @@ import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 
 import '../core/providers/app_state_provider.dart';
+import '../core/providers/auth_session_provider.dart';
 import '../core/providers/theme_mode_provider.dart';
 import '../core/router/app_router.dart';
+import '../core/router/go_router_refresh.dart';
 import '../core/theme/app_theme.dart';
 
 class EthioLocalApp extends ConsumerWidget {
@@ -13,6 +15,13 @@ class EthioLocalApp extends ConsumerWidget {
 
   @override
   Widget build(BuildContext context, WidgetRef ref) {
+    ref.listen(onboardingCompleteProvider, (prev, next) {
+      ref.read(goRouterRefreshProvider).notify();
+    });
+    ref.listen(authSessionProvider, (prev, next) {
+      ref.read(goRouterRefreshProvider).notify();
+    });
+
     final themeMode = ref.watch(themeModeProvider);
     final router = ref.watch(appRouterProvider);
     final locale = ref.watch(localeProvider);

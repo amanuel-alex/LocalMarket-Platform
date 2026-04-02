@@ -16,6 +16,7 @@ import '../../features/qr/qr_delivery_screen.dart';
 import '../../features/shell/main_shell.dart';
 import '../providers/app_state_provider.dart';
 import '../providers/auth_session_provider.dart';
+import 'go_router_refresh.dart';
 
 CustomTransitionPage<void> _fadeSlide(Widget child, LocalKey key) {
   return CustomTransitionPage<void>(
@@ -35,14 +36,15 @@ CustomTransitionPage<void> _fadeSlide(Widget child, LocalKey key) {
 }
 
 final appRouterProvider = Provider<GoRouter>((ref) {
-  ref.watch(onboardingCompleteProvider);
-  ref.watch(authSessionProvider);
+  final refresh = ref.watch(goRouterRefreshProvider);
 
   return GoRouter(
     initialLocation: '/splash',
+    refreshListenable: refresh,
     redirect: (context, state) {
-      final onboarding = ref.read(onboardingCompleteProvider);
-      final authed = ref.read(authSessionProvider) != null;
+      final container = ProviderScope.containerOf(context);
+      final onboarding = container.read(onboardingCompleteProvider);
+      final authed = container.read(authSessionProvider) != null;
       final loc = state.matchedLocation;
 
       if (loc == '/splash') return null;
