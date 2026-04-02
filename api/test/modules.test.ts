@@ -214,7 +214,7 @@ describe("Inventory", () => {
       price: 10,
       category: "c",
       location: { lat: 0, lng: 0 },
-      stockQuantity: 1,
+      quantity: 1,
     });
     expect(pr.status).toBe(201);
     const productId = pr.body.product.id;
@@ -236,7 +236,7 @@ describe("Inventory", () => {
       price: 5,
       category: "c",
       location: { lat: 0, lng: 0 },
-      stockQuantity: 2,
+      quantity: 2,
     });
     expect(pr.status).toBe(201);
     const productId = pr.body.product.id;
@@ -249,7 +249,7 @@ describe("Inventory", () => {
     expect(ord.status).toBe(201);
 
     let p = await prisma.product.findUnique({ where: { id: productId } });
-    expect(p!.stockQuantity).toBe(1);
+    expect(p!.sold).toBe(1);
 
     const cancel = await api()
       .post(`/orders/${ord.body.order.id}/cancel`)
@@ -258,7 +258,7 @@ describe("Inventory", () => {
     expect(cancel.body.order.status).toBe("cancelled");
 
     p = await prisma.product.findUnique({ where: { id: productId } });
-    expect(p!.stockQuantity).toBe(2);
+    expect(p!.sold).toBe(0);
   });
 });
 

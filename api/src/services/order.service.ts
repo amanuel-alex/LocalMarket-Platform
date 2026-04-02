@@ -114,7 +114,7 @@ export async function createOrder(buyerId: string, input: CreateOrderInput): Pro
   const totalPrice = product.price.times(input.quantity);
 
   const row = await prisma.$transaction(async (tx) => {
-    await inventoryService.reserveStockForOrder(tx, product.id, input.quantity);
+    await inventoryService.allocateSoldForOrder(tx, product.id, input.quantity);
     return tx.order.create({
       data: {
         buyerId,
@@ -178,7 +178,7 @@ export async function cancelPendingOrderByBuyer(buyerId: string, orderId: string
   }
 
   const updated = await prisma.$transaction(async (tx) => {
-    await inventoryService.releaseReservedStockForOrder(tx, row.productId, row.quantity);
+    await inventoryService.releaseSoldForCancelledOrder(tx, row.productId, row.quantity);
     return tx.order.update({
       where: { id: orderId },
       data: { status: "cancelled" },
@@ -431,7 +431,7 @@ export async function adminOverrideOrder(
 
   const updated = await prisma.$transaction(async (tx) => {
     if (input.status === "cancelled" && row.status === "pending") {
-      await inventoryService.releaseReservedStockForOrder(tx, row.productId, row.quantity);
+      await inventoryService.releaseSoldForCancelledOrder(tx, row.productId, row.quantity);
     }
     return tx.order.update({
       where: { id: orderId },

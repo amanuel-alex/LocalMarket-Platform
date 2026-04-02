@@ -22,6 +22,7 @@ import * as productRepo from "../repositories/product.repository.js";
 import type { ProductCatalogRecord, ProductWithSellerCoords } from "../repositories/product.repository.js";
 import { haversineDistanceKm } from "../utils/haversine.js";
 import { AppError } from "../utils/errors.js";
+import { availableStock as calcAvailableStock, computeIsSoldOut } from "../utils/stock.js";
 
 /** Multiplicative band around anchor price for “similar” related items (±30%). */
 const RELATED_PRICE_MIN_FACTOR = 0.7;
@@ -39,7 +40,11 @@ export type ProductJson = {
   title: string;
   description: string;
   price: number;
-  stockQuantity: number;
+  quantity: number;
+  sold: number;
+  isSoldOut: boolean;
+  /** `max(0, quantity - sold)` — same rule enforced when creating orders. */
+  availableStock: number;
   category: string;
   location: { lat: number; lng: number };
   imageUrl: string | null;
@@ -68,12 +73,18 @@ export type ProductListResult = {
 };
 
 export function toProductJson(row: Product | ProductCatalogRecord | ProductWithSellerCoords): ProductJson {
+  const qty = row.quantity;
+  const sold = row.sold;
+  const avail = calcAvailableStock(qty, sold);
   return {
     id: row.id,
     title: row.title,
     description: row.description,
     price: row.price.toNumber(),
-    stockQuantity: row.stockQuantity,
+    quantity: qty,
+    sold,
+    isSoldOut: row.isSoldOut,
+    availableStock: avail,
     category: row.category,
     location: { lat: row.lat, lng: row.lng },
     imageUrl: row.imageUrl ?? null,
@@ -96,7 +107,9 @@ export async function createProduct(sellerId: string, input: CreateProductInput)
     title: input.title,
     description: input.description,
     price: input.price,
-    stockQuantity: input.stockQuantity,
+    quantity: input.quantity,
+    sold: 0,
+    isSoldOut: false,
     category: input.category,
     lat: input.location.lat,
     lng: input.location.lng,
@@ -112,7 +125,7 @@ export async function listProducts(params: ProductListQuery): Promise<ProductLis
   const { page, limit, category, minPrice, maxPrice, sellerId, sort } = params;
   const skip = (page - 1) * limit;
 
-  const where: Prisma.ProductWhereInput = { stockQuantity: { gt: 0 } };
+  const where: Prisma.ProductWhereInput = { isSoldOut: false };
   if (category) where.category = category;
   if (sellerId) where.sellerId = sellerId;
   if (minPrice !== undefined || maxPrice !== undefined) {
@@ -236,7 +249,7 @@ export async function listNearbyProducts(query: NearbyProductsQuery): Promise<Ne
 export async function searchProducts(query: ProductSearchQuery): Promise<SearchProductJson[]> {
   const fp = productSearchFingerprint(query);
   return cacheGetOrSetSearch(fp, async () => {
-    const where: Prisma.ProductWhereInput = { stockQuantity: { gt: 0 } };
+    const where: Prisma.ProductWhereInput = { isSoldOut: false };
 
     if (query.q) {
       where.OR = [
@@ -433,8 +446,19 @@ export async function updateProductForSeller(
   if (input.productGroupId !== undefined) {
     data.productGroupId = input.productGroupId;
   }
-  if (input.stockQuantity !== undefined) {
-    data.stockQuantity = input.stockQuantity;
+  if (input.quantity !== undefined) {
+    if (input.quantity < 1) {
+      throw new AppError(400, "INVALID_QUANTITY", "quantity must be at least 1");
+    }
+    if (input.quantity < existing.sold) {
+      throw new AppError(
+        400,
+        "INVALID_QUANTITY",
+        "quantity cannot be less than units already allocated on orders",
+      );
+    }
+    data.quantity = input.quantity;
+    data.isSoldOut = computeIsSoldOut(input.quantity, existing.sold);
   }
 
   const row = await productRepo.updateProductRecord(productId, data);

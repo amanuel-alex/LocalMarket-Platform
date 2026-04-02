@@ -9,7 +9,9 @@ export const productCatalogSelect = {
   title: true,
   description: true,
   price: true,
-  stockQuantity: true,
+  quantity: true,
+  sold: true,
+  isSoldOut: true,
   category: true,
   lat: true,
   lng: true,
@@ -57,7 +59,7 @@ export async function findProductById(id: string): Promise<ProductCatalogRecord 
 export async function findProductForNewOrder(productId: string) {
   return prisma.product.findUnique({
     where: { id: productId },
-    select: { id: true, title: true, price: true, sellerId: true, stockQuantity: true },
+    select: { id: true, title: true, price: true, sellerId: true, quantity: true, sold: true },
   });
 }
 
@@ -66,7 +68,7 @@ export async function findProductsWithSellerForNearby(
   take: number,
 ): Promise<ProductWithSellerCoords[]> {
   return prisma.product.findMany({
-    where: { stockQuantity: { gt: 0 } },
+    where: { isSoldOut: false },
     take,
     orderBy: { updatedAt: "desc" },
     include: { seller: { select: sellerCoordsSelect } },
@@ -99,7 +101,7 @@ export async function findPeerProductsByGroup(
   take: number,
 ): Promise<ProductCatalogRecord[]> {
   return prisma.product.findMany({
-    where: { productGroupId, id: { not: excludeProductId }, stockQuantity: { gt: 0 } },
+    where: { productGroupId, id: { not: excludeProductId }, isSoldOut: false },
     orderBy: { updatedAt: "desc" },
     take,
     select: productCatalogSelect,
@@ -117,7 +119,7 @@ export async function findSimilarInCategoryByPriceBand(
     where: {
       category,
       id: { not: excludeProductId },
-      stockQuantity: { gt: 0 },
+      isSoldOut: false,
       price: { gte: minPrice, lte: maxPrice },
     },
     orderBy: { updatedAt: "desc" },
@@ -130,7 +132,7 @@ export async function findProductsInGroupOrderedByPrice(
   productGroupId: string,
 ): Promise<ProductCatalogRecord[]> {
   return prisma.product.findMany({
-    where: { productGroupId, stockQuantity: { gt: 0 } },
+    where: { productGroupId, isSoldOut: false },
     orderBy: [{ price: "asc" }, { updatedAt: "desc" }],
     select: productCatalogSelect,
   });

@@ -255,10 +255,12 @@ model Product {
   title          String
   description    String
   price          Decimal         @db.Decimal(14, 2)
-  /**
-   * Sellable units on hand. Decremented atomically when a buyer creates a pending order; restored if the order is cancelled before payment.
-   */
-  stockQuantity  Int             @default(0)
+  /** Total units offered for sale (seller-managed). */
+  quantity       Int
+  /** Units committed across non-cancelled orders; `availableStock ≈ quantity - sold`. */
+  sold           Int             @default(0)
+  /** Denormalized: `sold >= quantity` when quantity > 0. Kept in sync in inventory SQL updates. */
+  isSoldOut      Boolean         @default(false)
   category       String
   lat            Float
   lng            Float

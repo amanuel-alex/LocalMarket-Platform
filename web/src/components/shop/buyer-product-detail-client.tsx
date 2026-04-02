@@ -48,6 +48,18 @@ export function BuyerProductDetailClient({ productId }: { productId: string }) {
     };
   }, [productId]);
 
+  const maxOrderQty = useMemo(() => {
+    if (!product) return MAX_QTY;
+    const cap = Math.min(MAX_QTY, product.availableStock);
+    return Math.max(0, cap);
+  }, [product]);
+
+  useEffect(() => {
+    if (!product) return;
+    if (maxOrderQty < 1) return;
+    setQty((q) => Math.min(Math.max(1, q), maxOrderQty));
+  }, [product, maxOrderQty]);
+
   const mapsUrl = useMemo(() => {
     if (!product) return "";
     return `https://www.google.com/maps?q=${product.location.lat},${product.location.lng}`;
@@ -74,6 +86,14 @@ export function BuyerProductDetailClient({ productId }: { productId: string }) {
 
   async function startCheckout() {
     if (!product) return;
+    if (product.isSoldOut || product.availableStock < 1) {
+      toast.error("This product is sold out");
+      return;
+    }
+    if (qty > product.availableStock) {
+      toast.error("Not enough stock for this quantity");
+      return;
+    }
     const role = normalizeRole(user?.role);
     if (!user || role !== "buyer") {
       toast.message("Sign in as a buyer to order");
@@ -231,7 +251,11 @@ export function BuyerProductDetailClient({ productId }: { productId: string }) {
           <Card className="rounded-2xl border-violet-200/60 bg-violet-50/40 shadow-sm dark:border-violet-900/40 dark:bg-violet-950/20">
             <CardHeader>
               <CardTitle className="text-base">Order</CardTitle>
-              <CardDescription>Availability is managed per listing; quantity is capped for safety.</CardDescription>
+              <CardDescription>
+                {product.isSoldOut || product.availableStock < 1
+                  ? "This listing is currently sold out."
+                  : `${product.availableStock} available now (inventory updates when orders are placed).`}
+              </CardDescription>
             </CardHeader>
             <CardContent className="space-y-4">
               <div className="flex items-center justify-between gap-4">
@@ -242,7 +266,7 @@ export function BuyerProductDetailClient({ productId }: { productId: string }) {
                     size="icon"
                     variant="outline"
                     className="size-10 rounded-xl"
-                    disabled={qty <= 1}
+                    disabled={qty <= 1 || maxOrderQty < 1}
                     onClick={() => setQty((q) => Math.max(1, q - 1))}
                   >
                     <Minus className="size-4" />
@@ -253,25 +277,25 @@ export function BuyerProductDetailClient({ productId }: { productId: string }) {
                     size="icon"
                     variant="outline"
                     className="size-10 rounded-xl"
-                    disabled={qty >= MAX_QTY}
-                    onClick={() => setQty((q) => Math.min(MAX_QTY, q + 1))}
+                    disabled={maxOrderQty < 1 || qty >= maxOrderQty}
+                    onClick={() => setQty((q) => Math.min(maxOrderQty, q + 1))}
                   >
                     <Plus className="size-4" />
                   </Button>
                 </div>
               </div>
-              <p className="text-xs text-muted-foreground">
-                Real-time inventory locking will tie to stock APIs in a future release — for now, the seller may
-                confirm availability after you order.
-              </p>
               <Button
                 type="button"
                 size="lg"
                 className="h-12 w-full rounded-2xl text-base shadow-md"
-                disabled={submitting}
+                disabled={submitting || product.isSoldOut || product.availableStock < 1}
                 onClick={() => void startCheckout()}
               >
-                {submitting ? "Creating order…" : "Checkout"}
+                {submitting
+                  ? "Creating order…"
+                  : product.isSoldOut || product.availableStock < 1
+                    ? "Sold out"
+                    : "Checkout"}
               </Button>
               <div className="flex items-start gap-2 text-xs text-muted-foreground">
                 <ShieldCheck className="mt-0.5 size-4 shrink-0 text-emerald-600" />

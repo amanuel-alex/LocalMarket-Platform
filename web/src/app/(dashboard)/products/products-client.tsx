@@ -64,6 +64,12 @@ const productFormSchema = z.object({
     .refine((s) => !Number.isNaN(Number(s)), "Invalid number")
     .refine((s) => Number(s) > 0, "Must be positive"),
   category: z.string().min(1).max(120),
+  quantity: z
+    .string()
+    .min(1, "Required")
+    .refine((s) => !Number.isNaN(Number(s)), "Invalid number")
+    .refine((s) => Number.isInteger(Number(s)), "Must be a whole number")
+    .refine((s) => Number(s) >= 1, "Must be at least 1"),
   lat: z
     .string()
     .min(1, "Required")
@@ -200,6 +206,7 @@ function ProductsClientInner() {
       title: "",
       description: "",
       price: "1",
+      quantity: "100",
       category: "",
       lat: "9.03",
       lng: "38.75",
@@ -213,6 +220,7 @@ function ProductsClientInner() {
       title: "",
       description: "",
       price: "1",
+      quantity: "100",
       category: "",
       lat: "9.03",
       lng: "38.75",
@@ -227,6 +235,7 @@ function ProductsClientInner() {
       title: p.title,
       description: p.description,
       price: String(p.price),
+      quantity: String(p.quantity),
       category: p.category,
       lat: String(p.location.lat),
       lng: String(p.location.lng),
@@ -238,6 +247,7 @@ function ProductsClientInner() {
   async function onSubmit(values: ProductFormValues) {
     if (!user || normalizeRole(user.role) !== "seller") return;
     const price = Number(values.price);
+    const quantity = Number(values.quantity);
     const lat = Number(values.lat);
     const lng = Number(values.lng);
     try {
@@ -247,6 +257,7 @@ function ProductsClientInner() {
           title: values.title,
           description: values.description,
           price,
+          quantity,
           category: values.category,
           location: { lat, lng },
           imageUrl: imageUrl ?? null,
@@ -257,6 +268,7 @@ function ProductsClientInner() {
           title: values.title,
           description: values.description,
           price,
+          quantity,
           category: values.category,
           location: { lat, lng },
           imageUrl,
@@ -401,6 +413,7 @@ function ProductsClientInner() {
               <TableRow className="hover:bg-transparent">
                 <TableHead>Product</TableHead>
                 <TableHead>Category</TableHead>
+                <TableHead className="text-right">Stock</TableHead>
                 <TableHead className="text-right">Price</TableHead>
                 <TableHead className="w-[120px] text-right">Actions</TableHead>
               </TableRow>
@@ -409,7 +422,7 @@ function ProductsClientInner() {
               {loading
                 ? Array.from({ length: 5 }).map((_, i) => (
                     <TableRow key={i}>
-                      <TableCell colSpan={4}>
+                      <TableCell colSpan={5}>
                         <Skeleton className="h-10 w-full rounded-lg" />
                       </TableCell>
                     </TableRow>
@@ -428,6 +441,10 @@ function ProductsClientInner() {
                         </div>
                       </TableCell>
                       <TableCell>{p.category}</TableCell>
+                      <TableCell className="text-right text-muted-foreground text-xs">
+                        {p.availableStock} avail · {p.quantity} cap
+                        {p.isSoldOut ? " · sold out" : ""}
+                      </TableCell>
                       <TableCell className="text-right">ETB {p.price.toLocaleString()}</TableCell>
                       <TableCell className="text-right">
                         <Button
@@ -505,18 +522,31 @@ function ProductsClientInner() {
                 />
                 <FormField
                   control={form.control}
-                  name="category"
+                  name="quantity"
                   render={({ field }) => (
                     <FormItem>
-                      <FormLabel>Category</FormLabel>
+                      <FormLabel>Stock quantity</FormLabel>
                       <FormControl>
-                        <Input className="rounded-xl" {...field} />
+                        <Input type="text" inputMode="numeric" className="rounded-xl" {...field} />
                       </FormControl>
                       <FormMessage />
                     </FormItem>
                   )}
                 />
               </div>
+              <FormField
+                control={form.control}
+                name="category"
+                render={({ field }) => (
+                  <FormItem>
+                    <FormLabel>Category</FormLabel>
+                    <FormControl>
+                      <Input className="rounded-xl" {...field} />
+                    </FormControl>
+                    <FormMessage />
+                  </FormItem>
+                )}
+              />
               <div className="grid grid-cols-2 gap-4">
                 <FormField
                   control={form.control}

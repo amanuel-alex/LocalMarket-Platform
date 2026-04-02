@@ -1,30 +1,44 @@
 import type { Prisma } from "@prisma/client";
 import { AppError } from "../utils/errors.js";
 
+const OUT_OF_STOCK_MSG = "Product is sold out or not enough stock";
+
 /**
- * Atomically reserves units for a new pending order. Fails if concurrent checkouts exhaust stock.
+ * Atomically allocates `qty` to `sold` if `quantity - sold >= qty` (prevents overselling under concurrency).
  */
-export async function reserveStockForOrder(
+export async function allocateSoldForOrder(
   tx: Prisma.TransactionClient,
   productId: string,
-  quantity: number,
+  qty: number,
 ): Promise<void> {
-  const result = await tx.product.updateMany({
-    where: { id: productId, stockQuantity: { gte: quantity } },
-    data: { stockQuantity: { decrement: quantity } },
-  });
-  if (result.count === 0) {
-    throw new AppError(409, "OUT_OF_STOCK", "Not enough stock available for this quantity");
+  const n = await tx.$executeRaw`
+    UPDATE "Product"
+    SET
+      "sold" = "sold" + ${qty},
+      "isSoldOut" = ("sold" + ${qty}) >= "quantity"
+    WHERE "id" = ${productId}
+      AND ("quantity" - "sold") >= ${qty}
+  `;
+  if (Number(n) !== 1) {
+    throw new AppError(409, "OUT_OF_STOCK", OUT_OF_STOCK_MSG);
   }
 }
 
-export async function releaseReservedStockForOrder(
+/** Restores allocation when a pending order is cancelled (buyer or admin). */
+export async function releaseSoldForCancelledOrder(
   tx: Prisma.TransactionClient,
   productId: string,
-  quantity: number,
+  qty: number,
 ): Promise<void> {
-  await tx.product.update({
-    where: { id: productId },
-    data: { stockQuantity: { increment: quantity } },
-  });
+  const n = await tx.$executeRaw`
+    UPDATE "Product"
+    SET
+      "sold" = "sold" - ${qty},
+      "isSoldOut" = ("sold" - ${qty}) >= "quantity"
+    WHERE "id" = ${productId}
+      AND "sold" >= ${qty}
+  `;
+  if (Number(n) !== 1) {
+    throw new AppError(409, "INVENTORY_INVARIANT", "Could not restore product inventory for this order");
+  }
 }

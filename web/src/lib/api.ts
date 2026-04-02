@@ -292,7 +292,10 @@ export type ProductRow = {
   title: string;
   description: string;
   price: number;
-  stockQuantity: number;
+  quantity: number;
+  sold: number;
+  isSoldOut: boolean;
+  availableStock: number;
   category: string;
   location: { lat: number; lng: number };
   imageUrl: string | null;
@@ -419,6 +422,7 @@ export async function createProduct(body: {
   title: string;
   description: string;
   price: number;
+  quantity: number;
   category: string;
   location: { lat: number; lng: number };
   imageUrl?: string;
@@ -433,6 +437,7 @@ export async function updateProduct(
     title: string;
     description: string;
     price: number;
+    quantity: number;
     category: string;
     location: { lat: number; lng: number };
     imageUrl: string | null;

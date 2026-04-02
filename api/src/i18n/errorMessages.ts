@@ -68,9 +68,14 @@ const BY_CODE: Partial<Record<string, Record<Locale, string>>> = {
     om: "Ajajichi dalaga kanaaf qophaa’ee hin jiru.",
   },
   OUT_OF_STOCK: {
-    en: "Not enough stock available for this quantity",
-    am: "ለዚህ ብዛት በቂ ክምችት የለም።",
-    om: "Baay’ina kanaaf kuusaa gahaa hin jiru.",
+    en: "Product is sold out or not enough stock",
+    am: "ምርቱ አልፏል ወይም በቂ ክምችት የለም።",
+    om: "Oomishaan xumurame ykn kuusni gahaa hin jiru.",
+  },
+  INVALID_QUANTITY: {
+    en: "Invalid product quantity",
+    am: "የምርት ብዛት ትክክል አይደለም።",
+    om: "Baay’ina oomishaa dogoggora.",
   },
   PAYMENT_IN_PROGRESS: {
     en: "A payment is already in progress for this order",
