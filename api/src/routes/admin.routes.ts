@@ -11,7 +11,12 @@ router.use(requireRoles("admin"));
 
 router.get("/dashboard", adminController.getDashboard);
 router.get("/users", adminController.listUsers);
+router.get("/buyers", adminController.listBuyers);
+router.patch("/users/:id/status", adminController.patchUserStatus);
 router.patch("/users/:id", adminController.patchUser);
+router.get("/delivery-agents", adminController.listDeliveryAgents);
+router.patch("/delivery-agents/:id/approve", adminController.patchDeliveryAgentApprove);
+router.patch("/delivery-agents/:id/activate", adminController.patchDeliveryAgentActivate);
 router.get("/payments", adminController.listPayments);
 router.get("/payouts", adminController.listPayouts);
 router.get("/products", adminController.listProducts);

@@ -4,6 +4,7 @@ import { getEnv } from "../config/env.js";
 import { durationToMs } from "../utils/duration.js";
 import { AppError } from "../utils/errors.js";
 import type { User } from "@prisma/client";
+import { isAccountSuspended } from "./userAccess.service.js";
 
 function hashRefreshToken(plain: string): string {
   return createHash("sha256").update(plain, "utf8").digest("hex");
@@ -46,7 +47,7 @@ export async function rotateRefreshToken(
     if (!user) {
       throw new AppError(401, "INVALID_REFRESH_TOKEN", "Invalid refresh token");
     }
-    if (user.bannedAt != null) {
+    if (isAccountSuspended(user)) {
       throw new AppError(403, "ACCOUNT_BANNED", "This account has been suspended");
     }
 

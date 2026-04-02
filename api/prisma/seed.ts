@@ -32,8 +32,12 @@ async function main() {
           passwordHash,
           bannedAt: null,
           banReason: null,
+          status: "active",
           failedLoginAttempts: 0,
           lockedUntil: null,
+          ...(u.role === "delivery"
+            ? { deliveryAgentApproved: true, deliveryAgentActive: true }
+            : {}),
         },
       });
     } else {
@@ -43,6 +47,9 @@ async function main() {
           name: u.name,
           role: u.role,
           passwordHash,
+          ...(u.role === "delivery"
+            ? { deliveryAgentApproved: true, deliveryAgentActive: true }
+            : {}),
           wallet: {
             create: {
               isPlatform: false,

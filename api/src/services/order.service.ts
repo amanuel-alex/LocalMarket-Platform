@@ -1,9 +1,17 @@
-import type { Order, OrderStatus, Prisma, Product, Role } from "@prisma/client";
+import type {
+  DeliveryStatus,
+  Order,
+  OrderStatus,
+  Prisma,
+  Product,
+  Role,
+} from "@prisma/client";
 import { prisma } from "../prisma/client.js";
 import * as orderRepo from "../repositories/order.repository.js";
 import * as productRepo from "../repositories/product.repository.js";
 import { AppError } from "../utils/errors.js";
 import type { CreateOrderInput } from "../schemas/order.schemas.js";
+import { isDeliveryRole } from "../utils/roles.js";
 import * as auditService from "./audit.service.js";
 import * as dispatch from "./notificationDispatch.service.js";
 import { getPreferredLocalesMap } from "../i18n/userLocales.js";
@@ -28,6 +36,10 @@ export type OrderJson = {
   product: { id: string; title: string; price: number };
   createdAt: Date;
   updatedAt: Date;
+  deliveryAgentId: string | null;
+  deliveryStartedAt: Date | null;
+  deliveryStatus: DeliveryStatus;
+  readyForPickupAt: Date | null;
   deliveryConfirmedAt: Date | null;
   escrowReleasedAt: Date | null;
   adminOverrideNote: string | null;
@@ -62,6 +74,10 @@ export function toOrderJson(
     },
     createdAt: row.createdAt,
     updatedAt: row.updatedAt,
+    deliveryAgentId: row.deliveryAgentId ?? null,
+    deliveryStartedAt: row.deliveryStartedAt ?? null,
+    deliveryStatus: row.deliveryStatus,
+    readyForPickupAt: row.readyForPickupAt ?? null,
     deliveryConfirmedAt: row.deliveryConfirmedAt ?? null,
     escrowReleasedAt: row.escrowReleasedAt ?? null,
     adminOverrideNote: row.adminOverrideNote ?? null,
@@ -131,7 +147,7 @@ export async function listOrdersForUser(userId: string, role: Role): Promise<Ord
       ? {}
       : role === "seller"
         ? { sellerId: userId }
-        : role === "delivery"
+        : isDeliveryRole(role)
           ? { deliveryAgentId: userId }
           : { buyerId: userId };
 
@@ -156,7 +172,7 @@ export async function getOrderByIdForUser(
     role === "admin" ||
     row.buyerId === userId ||
     row.sellerId === userId ||
-    (role === "delivery" && row.deliveryAgentId === userId);
+    (isDeliveryRole(role) && row.deliveryAgentId === userId);
   if (!allowed) {
     throw new AppError(403, "FORBIDDEN", "You cannot access this order");
   }
@@ -206,6 +222,81 @@ export async function confirmDeliveryBySeller(
       orderId: updated.id,
     },
   ]);
+
+  return toOrderJson(updated, { userId: sellerId, role: "seller" });
+}
+
+export async function sellerAssignDeliveryAgent(
+  sellerId: string,
+  orderId: string,
+  deliveryAgentId: string,
+): Promise<OrderJson> {
+  const agent = await prisma.user.findUnique({ where: { id: deliveryAgentId } });
+  if (!agent || !isDeliveryRole(agent.role)) {
+    throw new AppError(400, "INVALID_AGENT", "Not a valid delivery agent");
+  }
+  if (!agent.deliveryAgentApproved || !agent.deliveryAgentActive) {
+    throw new AppError(
+      400,
+      "AGENT_NOT_AVAILABLE",
+      "Delivery agent must be approved and active",
+    );
+  }
+
+  const row = await prisma.order.findUnique({
+    where: { id: orderId },
+    include: { product: { select: productSelect } },
+  });
+  if (!row) {
+    throw new AppError(404, "NOT_FOUND", "Order not found");
+  }
+  if (row.sellerId !== sellerId) {
+    throw new AppError(403, "FORBIDDEN", "You can only assign delivery on your own orders");
+  }
+  if (row.status !== "paid") {
+    throw new AppError(
+      409,
+      "ORDER_NOT_READY",
+      "Assign delivery only after the buyer has paid",
+    );
+  }
+
+  const updated = await prisma.order.update({
+    where: { id: orderId },
+    data: {
+      deliveryAgent: { connect: { id: deliveryAgentId } },
+      deliveryStatus: "assigned",
+      deliveryStartedAt: null,
+    },
+    include: { product: { select: productSelect } },
+  });
+
+  return toOrderJson(updated, { userId: sellerId, role: "seller" });
+}
+
+export async function sellerMarkOrderReadyForPickup(
+  sellerId: string,
+  orderId: string,
+): Promise<OrderJson> {
+  const row = await prisma.order.findUnique({
+    where: { id: orderId },
+    include: { product: { select: productSelect } },
+  });
+  if (!row) {
+    throw new AppError(404, "NOT_FOUND", "Order not found");
+  }
+  if (row.sellerId !== sellerId) {
+    throw new AppError(403, "FORBIDDEN", "You can only mark your own orders ready");
+  }
+  if (row.status !== "paid") {
+    throw new AppError(409, "ORDER_NOT_READY", "Order must be paid before marking ready for pickup");
+  }
+
+  const updated = await prisma.order.update({
+    where: { id: orderId },
+    data: { readyForPickupAt: new Date() },
+    include: { product: { select: productSelect } },
+  });
 
   return toOrderJson(updated, { userId: sellerId, role: "seller" });
 }
@@ -280,8 +371,10 @@ export async function adminOverrideOrder(
   if (input.deliveryAgentId !== undefined) {
     if (input.deliveryAgentId === null) {
       data.deliveryAgent = { disconnect: true };
+      data.deliveryStatus = "pending";
     } else {
       data.deliveryAgent = { connect: { id: input.deliveryAgentId } };
+      data.deliveryStatus = "assigned";
     }
     data.deliveryStartedAt = null;
   }

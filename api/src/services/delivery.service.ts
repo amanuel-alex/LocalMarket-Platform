@@ -1,4 +1,4 @@
-import type { OrderStatus } from "@prisma/client";
+import type { DeliveryStatus, OrderStatus } from "@prisma/client";
 import { prisma } from "../prisma/client.js";
 import { AppError } from "../utils/errors.js";
 
@@ -33,6 +33,8 @@ export type DeliveryAssignmentJson = {
   pickup: { lat: number; lng: number };
   /** MVP: same coordinates as listing; agents confirm exact drop-off with buyer. */
   dropoff: { lat: number; lng: number; note: string };
+  deliveryStatus: DeliveryStatus;
+  readyForPickupAt: string | null;
   deliveryStartedAt: string | null;
   createdAt: string;
   updatedAt: string;
@@ -76,6 +78,8 @@ function toJson(row: NonNullable<Row>): DeliveryAssignmentJson {
       lng,
       note: "Confirm exact drop-off with the buyer. Listing coordinates are the seller pickup point.",
     },
+    deliveryStatus: row.deliveryStatus,
+    readyForPickupAt: row.readyForPickupAt?.toISOString() ?? null,
     deliveryStartedAt: row.deliveryStartedAt?.toISOString() ?? null,
     createdAt: row.createdAt.toISOString(),
     updatedAt: row.updatedAt.toISOString(),
@@ -121,13 +125,43 @@ export async function startDeliveryAssignment(
       "Start delivery after the buyer has paid — order must be in paid status",
     );
   }
-  if (row.deliveryStartedAt) {
-    return toJson(row);
+  if (!row.deliveryAgentId) {
+    throw new AppError(409, "NO_DELIVERY_AGENT", "No delivery agent assigned to this order");
+  }
+  const updated = await prisma.order.update({
+    where: { id: orderId },
+    data: {
+      deliveryStartedAt: row.deliveryStartedAt ?? new Date(),
+      deliveryStatus: "picked",
+    },
+    include: {
+      product: { select: productSelect },
+      buyer: { select: userSelect },
+      seller: { select: userSelect },
+    },
+  });
+  return toJson(updated);
+}
+
+export async function markAssignmentDelivered(
+  agentId: string,
+  orderId: string,
+): Promise<DeliveryAssignmentJson> {
+  const row = await loadAssignmentRow(orderId, agentId);
+  if (!row) {
+    throw new AppError(404, "NOT_FOUND", "Assignment not found");
+  }
+  if (row.deliveryStatus !== "picked") {
+    throw new AppError(
+      409,
+      "DELIVERY_NOT_PICKED",
+      "Mark pickup before marking delivered",
+    );
   }
 
   const updated = await prisma.order.update({
     where: { id: orderId },
-    data: { deliveryStartedAt: new Date() },
+    data: { deliveryStatus: "delivered" },
     include: {
       product: { select: productSelect },
       buyer: { select: userSelect },

@@ -3,12 +3,23 @@ import { prisma } from "../prisma/client.js";
 import { AppError } from "../utils/errors.js";
 import type { OrderJson } from "./order.service.js";
 import { toOrderJson } from "./order.service.js";
+import { isDeliveryRole } from "../utils/roles.js";
 import * as dispatch from "./notificationDispatch.service.js";
 import { getPreferredLocalesMap } from "../i18n/userLocales.js";
 import { pickupCompletedBuyerCopy } from "../i18n/notificationCopy.js";
 
 /** pickup verified → order `completed`. Funds stay in platform escrow until seller confirms delivery and admin releases. */
 export async function verifyPickupQr(userId: string, role: Role, token: string): Promise<OrderJson> {
+  if (isDeliveryRole(role)) {
+    const agent = await prisma.user.findUnique({
+      where: { id: userId },
+      select: { deliveryAgentApproved: true, deliveryAgentActive: true },
+    });
+    if (!agent?.deliveryAgentApproved || !agent.deliveryAgentActive) {
+      throw new AppError(403, "DELIVERY_NOT_APPROVED", "Delivery account is not approved or active");
+    }
+  }
+
   const order = await prisma.order.findUnique({
     where: { qrToken: token },
     include: { product: { select: { id: true, title: true, price: true } } },
@@ -22,7 +33,7 @@ export async function verifyPickupQr(userId: string, role: Role, token: string):
     if (order.sellerId !== userId) {
       throw new AppError(403, "FORBIDDEN", "This order belongs to another seller");
     }
-  } else if (role === "delivery") {
+  } else if (isDeliveryRole(role)) {
     if (order.deliveryAgentId !== userId) {
       throw new AppError(403, "FORBIDDEN", "You are not assigned to this order");
     }

@@ -12,6 +12,19 @@ enum Role {
   seller
   admin
   delivery
+  delivery_agent
+}
+
+enum UserStatus {
+  active
+  blocked
+}
+
+enum DeliveryStatus {
+  pending
+  assigned
+  picked
+  delivered
 }
 
 enum OrderStatus {
@@ -93,6 +106,16 @@ model User {
    */
   bannedAt            DateTime?
   banReason           String?
+  /**
+   * Account gate (admin). `blocked` also revokes sessions when set via admin status/ban APIs.
+   */
+  status              UserStatus      @default(active)
+  isVerified          Boolean         @default(false)
+  /**
+   * Logistics staff: admin must approve before agent routes are usable.
+   */
+  deliveryAgentApproved Boolean       @default(false)
+  deliveryAgentActive Boolean         @default(false)
   preferredLocale     Locale          @default(en)
   /**
    * Shop / pickup coordinates for sellers (optional). Used for nearby product search.
@@ -340,6 +363,11 @@ model Order {
    */
   deliveryAgentId     String?
   deliveryStartedAt   DateTime?
+  deliveryStatus      DeliveryStatus @default(pending)
+  /**
+   * Seller marked the order ready for courier pickup (logistics UX).
+   */
+  readyForPickupAt    DateTime?
   deliveryAgent       User?          @relation("DeliveryAssignments", fields: [deliveryAgentId], references: [id], onDelete: SetNull)
   product             Product        @relation(fields: [productId], references: [id], onDelete: Restrict)
   payments            Payment[]

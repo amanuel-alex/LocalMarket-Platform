@@ -15,3 +15,8 @@ export function requireRoles(...allowed: Role[]): RequestHandler {
     next();
   };
 }
+
+/** Logistics staff: legacy `delivery` role and `delivery_agent`. */
+export function requireDeliveryRoles(): RequestHandler {
+  return requireRoles("delivery", "delivery_agent");
+}

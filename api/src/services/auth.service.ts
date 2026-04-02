@@ -6,6 +6,8 @@ import { hashPassword, verifyPassword } from "../utils/password.js";
 import { signAccessToken } from "../utils/jwt.js";
 import * as refreshTokenService from "./refreshToken.service.js";
 import type { RegisterInput } from "../schemas/auth.schemas.js";
+import { isAccountSuspended } from "./userAccess.service.js";
+import * as suspiciousActivity from "./suspiciousActivity.service.js";
 
 function lockoutMs(): number {
   const { LOCKOUT_MINUTES } = getEnv();
@@ -95,7 +97,8 @@ export async function login(phone: string, password: string): Promise<AuthTokenP
     throw new AppError(401, "INVALID_CREDENTIALS", "Invalid phone or password");
   }
 
-  if (user.bannedAt != null) {
+  if (isAccountSuspended(user)) {
+    suspiciousActivity.logSuspiciousActivity("auth.login.suspended", { userId: user.id });
     throw new AppError(403, "ACCOUNT_BANNED", "This account has been suspended");
   }
 

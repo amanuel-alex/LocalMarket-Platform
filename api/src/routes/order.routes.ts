@@ -14,6 +14,16 @@ router.post(
   requireRoles("seller"),
   orderController.confirmDelivery,
 );
+router.patch(
+  "/:id/assign-delivery",
+  requireRoles("seller"),
+  orderController.assignDelivery,
+);
+router.patch(
+  "/:id/mark-ready",
+  requireRoles("seller"),
+  orderController.markReadyForPickup,
+);
 router.post("/:id/review", requireRoles("buyer"), orderController.submitReview);
 router.get("/:id/receipt", orderController.receipt);
 router.get("/:id", orderController.getById);

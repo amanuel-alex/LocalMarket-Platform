@@ -5,9 +5,14 @@ import { productIdParamSchema } from "../schemas/product.schemas.js";
 import {
   adminAssignProductGroupBodySchema,
   adminBanBodySchema,
+  adminBuyersQuerySchema,
   adminCommissionBodySchema,
   adminCreateProductGroupBodySchema,
+  adminDeliveryAgentActivateBodySchema,
+  adminDeliveryAgentApproveBodySchema,
+  adminDeliveryAgentsQuerySchema,
   adminOrderOverrideBodySchema,
+  adminPatchUserStatusBodySchema,
   adminPaymentsQuerySchema,
   adminPayoutsQuerySchema,
   adminProductsQuerySchema,
@@ -107,6 +112,114 @@ export const listUsers: RequestHandler = asyncHandler(async (req, res, next) => 
       createdAt: u.createdAt.toISOString(),
     })),
     total: result.total,
+  });
+});
+
+export const listBuyers: RequestHandler = asyncHandler(async (req, res, next) => {
+  const parsed = adminBuyersQuerySchema.safeParse(req.query);
+  if (!parsed.success) {
+    next(parsed.error);
+    return;
+  }
+  const { limit, offset, q } = parsed.data;
+  const result = await adminUsersService.listBuyersForAdmin(limit, offset, { q });
+  res.json({
+    buyers: result.buyers.map((b) => ({
+      ...b,
+      bannedAt: b.bannedAt?.toISOString() ?? null,
+      createdAt: b.createdAt.toISOString(),
+    })),
+    total: result.total,
+  });
+});
+
+export const patchUserStatus: RequestHandler = asyncHandler(async (req, res, next) => {
+  const parsedParams = userIdParamSchema.safeParse(req.params);
+  if (!parsedParams.success) {
+    next(parsedParams.error);
+    return;
+  }
+  const parsedBody = adminPatchUserStatusBodySchema.safeParse(req.body);
+  if (!parsedBody.success) {
+    next(parsedBody.error);
+    return;
+  }
+  const updated = await adminUsersService.patchUserStatusByAdmin(
+    req.user!.id,
+    parsedParams.data.id,
+    parsedBody.data.status,
+  );
+  res.json({
+    user: {
+      ...updated,
+      bannedAt: updated.bannedAt?.toISOString() ?? null,
+      createdAt: updated.createdAt.toISOString(),
+    },
+  });
+});
+
+export const listDeliveryAgents: RequestHandler = asyncHandler(async (req, res, next) => {
+  const parsed = adminDeliveryAgentsQuerySchema.safeParse(req.query);
+  if (!parsed.success) {
+    next(parsed.error);
+    return;
+  }
+  const { limit, offset } = parsed.data;
+  const result = await adminUsersService.listDeliveryAgentsForAdmin(limit, offset);
+  res.json({
+    agents: result.agents.map((a) => ({
+      ...a,
+      createdAt: a.createdAt.toISOString(),
+    })),
+    total: result.total,
+  });
+});
+
+export const patchDeliveryAgentApprove: RequestHandler = asyncHandler(async (req, res, next) => {
+  const parsedParams = userIdParamSchema.safeParse(req.params);
+  if (!parsedParams.success) {
+    next(parsedParams.error);
+    return;
+  }
+  const parsedBody = adminDeliveryAgentApproveBodySchema.safeParse(req.body);
+  if (!parsedBody.success) {
+    next(parsedBody.error);
+    return;
+  }
+  const agent = await adminUsersService.setDeliveryAgentApprovedByAdmin(
+    req.user!.id,
+    parsedParams.data.id,
+    parsedBody.data.isApproved,
+  );
+  res.json({
+    agent: {
+      ...agent,
+      createdAt: agent.createdAt.toISOString(),
+    },
+  });
+});
+
+export const patchDeliveryAgentActivate: RequestHandler = asyncHandler(async (req, res, next) => {
+  const parsedParams = userIdParamSchema.safeParse(req.params);
+  if (!parsedParams.success) {
+    next(parsedParams.error);
+    return;
+  }
+  const parsedBody = adminDeliveryAgentActivateBodySchema.safeParse(req.body);
+  if (!parsedBody.success) {
+    next(parsedBody.error);
+    return;
+  }
+  const agent = await adminUsersService.setDeliveryAgentActiveByAdmin(
+    req.user!.id,
+    parsedParams.data.id,
+    parsedBody.data.isActive,
+  );
+  res.json({
+    agent: {
+      ...agent,
+      createdAt: agent.createdAt.toISOString(),
+    },
   });
 });
 

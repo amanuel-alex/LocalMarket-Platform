@@ -1,4 +1,4 @@
-import { OrderStatus, Role } from "@prisma/client";
+import { OrderStatus, Role, UserStatus } from "@prisma/client";
 import { z } from "zod";
 
 export const logQuerySchema = z.object({
@@ -93,4 +93,27 @@ export const adminUserPatchBodySchema = z
 export const adminPaymentsQuerySchema = z.object({
   limit: z.coerce.number().int().min(1).max(200).optional().default(50),
   offset: z.coerce.number().int().min(0).optional().default(0),
+});
+
+export const adminBuyersQuerySchema = z.object({
+  limit: z.coerce.number().int().min(1).max(100).optional().default(50),
+  offset: z.coerce.number().int().min(0).optional().default(0),
+  q: z.string().trim().max(120).optional(),
+});
+
+export const adminPatchUserStatusBodySchema = z.object({
+  status: z.nativeEnum(UserStatus),
+});
+
+export const adminDeliveryAgentsQuerySchema = z.object({
+  limit: z.coerce.number().int().min(1).max(100).optional().default(50),
+  offset: z.coerce.number().int().min(0).optional().default(0),
+});
+
+export const adminDeliveryAgentApproveBodySchema = z.object({
+  isApproved: z.boolean(),
+});
+
+export const adminDeliveryAgentActivateBodySchema = z.object({
+  isActive: z.boolean(),
 });

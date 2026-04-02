@@ -1,6 +1,10 @@
 import type { RequestHandler } from "express";
 import { asyncHandler } from "../utils/asyncHandler.js";
-import { createOrderSchema, orderIdParamSchema } from "../schemas/order.schemas.js";
+import {
+  assignDeliveryBodySchema,
+  createOrderSchema,
+  orderIdParamSchema,
+} from "../schemas/order.schemas.js";
 import { submitOrderReviewBodySchema } from "../schemas/review.schemas.js";
 import * as orderService from "../services/order.service.js";
 import * as receiptService from "../services/receipt.service.js";
@@ -77,5 +81,34 @@ export const confirmDelivery: RequestHandler = asyncHandler(async (req, res, nex
     return;
   }
   const order = await orderService.confirmDeliveryBySeller(req.user!.id, parsed.data.id);
+  res.json({ order });
+});
+
+export const assignDelivery: RequestHandler = asyncHandler(async (req, res, next) => {
+  const params = orderIdParamSchema.safeParse(req.params);
+  if (!params.success) {
+    next(params.error);
+    return;
+  }
+  const body = assignDeliveryBodySchema.safeParse(req.body);
+  if (!body.success) {
+    next(body.error);
+    return;
+  }
+  const order = await orderService.sellerAssignDeliveryAgent(
+    req.user!.id,
+    params.data.id,
+    body.data.deliveryAgentId,
+  );
+  res.json({ order });
+});
+
+export const markReadyForPickup: RequestHandler = asyncHandler(async (req, res, next) => {
+  const parsed = orderIdParamSchema.safeParse(req.params);
+  if (!parsed.success) {
+    next(parsed.error);
+    return;
+  }
+  const order = await orderService.sellerMarkOrderReadyForPickup(req.user!.id, parsed.data.id);
   res.json({ order });
 });

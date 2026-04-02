@@ -12,3 +12,9 @@ export const orderIdParamSchema = z.object({
 });
 
 export type OrderIdParam = z.infer<typeof orderIdParamSchema>;
+
+export const assignDeliveryBodySchema = z.object({
+  deliveryAgentId: z.string().cuid(),
+});
+
+export type AssignDeliveryBody = z.infer<typeof assignDeliveryBodySchema>;

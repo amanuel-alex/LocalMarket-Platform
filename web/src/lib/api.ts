@@ -501,6 +501,8 @@ export type DeliveryAssignment = {
   seller: { id: string; name: string; phone: string };
   pickup: { lat: number; lng: number };
   dropoff: { lat: number; lng: number; note: string };
+  deliveryStatus?: string;
+  readyForPickupAt?: string | null;
   deliveryStartedAt: string | null;
   createdAt: string;
   updatedAt: string;

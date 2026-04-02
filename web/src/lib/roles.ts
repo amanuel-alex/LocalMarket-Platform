@@ -5,6 +5,8 @@ export type UserRole = (typeof USER_ROLES)[number];
 export function normalizeRole(role: string | undefined | null): UserRole | null {
   if (!role) return null;
   const r = role.toLowerCase().trim();
+  /** API may return `delivery_agent`; UI buckets it with delivery staff. */
+  if (r === "delivery_agent") return "delivery";
   if (USER_ROLES.includes(r as UserRole)) return r as UserRole;
   return null;
 }

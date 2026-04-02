@@ -1,7 +1,8 @@
 import type { RequestHandler } from "express";
-import { prisma } from "../prisma/client.js";
 import { verifyAccessToken } from "../utils/jwt.js";
 import { AppError } from "../utils/errors.js";
+import { assertUserNotSuspended } from "../services/userAccess.service.js";
+import * as suspiciousActivity from "../services/suspiciousActivity.service.js";
 
 export const requireAuth: RequestHandler = async (req, _res, next) => {
   const header = req.headers.authorization;
@@ -16,13 +17,13 @@ export const requireAuth: RequestHandler = async (req, _res, next) => {
   }
   try {
     const { sub, role } = verifyAccessToken(token);
-    const user = await prisma.user.findUnique({
-      where: { id: sub },
-      select: { bannedAt: true },
-    });
-    if (user?.bannedAt != null) {
-      next(new AppError(403, "ACCOUNT_BANNED", "This account has been suspended"));
-      return;
+    try {
+      await assertUserNotSuspended(sub);
+    } catch (e) {
+      if (e instanceof AppError && e.code === "ACCOUNT_BANNED") {
+        suspiciousActivity.logSuspiciousActivity("api.token.blocked_user", { userId: sub });
+      }
+      throw e;
     }
     req.user = { id: sub, role };
     next();
