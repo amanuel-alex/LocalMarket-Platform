@@ -13,8 +13,8 @@ export function DeliveryQrShell() {
         <p className="text-xs font-semibold uppercase tracking-wider text-cyan-600">EthioLocal</p>
         <h1 className="text-2xl font-semibold tracking-tight sm:text-3xl">QR verification</h1>
         <p className="text-sm text-muted-foreground">
-          Enter the buyer’s pickup token to complete handoff. You must be <strong>assigned</strong> to the order
-          on the platform — the API enforces this for your agent account.
+          Scan the buyer’s pickup QR with your camera or paste the token. You must be <strong>assigned</strong> to
+          the order — the API enforces this for your agent account.
         </p>
       </motion.div>
 
@@ -30,7 +30,7 @@ export function DeliveryQrShell() {
             <ol className="list-decimal space-y-2 pl-4">
               <li>Confirm you are on the assigned order in Assignments.</li>
               <li>Collect the item and meet the buyer.</li>
-              <li>Paste the long token from their EthioLocal QR.</li>
+              <li>Scan their EthioLocal QR with the camera, or paste the token if needed.</li>
             </ol>
           </CardContent>
         </Card>
@@ -52,11 +52,11 @@ export function DeliveryQrShell() {
         <CardHeader className="pb-2">
           <CardTitle className="flex items-center gap-2 text-base">
             <QrCode className="size-4 text-cyan-600" />
-            Token input
+            Scan or enter token
           </CardTitle>
         </CardHeader>
         <CardContent>
-          <QrVerifyClient embedded />
+          <QrVerifyClient embedded enableCameraScanner />
         </CardContent>
       </Card>
     </div>
