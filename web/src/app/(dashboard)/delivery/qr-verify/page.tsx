@@ -1,5 +1,5 @@
-import { QrVerifyClient } from "../../qr-verify/qr-client";
+import { DeliveryQrShell } from "@/components/delivery/delivery-qr-shell";
 
 export default function DeliveryQrVerifyPage() {
-  return <QrVerifyClient />;
+  return <DeliveryQrShell />;
 }

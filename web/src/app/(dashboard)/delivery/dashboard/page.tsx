@@ -1,5 +1,5 @@
-import { DeliveryHomeClient } from "@/components/dashboard/delivery-home-client";
+import { DeliveryDashboardClient } from "@/components/delivery/delivery-dashboard-client";
 
 export default function DeliveryDashboardPage() {
-  return <DeliveryHomeClient />;
+  return <DeliveryDashboardClient />;
 }
