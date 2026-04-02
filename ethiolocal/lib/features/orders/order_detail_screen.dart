@@ -5,6 +5,7 @@ import 'package:intl/intl.dart';
 
 import '../../core/models/order.dart';
 import '../../core/providers/orders_provider.dart';
+import '../../core/widgets/error_retry.dart';
 import '../../core/widgets/gradient_cta.dart';
 
 final _etb = NumberFormat.currency(symbol: 'Br ', decimalDigits: 0);
@@ -16,20 +17,50 @@ class OrderDetailScreen extends ConsumerWidget {
 
   @override
   Widget build(BuildContext context, WidgetRef ref) {
-    final order = ref.watch(orderProvider(orderId));
-    if (order == null) {
-      return Scaffold(
-        appBar: AppBar(title: const Text('Order')),
-        body: const Center(child: Text('Order not found')),
-      );
-    }
+    final async = ref.watch(orderDetailProvider(orderId));
 
+    return async.when(
+      loading: () => Scaffold(
+        appBar: AppBar(title: const Text('Order')),
+        body: const Center(child: CircularProgressIndicator.adaptive()),
+      ),
+      error: (e, _) => Scaffold(
+        appBar: AppBar(title: const Text('Order')),
+        body: ErrorRetryView(
+          message: e.toString(),
+          onRetry: () => ref.invalidate(orderDetailProvider(orderId)),
+        ),
+      ),
+      data: (order) {
+        if (order == null) {
+          return Scaffold(
+            appBar: AppBar(title: const Text('Order')),
+            body: const Center(child: Text('Order not found')),
+          );
+        }
+        return _OrderDetailBody(order: order, orderId: orderId);
+      },
+    );
+  }
+}
+
+class _OrderDetailBody extends StatelessWidget {
+  const _OrderDetailBody({required this.order, required this.orderId});
+
+  final ShopOrder order;
+  final String orderId;
+
+  @override
+  Widget build(BuildContext context) {
     final scheme = Theme.of(context).colorScheme;
     final statusLabel = switch (order.status) {
       OrderStatus.pending => 'Pending payment',
-      OrderStatus.paid => 'Paid — awaiting delivery',
+      OrderStatus.paid => 'Paid — awaiting pickup / delivery',
       OrderStatus.delivered => 'Delivered',
+      OrderStatus.cancelled => 'Cancelled',
     };
+
+    final showQr = order.status == OrderStatus.paid && (order.pickupQrToken != null && order.pickupQrToken!.isNotEmpty);
 
     return Scaffold(
       appBar: AppBar(
@@ -88,11 +119,11 @@ class OrderDetailScreen extends ConsumerWidget {
             ],
           ),
           const SizedBox(height: 24),
-          if (order.status != OrderStatus.delivered)
+          if (showQr)
             GradientCta(
               label: 'Show delivery QR',
               icon: Icons.qr_code_2_rounded,
-              onPressed: () => context.push('/qr/${order.id}'),
+              onPressed: () => context.push('/qr/$orderId'),
             ),
         ],
       ),

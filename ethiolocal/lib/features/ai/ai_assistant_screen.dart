@@ -4,8 +4,10 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
 import 'package:intl/intl.dart';
 
-import '../../core/data/mock_catalog.dart';
+import '../../core/api/api_exception.dart';
+import '../../core/config/api_config.dart';
 import '../../core/models/product.dart';
+import '../../core/providers/api_providers.dart';
 import '../../core/widgets/pressable_scale.dart';
 
 final _etb = NumberFormat.currency(symbol: 'Br ', decimalDigits: 0);

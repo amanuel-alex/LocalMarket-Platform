@@ -13,8 +13,7 @@ class QrDeliveryScreen extends ConsumerWidget {
 
   @override
   Widget build(BuildContext context, WidgetRef ref) {
-    final order = ref.watch(orderProvider(orderId));
-    final payload = order?.deliveryQrPayload ?? 'ETHIOLOCAL|$orderId|UNKNOWN';
+    final async = ref.watch(orderDetailProvider(orderId));
     final scheme = Theme.of(context).colorScheme;
 
     return Scaffold(
@@ -22,75 +21,82 @@ class QrDeliveryScreen extends ConsumerWidget {
         title: const Text('Delivery QR'),
         leading: IconButton(icon: const Icon(Icons.close_rounded), onPressed: () => context.pop()),
       ),
-      body: Center(
-        child: SingleChildScrollView(
-          padding: const EdgeInsets.all(28),
-          child: Column(
-            children: [
-              Text(
-                'Almost there',
-                style: Theme.of(context).textTheme.headlineSmall?.copyWith(fontWeight: FontWeight.w800),
-              ),
-              const SizedBox(height: 10),
-              Text(
-                'Show this to the seller to confirm delivery',
-                textAlign: TextAlign.center,
-                style: Theme.of(context).textTheme.bodyLarge?.copyWith(
-                      color: scheme.onSurface.withValues(alpha: 0.65),
-                      height: 1.5,
-                    ),
-              ),
-              const SizedBox(height: 36),
-              GlassCard(
-                padding: const EdgeInsets.all(28),
-                borderRadius: 28,
-                child: Column(
-                  children: [
-                    Container(
-                      padding: const EdgeInsets.all(16),
-                      decoration: BoxDecoration(
-                        color: Colors.white,
-                        borderRadius: BorderRadius.circular(20),
-                        boxShadow: [
-                          BoxShadow(
-                            color: Colors.black.withValues(alpha: 0.06),
-                            blurRadius: 24,
-                            offset: const Offset(0, 12),
+      body: async.when(
+        loading: () => const Center(child: CircularProgressIndicator.adaptive()),
+        error: (e, _) => Center(child: Padding(padding: const EdgeInsets.all(24), child: Text(e.toString()))),
+        data: (order) {
+          final payload = order?.pickupQrToken ?? order?.deliveryQrPayload ?? 'ETHIOLOCAL|$orderId';
+          return Center(
+            child: SingleChildScrollView(
+              padding: const EdgeInsets.all(28),
+              child: Column(
+                children: [
+                  Text(
+                    'Almost there',
+                    style: Theme.of(context).textTheme.headlineSmall?.copyWith(fontWeight: FontWeight.w800),
+                  ),
+                  const SizedBox(height: 10),
+                  Text(
+                    'Show this to the seller to confirm delivery',
+                    textAlign: TextAlign.center,
+                    style: Theme.of(context).textTheme.bodyLarge?.copyWith(
+                          color: scheme.onSurface.withValues(alpha: 0.65),
+                          height: 1.5,
+                        ),
+                  ),
+                  const SizedBox(height: 36),
+                  GlassCard(
+                    padding: const EdgeInsets.all(28),
+                    borderRadius: 28,
+                    child: Column(
+                      children: [
+                        Container(
+                          padding: const EdgeInsets.all(16),
+                          decoration: BoxDecoration(
+                            color: Colors.white,
+                            borderRadius: BorderRadius.circular(20),
+                            boxShadow: [
+                              BoxShadow(
+                                color: Colors.black.withValues(alpha: 0.06),
+                                blurRadius: 24,
+                                offset: const Offset(0, 12),
+                              ),
+                            ],
                           ),
-                        ],
-                      ),
-                      child: QrImageView(
-                        data: payload,
-                        version: QrVersions.auto,
-                        size: 220,
-                        eyeStyle: const QrEyeStyle(eyeShape: QrEyeShape.square, color: Color(0xFF312E81)),
-                        dataModuleStyle: const QrDataModuleStyle(dataModuleShape: QrDataModuleShape.square, color: Color(0xFF1E1B4B)),
-                        gapless: true,
-                      ),
-                    ),
-                    const SizedBox(height: 20),
-                    Text(
-                      'Order ${orderId.length > 10 ? orderId.substring(orderId.length - 8) : orderId}',
-                      style: Theme.of(context).textTheme.labelLarge?.copyWith(
-                            color: scheme.onSurface.withValues(alpha: 0.55),
+                          child: QrImageView(
+                            data: payload,
+                            version: QrVersions.auto,
+                            size: 220,
+                            eyeStyle: const QrEyeStyle(eyeShape: QrEyeShape.square, color: Color(0xFF312E81)),
+                            dataModuleStyle: const QrDataModuleStyle(dataModuleShape: QrDataModuleShape.square, color: Color(0xFF1E1B4B)),
+                            gapless: true,
                           ),
+                        ),
+                        const SizedBox(height: 20),
+                        Text(
+                          'Order ${orderId.length > 10 ? orderId.substring(orderId.length - 8) : orderId}',
+                          style: Theme.of(context).textTheme.labelLarge?.copyWith(
+                                color: scheme.onSurface.withValues(alpha: 0.55),
+                              ),
+                        ),
+                      ],
                     ),
-                  ],
-                ),
+                  ),
+                  const SizedBox(height: 28),
+                  FilledButton.tonalIcon(
+                    onPressed: () => context.pop(),
+                    icon: const Icon(Icons.check_circle_outline_rounded),
+                    label: const Text('Done'),
+                    style: FilledButton.styleFrom(
+                      padding: const EdgeInsets.symmetric(horizontal: 28, vertical: 14),
+                      shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(16)),
+                    ),
+                  ),
+                ],
               ),
-              const SizedBox(height: 28),
-              FilledButton.tonalIcon(
-                onPressed: () => context.pop(),
-                icon: const Icon(Icons.check_circle_outline_rounded),
-                label: const Text('Done'),
-                style: FilledButton.styleFrom(
-                  padding: const EdgeInsets.symmetric(horizontal: 28, vertical: 14),
-                  shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(16)),
-                ),
-              ),
-            ],
-          ),
-        ),
+            ),
+          );
+        },
       ),
     );
   }

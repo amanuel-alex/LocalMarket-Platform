@@ -7,6 +7,7 @@ import 'package:intl/intl.dart';
 import '../../core/models/product.dart';
 import '../../core/providers/cart_provider.dart';
 import '../../core/providers/catalog_provider.dart';
+import '../../core/widgets/error_retry.dart';
 import '../../core/widgets/gradient_cta.dart';
 import '../../core/widgets/pressable_scale.dart';
 
@@ -19,14 +20,32 @@ class ProductDetailScreen extends ConsumerWidget {
 
   @override
   Widget build(BuildContext context, WidgetRef ref) {
-    final product = ref.watch(productProvider(productId));
-    if (product == null) {
-      return Scaffold(
-        appBar: AppBar(title: const Text('Product')),
-        body: const Center(child: Text('Product not found')),
-      );
-    }
+    final async = ref.watch(productWithCompareProvider(productId));
 
+    return async.when(
+      loading: () => Scaffold(
+        appBar: AppBar(title: const Text('Product')),
+        body: const Center(child: CircularProgressIndicator.adaptive()),
+      ),
+      error: (e, _) => Scaffold(
+        appBar: AppBar(title: const Text('Product')),
+        body: ErrorRetryView(
+          message: e.toString(),
+          onRetry: () => ref.invalidate(productWithCompareProvider(productId)),
+        ),
+      ),
+      data: (product) => _ProductDetailContent(product: product),
+    );
+  }
+}
+
+class _ProductDetailContent extends ConsumerWidget {
+  const _ProductDetailContent({required this.product});
+
+  final Product product;
+
+  @override
+  Widget build(BuildContext context, WidgetRef ref) {
     final scheme = Theme.of(context).colorScheme;
 
     return Scaffold(
@@ -72,8 +91,8 @@ class ProductDetailScreen extends ConsumerWidget {
                 child: CachedNetworkImage(
                   imageUrl: product.imageUrl,
                   fit: BoxFit.cover,
-                  placeholder: (_, __) => Container(color: scheme.surfaceContainerHighest),
-                  errorWidget: (_, __, ___) => Container(color: scheme.surfaceContainerHighest),
+                  placeholder: (_, progress) => Container(color: scheme.surfaceContainerHighest),
+                  errorWidget: (_, err, st) => Container(color: scheme.surfaceContainerHighest),
                 ),
               ),
             ),
@@ -266,7 +285,7 @@ class _CompareSection extends StatelessWidget {
                           Text(o.storeName, style: Theme.of(context).textTheme.titleSmall?.copyWith(fontWeight: FontWeight.w700)),
                           const SizedBox(height: 4),
                           Text(
-                            '${o.distanceKm.toStringAsFixed(1)} km away',
+                            o.distanceKm > 0 ? '${o.distanceKm.toStringAsFixed(1)} km away' : 'Same catalog group',
                             style: Theme.of(context).textTheme.labelMedium?.copyWith(color: scheme.onSurface.withValues(alpha: 0.5)),
                           ),
                         ],

@@ -3,6 +3,9 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
 import 'package:intl/intl.dart';
 
+import '../../core/api/api_exception.dart';
+import '../../core/providers/api_providers.dart';
+import '../../core/providers/auth_session_provider.dart';
 import '../../core/providers/cart_provider.dart';
 import '../../core/providers/orders_provider.dart';
 import '../../core/widgets/glass_card.dart';
@@ -12,11 +15,56 @@ final _etb = NumberFormat.currency(symbol: 'Br ', decimalDigits: 0);
 
 final _paymentProvider = StateProvider<String>((ref) => 'telebirr');
 
-class CheckoutScreen extends ConsumerWidget {
+class CheckoutScreen extends ConsumerStatefulWidget {
   const CheckoutScreen({super.key});
 
   @override
-  Widget build(BuildContext context, WidgetRef ref) {
+  ConsumerState<CheckoutScreen> createState() => _CheckoutScreenState();
+}
+
+class _CheckoutScreenState extends ConsumerState<CheckoutScreen> {
+  var _submitting = false;
+
+  Future<void> _confirm() async {
+    final lines = ref.read(cartProvider);
+    if (lines.isEmpty) return;
+    final auth = ref.read(authSessionProvider);
+    if (auth == null) {
+      if (mounted) context.go('/auth');
+      return;
+    }
+    setState(() => _submitting = true);
+    try {
+      final api = ref.read(localMarketApiProvider);
+      for (final line in lines) {
+        await api.createOrder(
+          accessToken: auth.accessToken,
+          productId: line.product.id,
+          quantity: line.qty,
+        );
+      }
+      ref.read(cartProvider.notifier).clear();
+      ref.invalidate(ordersProvider);
+      if (!mounted) return;
+      ScaffoldMessenger.of(context).showSnackBar(
+        const SnackBar(content: Text('Orders created on API — complete payment in your LocalMarket flow.')),
+      );
+      context.go('/orders');
+    } on ApiException catch (e) {
+      if (mounted) {
+        ScaffoldMessenger.of(context).showSnackBar(SnackBar(content: Text(e.message)));
+      }
+    } catch (e) {
+      if (mounted) {
+        ScaffoldMessenger.of(context).showSnackBar(SnackBar(content: Text(e.toString())));
+      }
+    } finally {
+      if (mounted) setState(() => _submitting = false);
+    }
+  }
+
+  @override
+  Widget build(BuildContext context) {
     final lines = ref.watch(cartProvider);
     final subtotal = lines.subtotal;
     const commissionRate = 0.03;
@@ -79,6 +127,12 @@ class CheckoutScreen extends ConsumerWidget {
               ],
             ),
           ),
+          Text(
+            'Each cart line is sent as POST /orders (LocalMarket). Fees below are estimates until payment is completed in the platform.',
+            style: Theme.of(context).textTheme.bodySmall?.copyWith(
+                  color: Theme.of(context).colorScheme.onSurface.withValues(alpha: 0.55),
+                ),
+          ),
           const SizedBox(height: 28),
           Text('Pay with', style: Theme.of(context).textTheme.titleMedium?.copyWith(fontWeight: FontWeight.w800)),
           const SizedBox(height: 12),
@@ -103,17 +157,9 @@ class CheckoutScreen extends ConsumerWidget {
         child: Padding(
           padding: const EdgeInsets.fromLTRB(20, 8, 20, 16),
           child: GradientCta(
-            label: 'Confirm & pay',
+            label: _submitting ? 'Submitting…' : 'Confirm & pay',
             icon: Icons.lock_rounded,
-            onPressed: () {
-              ref.read(ordersProvider.notifier).placeFromCart(lines);
-              ref.read(cartProvider.notifier).clear();
-              if (!context.mounted) return;
-              ScaffoldMessenger.of(context).showSnackBar(
-                const SnackBar(content: Text('Order placed — pending payment')),
-              );
-              context.go('/orders');
-            },
+            onPressed: _submitting ? null : _confirm,
           ),
         ),
       ),

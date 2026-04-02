@@ -6,6 +6,7 @@ import 'package:intl/intl.dart';
 import '../../core/models/order.dart';
 import '../../core/providers/orders_provider.dart';
 import '../../core/widgets/empty_state.dart';
+import '../../core/widgets/error_retry.dart';
 
 final _etb = NumberFormat.currency(symbol: 'Br ', decimalDigits: 0);
 final _dateFmt = DateFormat.MMMd();
@@ -15,32 +16,43 @@ class OrdersScreen extends ConsumerWidget {
 
   @override
   Widget build(BuildContext context, WidgetRef ref) {
-    final orders = ref.watch(ordersProvider);
+    final async = ref.watch(ordersProvider);
 
     return Scaffold(
       appBar: AppBar(title: const Text('Orders')),
-      body: orders.isEmpty
-          ? EthioEmptyState(
+      body: async.when(
+        loading: () => const Center(child: CircularProgressIndicator.adaptive()),
+        error: (e, _) => ErrorRetryView(
+          message: e.toString(),
+          onRetry: () => ref.invalidate(ordersProvider),
+        ),
+        data: (orders) {
+          if (orders.isEmpty) {
+            return EthioEmptyState(
               title: 'No orders yet',
-              subtitle: 'When you checkout, your purchases and delivery status show up here.',
+              subtitle: 'Checkout from the cart — each line creates an order on LocalMarket API.',
               icon: Icons.receipt_long_rounded,
               actionLabel: 'Shop now',
               onAction: () => context.go('/home'),
-            )
-          : RefreshIndicator(
-              onRefresh: () async {
-                await Future<void>.delayed(const Duration(milliseconds: 600));
+            );
+          }
+          return RefreshIndicator(
+            onRefresh: () async {
+              ref.invalidate(ordersProvider);
+              await ref.read(ordersProvider.future);
+            },
+            child: ListView.separated(
+              padding: const EdgeInsets.all(20),
+              itemCount: orders.length,
+              separatorBuilder: (context, unusedIndex) => const SizedBox(height: 12),
+              itemBuilder: (context, i) {
+                final o = orders[i];
+                return _OrderTile(order: o, onTap: () => context.push('/orders/${o.id}'));
               },
-              child: ListView.separated(
-                padding: const EdgeInsets.all(20),
-                itemCount: orders.length,
-                separatorBuilder: (_, __) => const SizedBox(height: 12),
-                itemBuilder: (context, i) {
-                  final o = orders[i];
-                  return _OrderTile(order: o, onTap: () => context.push('/orders/${o.id}'));
-                },
-              ),
             ),
+          );
+        },
+      ),
     );
   }
 }
@@ -58,6 +70,7 @@ class _OrderTile extends StatelessWidget {
       OrderStatus.pending => ('Pending', scheme.tertiary),
       OrderStatus.paid => ('Paid', scheme.primary),
       OrderStatus.delivered => ('Delivered', Colors.green.shade600),
+      OrderStatus.cancelled => ('Cancelled', scheme.onSurface.withValues(alpha: 0.45)),
     };
 
     return Material(

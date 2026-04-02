@@ -106,9 +106,3 @@ class LocalMarketApi {
     return double.tryParse('$v') ?? 0;
   }
 }
-
-/// Placeholder when compare group exists (for future UI).
-class ProductGroupCompare {
-  const ProductGroupCompare({required this.groupId});
-  final String groupId;
-}
