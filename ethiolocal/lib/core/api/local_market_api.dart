@@ -94,11 +94,10 @@ class LocalMarketApi {
     double? lat,
     double? lng,
   }) async {
-    return _client.postJson('/assistant/chat', {
-      'message': message,
-      if (lat != null) 'lat': lat,
-      if (lng != null) 'lng': lng,
-    });
+    final body = <String, dynamic>{'message': message};
+    if (lat != null) body['lat'] = lat;
+    if (lng != null) body['lng'] = lng;
+    return _client.postJson('/assistant/chat', body);
   }
 
   static double _numToDouble(dynamic v) {

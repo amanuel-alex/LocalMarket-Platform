@@ -25,7 +25,6 @@ class EthioLocalApp extends ConsumerWidget {
       themeMode: themeMode,
       locale: kDebugMode ? (DevicePreview.locale(context) ?? locale) : locale,
       routerConfig: router,
-      useInheritedMediaQuery: true,
       builder: DevicePreview.appBuilder,
     );
   }

@@ -40,7 +40,7 @@ class CartScreen extends ConsumerWidget {
                   child: ListView.separated(
                     padding: const EdgeInsets.all(20),
                     itemCount: lines.length,
-                    separatorBuilder: (_, __) => const SizedBox(height: 12),
+                    separatorBuilder: (context, unusedIndex) => const SizedBox(height: 12),
                     itemBuilder: (context, i) {
                       final line = lines[i];
                       final p = line.product;
