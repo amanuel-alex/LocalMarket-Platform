@@ -18,6 +18,9 @@ import '../providers/app_state_provider.dart';
 import '../providers/auth_session_provider.dart';
 import 'go_router_refresh.dart';
 
+/// [state.pageKey] can collide across [StatefulShellRoute] branches / nested stacks; Navigator requires unique keys.
+LocalKey _pageKeyFor(GoRouterState state) => ValueKey<String>('${state.matchedLocation}|${state.uri}');
+
 CustomTransitionPage<void> _fadeSlide(Widget child, LocalKey key) {
   return CustomTransitionPage<void>(
     key: key,
@@ -67,11 +70,11 @@ final appRouterProvider = Provider<GoRouter>((ref) {
       ),
       GoRoute(
         path: '/onboarding',
-        pageBuilder: (context, state) => _fadeSlide(const OnboardingScreen(), state.pageKey),
+        pageBuilder: (context, state) => _fadeSlide(const OnboardingScreen(), _pageKeyFor(state)),
       ),
       GoRoute(
         path: '/auth',
-        pageBuilder: (context, state) => _fadeSlide(const AuthScreen(), state.pageKey),
+        pageBuilder: (context, state) => _fadeSlide(const AuthScreen(), _pageKeyFor(state)),
       ),
       StatefulShellRoute.indexedStack(
         builder: (context, state, navigationShell) {
@@ -82,13 +85,13 @@ final appRouterProvider = Provider<GoRouter>((ref) {
             routes: [
               GoRoute(
                 path: '/home',
-                pageBuilder: (context, state) => _fadeSlide(const HomeScreen(), state.pageKey),
+                pageBuilder: (context, state) => _fadeSlide(const HomeScreen(), _pageKeyFor(state)),
                 routes: [
                   GoRoute(
                     path: 'product/:id',
                     pageBuilder: (context, state) {
                       final id = state.pathParameters['id']!;
-                      return _fadeSlide(ProductDetailScreen(productId: id), state.pageKey);
+                      return _fadeSlide(ProductDetailScreen(productId: id), _pageKeyFor(state));
                     },
                   ),
                 ],
@@ -99,13 +102,13 @@ final appRouterProvider = Provider<GoRouter>((ref) {
             routes: [
               GoRoute(
                 path: '/orders',
-                pageBuilder: (context, state) => _fadeSlide(const OrdersScreen(), state.pageKey),
+                pageBuilder: (context, state) => _fadeSlide(const OrdersScreen(), _pageKeyFor(state)),
                 routes: [
                   GoRoute(
                     path: ':id',
                     pageBuilder: (context, state) {
                       final id = state.pathParameters['id']!;
-                      return _fadeSlide(OrderDetailScreen(orderId: id), state.pageKey);
+                      return _fadeSlide(OrderDetailScreen(orderId: id), _pageKeyFor(state));
                     },
                   ),
                 ],
@@ -116,7 +119,7 @@ final appRouterProvider = Provider<GoRouter>((ref) {
             routes: [
               GoRoute(
                 path: '/profile',
-                pageBuilder: (context, state) => _fadeSlide(const ProfileScreen(), state.pageKey),
+                pageBuilder: (context, state) => _fadeSlide(const ProfileScreen(), _pageKeyFor(state)),
               ),
             ],
           ),
@@ -124,21 +127,21 @@ final appRouterProvider = Provider<GoRouter>((ref) {
       ),
       GoRoute(
         path: '/cart',
-        pageBuilder: (context, state) => _fadeSlide(const CartScreen(), state.pageKey),
+        pageBuilder: (context, state) => _fadeSlide(const CartScreen(), _pageKeyFor(state)),
       ),
       GoRoute(
         path: '/checkout',
-        pageBuilder: (context, state) => _fadeSlide(const CheckoutScreen(), state.pageKey),
+        pageBuilder: (context, state) => _fadeSlide(const CheckoutScreen(), _pageKeyFor(state)),
       ),
       GoRoute(
         path: '/ai',
-        pageBuilder: (context, state) => _fadeSlide(const AiAssistantScreen(), state.pageKey),
+        pageBuilder: (context, state) => _fadeSlide(const AiAssistantScreen(), _pageKeyFor(state)),
       ),
       GoRoute(
         path: '/qr/:orderId',
         pageBuilder: (context, state) {
           final id = state.pathParameters['orderId']!;
-          return _fadeSlide(QrDeliveryScreen(orderId: id), state.pageKey);
+          return _fadeSlide(QrDeliveryScreen(orderId: id), _pageKeyFor(state));
         },
       ),
     ],
