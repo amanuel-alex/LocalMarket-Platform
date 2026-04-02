@@ -33,6 +33,7 @@ describe("Health", () => {
     const res = await api().get("/api/v1/meta/checklist");
     expect(res.status).toBe(200);
     expect(res.body.features.smartRanking).toBe(true);
+    expect(res.body.features.inventoryStock).toBe(true);
     expect(res.body.features.hybridAssistant).toBe(true);
     expect(res.body.checklist.some((c: { id: string }) => c.id === "smart_ranking")).toBe(true);
   });
@@ -201,6 +202,63 @@ describe("Sellers / location", () => {
       sellerLat: -1.28,
       sellerLng: 36.82,
     });
+  });
+});
+
+describe("Inventory", () => {
+  it("rejects order when quantity exceeds available stock", async () => {
+    const { token: st } = await seedSeller("Inv", uniquePhone("inv"));
+    const pr = await createProductAsSeller(st, {
+      title: "Low stock",
+      description: "d",
+      price: 10,
+      category: "c",
+      location: { lat: 0, lng: 0 },
+      stockQuantity: 1,
+    });
+    expect(pr.status).toBe(201);
+    const productId = pr.body.product.id;
+
+    const { token: bt } = await seedBuyer("IB", uniquePhone("ib"));
+    const ord = await api()
+      .post("/orders")
+      .set("Authorization", `Bearer ${bt}`)
+      .send({ productId, quantity: 2 });
+    expect(ord.status).toBe(409);
+    expect(ord.body.error.code).toBe("OUT_OF_STOCK");
+  });
+
+  it("buyer cancels pending order and stock is restored", async () => {
+    const { token: st } = await seedSeller("Inv2", uniquePhone("inv2"));
+    const pr = await createProductAsSeller(st, {
+      title: "Restock",
+      description: "d",
+      price: 5,
+      category: "c",
+      location: { lat: 0, lng: 0 },
+      stockQuantity: 2,
+    });
+    expect(pr.status).toBe(201);
+    const productId = pr.body.product.id;
+
+    const { token: bt } = await seedBuyer("IB2", uniquePhone("ib2"));
+    const ord = await api()
+      .post("/orders")
+      .set("Authorization", `Bearer ${bt}`)
+      .send({ productId, quantity: 1 });
+    expect(ord.status).toBe(201);
+
+    let p = await prisma.product.findUnique({ where: { id: productId } });
+    expect(p!.stockQuantity).toBe(1);
+
+    const cancel = await api()
+      .post(`/orders/${ord.body.order.id}/cancel`)
+      .set("Authorization", `Bearer ${bt}`);
+    expect(cancel.status).toBe(200);
+    expect(cancel.body.order.status).toBe("cancelled");
+
+    p = await prisma.product.findUnique({ where: { id: productId } });
+    expect(p!.stockQuantity).toBe(2);
   });
 });
 

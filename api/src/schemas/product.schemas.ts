@@ -9,6 +9,8 @@ export const createProductSchema = z.object({
   title: z.string().trim().min(1).max(200),
   description: z.string().max(10_000),
   price: z.number().positive().finite(),
+  /** Units available to sell (atomically decremented per pending order). */
+  stockQuantity: z.coerce.number().int().min(0).max(999_999).optional().default(100),
   category: z.string().trim().min(1).max(120),
   location: locationSchema,
   imageUrl: z.string().url().max(2048).optional(),

@@ -38,6 +38,9 @@ export async function createDispute(buyerId: string, input: CreateDisputeInput):
   if (order.status === "pending") {
     throw new AppError(409, "ORDER_NOT_PAYABLE", "Disputes apply after the order is paid");
   }
+  if (order.status === "cancelled") {
+    throw new AppError(409, "ORDER_NOT_PAYABLE", "Disputes do not apply to cancelled orders");
+  }
 
   const active = await prisma.dispute.findFirst({
     where: {

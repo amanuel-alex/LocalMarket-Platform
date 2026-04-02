@@ -63,6 +63,9 @@ export async function initiateStkPush(
   if (order.buyerId !== buyerId) {
     throw new AppError(403, "FORBIDDEN", "You can only pay for your own orders");
   }
+  if (order.status === "cancelled") {
+    throw new AppError(409, "ORDER_NOT_PAYABLE", "This order was cancelled");
+  }
   if (order.status !== "pending") {
     throw new AppError(409, "ORDER_NOT_PAYABLE", "Order is not pending payment");
   }

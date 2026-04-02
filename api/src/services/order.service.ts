@@ -20,6 +20,8 @@ import {
   newOrderSellerCopy,
 } from "../i18n/notificationCopy.js";
 import * as walletService from "./wallet.service.js";
+import * as inventoryService from "./inventory.service.js";
+import { bumpProductCatalogCacheEpoch } from "../cache/productCatalog.cache.js";
 
 type OrderWithProduct = Order & {
   product: Pick<Product, "id" | "title" | "price">;
@@ -112,6 +114,7 @@ export async function createOrder(buyerId: string, input: CreateOrderInput): Pro
   const totalPrice = product.price.times(input.quantity);
 
   const row = await prisma.$transaction(async (tx) => {
+    await inventoryService.reserveStockForOrder(tx, product.id, input.quantity);
     return tx.order.create({
       data: {
         buyerId,
@@ -124,6 +127,8 @@ export async function createOrder(buyerId: string, input: CreateOrderInput): Pro
       include: { product: { select: productSelect } },
     });
   });
+
+  await bumpProductCatalogCacheEpoch();
 
   const locs = await getPreferredLocalesMap([product.sellerId]);
   const sellerL = locs.get(product.sellerId) ?? "en";
@@ -139,6 +144,51 @@ export async function createOrder(buyerId: string, input: CreateOrderInput): Pro
   ]);
 
   return toOrderJson(row, { userId: buyerId, role: "buyer" });
+}
+
+export async function cancelPendingOrderByBuyer(buyerId: string, orderId: string): Promise<OrderJson> {
+  const row = await prisma.order.findUnique({
+    where: { id: orderId },
+    include: { product: { select: productSelect } },
+  });
+  if (!row) {
+    throw new AppError(404, "NOT_FOUND", "Order not found");
+  }
+  if (row.buyerId !== buyerId) {
+    throw new AppError(403, "FORBIDDEN", "You can only cancel your own orders");
+  }
+  if (row.status !== "pending") {
+    throw new AppError(409, "ORDER_NOT_READY", "Only unpaid pending orders can be cancelled");
+  }
+  const paid = await prisma.payment.count({
+    where: { orderId, status: "completed" },
+  });
+  if (paid > 0) {
+    throw new AppError(409, "ORDER_NOT_PAYABLE", "Cannot cancel an order with a completed payment");
+  }
+  const paymentInFlight = await prisma.payment.count({
+    where: { orderId, status: "pending" },
+  });
+  if (paymentInFlight > 0) {
+    throw new AppError(
+      409,
+      "PAYMENT_IN_PROGRESS",
+      "Finish or wait for payment to finish before cancelling this order",
+    );
+  }
+
+  const updated = await prisma.$transaction(async (tx) => {
+    await inventoryService.releaseReservedStockForOrder(tx, row.productId, row.quantity);
+    return tx.order.update({
+      where: { id: orderId },
+      data: { status: "cancelled" },
+      include: { product: { select: productSelect } },
+    });
+  });
+
+  await bumpProductCatalogCacheEpoch();
+
+  return toOrderJson(updated, { userId: buyerId, role: "buyer" });
 }
 
 export async function listOrdersForUser(userId: string, role: Role): Promise<OrderJson[]> {
@@ -379,11 +429,20 @@ export async function adminOverrideOrder(
     data.deliveryStartedAt = null;
   }
 
-  const updated = await prisma.order.update({
-    where: { id: orderId },
-    data,
-    include: { product: { select: productSelect } },
+  const updated = await prisma.$transaction(async (tx) => {
+    if (input.status === "cancelled" && row.status === "pending") {
+      await inventoryService.releaseReservedStockForOrder(tx, row.productId, row.quantity);
+    }
+    return tx.order.update({
+      where: { id: orderId },
+      data,
+      include: { product: { select: productSelect } },
+    });
   });
+
+  if (input.status === "cancelled" && row.status === "pending") {
+    await bumpProductCatalogCacheEpoch();
+  }
 
   await auditService.recordAudit({
     actorId: adminId,

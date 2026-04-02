@@ -9,6 +9,7 @@ export const productCatalogSelect = {
   title: true,
   description: true,
   price: true,
+  stockQuantity: true,
   category: true,
   lat: true,
   lng: true,
@@ -56,7 +57,7 @@ export async function findProductById(id: string): Promise<ProductCatalogRecord 
 export async function findProductForNewOrder(productId: string) {
   return prisma.product.findUnique({
     where: { id: productId },
-    select: { id: true, title: true, price: true, sellerId: true },
+    select: { id: true, title: true, price: true, sellerId: true, stockQuantity: true },
   });
 }
 
@@ -65,6 +66,7 @@ export async function findProductsWithSellerForNearby(
   take: number,
 ): Promise<ProductWithSellerCoords[]> {
   return prisma.product.findMany({
+    where: { stockQuantity: { gt: 0 } },
     take,
     orderBy: { updatedAt: "desc" },
     include: { seller: { select: sellerCoordsSelect } },
@@ -97,7 +99,7 @@ export async function findPeerProductsByGroup(
   take: number,
 ): Promise<ProductCatalogRecord[]> {
   return prisma.product.findMany({
-    where: { productGroupId, id: { not: excludeProductId } },
+    where: { productGroupId, id: { not: excludeProductId }, stockQuantity: { gt: 0 } },
     orderBy: { updatedAt: "desc" },
     take,
     select: productCatalogSelect,
@@ -115,6 +117,7 @@ export async function findSimilarInCategoryByPriceBand(
     where: {
       category,
       id: { not: excludeProductId },
+      stockQuantity: { gt: 0 },
       price: { gte: minPrice, lte: maxPrice },
     },
     orderBy: { updatedAt: "desc" },
@@ -127,7 +130,7 @@ export async function findProductsInGroupOrderedByPrice(
   productGroupId: string,
 ): Promise<ProductCatalogRecord[]> {
   return prisma.product.findMany({
-    where: { productGroupId },
+    where: { productGroupId, stockQuantity: { gt: 0 } },
     orderBy: [{ price: "asc" }, { updatedAt: "desc" }],
     select: productCatalogSelect,
   });

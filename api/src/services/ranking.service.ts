@@ -194,7 +194,10 @@ export async function listRankedProducts(input: {
 
   return cacheGetOrSetRanked(fp, async () => {
     const rows = await productRepo.findProductsForSearch(
-      input.category ? { category: input.category } : {},
+      {
+        stockQuantity: { gt: 0 },
+        ...(input.category ? { category: input.category } : {}),
+      },
       RANK_FETCH_CAP,
     );
 

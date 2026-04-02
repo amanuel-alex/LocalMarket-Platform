@@ -72,6 +72,9 @@ export async function buildOrderReceipt(
   if (order.status === "pending") {
     throw new AppError(409, "ORDER_NOT_PAYABLE", "Receipt is available after payment");
   }
+  if (order.status === "cancelled") {
+    throw new AppError(409, "ORDER_NOT_PAYABLE", "Receipt is not available for cancelled orders");
+  }
 
   const settings = await platformSettingsService.getPlatformSettings();
   const bps = settings.commissionRateBps;

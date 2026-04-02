@@ -91,6 +91,7 @@ export async function createProductAsSeller(
     price: number;
     category: string;
     location: { lat: number; lng: number };
+    stockQuantity?: number;
   },
 ): Promise<request.Response> {
   return api().post("/products").set("Authorization", `Bearer ${token}`).send(body);

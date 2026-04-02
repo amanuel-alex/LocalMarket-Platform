@@ -292,6 +292,7 @@ export type ProductRow = {
   title: string;
   description: string;
   price: number;
+  stockQuantity: number;
   category: string;
   location: { lat: number; lng: number };
   imageUrl: string | null;

@@ -27,6 +27,7 @@ export const checklist: RequestHandler = (_req, res) => {
     commissionEngine: true,
     sellerInsights: true,
     orderReceipts: true,
+    inventoryStock: true,
     redisCache: Boolean(redis),
     backgroundJobs: isQueueInfrastructureEnabled(),
     cloudinaryUploads: Boolean(env.CLOUDINARY_CLOUD_NAME && env.CLOUDINARY_API_KEY),
@@ -39,7 +40,7 @@ export const checklist: RequestHandler = (_req, res) => {
     { id: "hybrid_ai", label: "Assistant: rules + smart rank when user asks for best / popular / trusted", ok: true },
     { id: "security_stack", label: "Helmet · rate limits · sanitization · JWT access+refresh", ok: true },
     { id: "observability", label: "Pino logs · request/error DB logs · admin metrics summary", ok: true },
-    { id: "business", label: "5% commission default · seller insights · JSON receipts", ok: true },
+    { id: "business", label: "5% commission · seller insights · JSON receipts · stock / oversell guard", ok: true },
     { id: "redis", label: "Redis cache / queues", ok: features.redisCache },
     { id: "uploads", label: "Product image uploads", ok: features.cloudinaryUploads },
   ];

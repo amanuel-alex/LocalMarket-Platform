@@ -67,6 +67,16 @@ const BY_CODE: Partial<Record<string, Record<Locale, string>>> = {
     am: "ትዕዛዙ ለዚህ ዝግጅት ዝግጁ አይደለም።",
     om: "Ajajichi dalaga kanaaf qophaa’ee hin jiru.",
   },
+  OUT_OF_STOCK: {
+    en: "Not enough stock available for this quantity",
+    am: "ለዚህ ብዛት በቂ ክምችት የለም።",
+    om: "Baay’ina kanaaf kuusaa gahaa hin jiru.",
+  },
+  PAYMENT_IN_PROGRESS: {
+    en: "A payment is already in progress for this order",
+    am: "ለዚህ ትዕዛዝ ክፍያ በሂደት ላይ ነው።",
+    om: "Kaffaltiin ajaja kanaaf duraan gaggaarii irratti jira.",
+  },
   ALREADY_CONFIRMED: {
     en: "Already confirmed",
     am: "ቀድሞ ተረጋግጧል።",

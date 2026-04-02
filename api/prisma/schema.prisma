@@ -31,6 +31,7 @@ enum OrderStatus {
   pending
   paid
   completed
+  cancelled
 }
 
 enum PaymentStatus {
@@ -254,6 +255,10 @@ model Product {
   title          String
   description    String
   price          Decimal         @db.Decimal(14, 2)
+  /**
+   * Sellable units on hand. Decremented atomically when a buyer creates a pending order; restored if the order is cancelled before payment.
+   */
+  stockQuantity  Int             @default(0)
   category       String
   lat            Float
   lng            Float

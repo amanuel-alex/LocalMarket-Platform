@@ -21,6 +21,16 @@ export const create: RequestHandler = asyncHandler(async (req, res, next) => {
   res.status(201).json({ order });
 });
 
+export const cancelPending: RequestHandler = asyncHandler(async (req, res, next) => {
+  const parsed = orderIdParamSchema.safeParse(req.params);
+  if (!parsed.success) {
+    next(parsed.error);
+    return;
+  }
+  const order = await orderService.cancelPendingOrderByBuyer(req.user!.id, parsed.data.id);
+  res.json({ order });
+});
+
 export const list: RequestHandler = asyncHandler(async (req, res) => {
   const orders = await orderService.listOrdersForUser(req.user!.id, req.user!.role);
   res.json({ orders });

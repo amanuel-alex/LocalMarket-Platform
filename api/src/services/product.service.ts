@@ -39,6 +39,7 @@ export type ProductJson = {
   title: string;
   description: string;
   price: number;
+  stockQuantity: number;
   category: string;
   location: { lat: number; lng: number };
   imageUrl: string | null;
@@ -72,6 +73,7 @@ export function toProductJson(row: Product | ProductCatalogRecord | ProductWithS
     title: row.title,
     description: row.description,
     price: row.price.toNumber(),
+    stockQuantity: row.stockQuantity,
     category: row.category,
     location: { lat: row.lat, lng: row.lng },
     imageUrl: row.imageUrl ?? null,
@@ -94,6 +96,7 @@ export async function createProduct(sellerId: string, input: CreateProductInput)
     title: input.title,
     description: input.description,
     price: input.price,
+    stockQuantity: input.stockQuantity,
     category: input.category,
     lat: input.location.lat,
     lng: input.location.lng,
@@ -109,7 +112,7 @@ export async function listProducts(params: ProductListQuery): Promise<ProductLis
   const { page, limit, category, minPrice, maxPrice, sellerId, sort } = params;
   const skip = (page - 1) * limit;
 
-  const where: Prisma.ProductWhereInput = {};
+  const where: Prisma.ProductWhereInput = { stockQuantity: { gt: 0 } };
   if (category) where.category = category;
   if (sellerId) where.sellerId = sellerId;
   if (minPrice !== undefined || maxPrice !== undefined) {
@@ -233,7 +236,7 @@ export async function listNearbyProducts(query: NearbyProductsQuery): Promise<Ne
 export async function searchProducts(query: ProductSearchQuery): Promise<SearchProductJson[]> {
   const fp = productSearchFingerprint(query);
   return cacheGetOrSetSearch(fp, async () => {
-    const where: Prisma.ProductWhereInput = {};
+    const where: Prisma.ProductWhereInput = { stockQuantity: { gt: 0 } };
 
     if (query.q) {
       where.OR = [
@@ -429,6 +432,9 @@ export async function updateProductForSeller(
   if (input.imageUrl !== undefined) data.imageUrl = input.imageUrl;
   if (input.productGroupId !== undefined) {
     data.productGroupId = input.productGroupId;
+  }
+  if (input.stockQuantity !== undefined) {
+    data.stockQuantity = input.stockQuantity;
   }
 
   const row = await productRepo.updateProductRecord(productId, data);

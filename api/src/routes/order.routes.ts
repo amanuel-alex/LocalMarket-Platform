@@ -8,6 +8,7 @@ const router = Router();
 router.use(requireAuth);
 
 router.post("/", requireRoles("buyer"), orderController.create);
+router.post("/:id/cancel", requireRoles("buyer"), orderController.cancelPending);
 router.get("/", orderController.list);
 router.post(
   "/:id/confirm-delivery",
