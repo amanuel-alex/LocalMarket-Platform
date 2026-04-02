@@ -5,6 +5,7 @@ import { usePathname } from "next/navigation";
 import {
   Banknote,
   BarChart3,
+  ClipboardList,
   CreditCard,
   LayoutDashboard,
   Package,
@@ -57,8 +58,9 @@ const SELLER_NAV: NavItem[] = [
 ];
 
 const DELIVERY_NAV: NavItem[] = [
-  { title: "Overview", href: "/delivery/dashboard", icon: LayoutDashboard },
-  { title: "QR verify", href: "/delivery/qr-verify", icon: QrCode },
+  { title: "Dashboard", href: "/delivery/dashboard", icon: LayoutDashboard },
+  { title: "Assignments", href: "/delivery/assignments", icon: ClipboardList },
+  { title: "QR verification", href: "/delivery/qr-verify", icon: QrCode },
   { title: "Settings", href: "/settings", icon: Settings },
 ];
 
@@ -76,7 +78,7 @@ function navForRole(role: UserRole | null): { label: string; items: NavItem[] } 
     case "seller":
       return { label: "Organizer", items: SELLER_NAV };
     case "delivery":
-      return { label: "Delivery", items: DELIVERY_NAV };
+      return { label: "Delivery agent", items: DELIVERY_NAV };
     default:
       return { label: "Account", items: BUYER_NAV };
   }

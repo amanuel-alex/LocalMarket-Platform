@@ -31,16 +31,19 @@ export const adminOrderOverrideBodySchema = z
     status: z.nativeEnum(OrderStatus).optional(),
     clearPickupQr: z.boolean().optional(),
     adminNote: z.string().max(4000).optional(),
+    /** Assign or unassign a delivery agent (null clears). */
+    deliveryAgentId: z.union([z.string().cuid(), z.null()]).optional(),
   })
   .superRefine((data, ctx) => {
     const hasPatch =
       data.status !== undefined ||
       data.clearPickupQr === true ||
-      data.adminNote !== undefined;
+      data.adminNote !== undefined ||
+      data.deliveryAgentId !== undefined;
     if (!hasPatch) {
       ctx.addIssue({
         code: z.ZodIssueCode.custom,
-        message: "Provide at least one of: status, clearPickupQr, adminNote",
+        message: "Provide at least one of: status, clearPickupQr, adminNote, deliveryAgentId",
       });
     }
   });

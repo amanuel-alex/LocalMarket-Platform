@@ -9,6 +9,6 @@ export const verify: RequestHandler = asyncHandler(async (req, res, next) => {
     next(parsed.error);
     return;
   }
-  const order = await qrService.verifyPickupQr(req.user!.id, parsed.data.token);
+  const order = await qrService.verifyPickupQr(req.user!.id, req.user!.role, parsed.data.token);
   res.status(200).json({ order });
 });

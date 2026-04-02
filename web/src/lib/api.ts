@@ -447,7 +447,7 @@ export async function deleteProduct(id: string) {
 
 export async function adminOverrideOrder(
   orderId: string,
-  body: { status?: string; clearPickupQr?: boolean; adminNote?: string },
+  body: { status?: string; clearPickupQr?: boolean; adminNote?: string; deliveryAgentId?: string | null },
 ) {
   const { data } = await apiClient.patch<{ order: OrderRow }>(`/admin/orders/${orderId}`, body);
   return data.order;
@@ -481,6 +481,46 @@ export async function uploadProductImage(file: File) {
 export async function verifyQrToken(token: string) {
   const { data } = await apiClient.post<{ order: OrderRow }>("/qr/verify", { token });
   return data.order;
+}
+
+export type DeliveryAssignment = {
+  id: string;
+  status: string;
+  quantity: number;
+  totalPrice: number;
+  product: {
+    id: string;
+    title: string;
+    price: number;
+    category: string;
+    imageUrl: string | null;
+    lat: number;
+    lng: number;
+  };
+  buyer: { id: string; name: string; phone: string };
+  seller: { id: string; name: string; phone: string };
+  pickup: { lat: number; lng: number };
+  dropoff: { lat: number; lng: number; note: string };
+  deliveryStartedAt: string | null;
+  createdAt: string;
+  updatedAt: string;
+};
+
+export async function fetchDeliveryAssignments() {
+  const { data } = await apiClient.get<{ assignments: DeliveryAssignment[] }>("/delivery/assignments");
+  return data.assignments;
+}
+
+export async function fetchDeliveryAssignment(orderId: string) {
+  const { data } = await apiClient.get<{ assignment: DeliveryAssignment }>(`/delivery/assignments/${orderId}`);
+  return data.assignment;
+}
+
+export async function postDeliveryStart(orderId: string) {
+  const { data } = await apiClient.post<{ assignment: DeliveryAssignment }>(
+    `/delivery/assignments/${orderId}/start`,
+  );
+  return data.assignment;
 }
 
 /* ——— Assistant (OpenAI + tools) ——— */

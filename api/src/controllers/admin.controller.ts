@@ -246,6 +246,7 @@ export const overrideOrder: RequestHandler = asyncHandler(async (req, res, next)
     status: parsedBody.data.status,
     clearPickupQr: parsedBody.data.clearPickupQr,
     adminNote: parsedBody.data.adminNote,
+    deliveryAgentId: parsedBody.data.deliveryAgentId,
   });
   res.json({ order });
 });

@@ -1,3 +1,4 @@
+import type { Role } from "@prisma/client";
 import { prisma } from "../prisma/client.js";
 import { AppError } from "../utils/errors.js";
 import type { OrderJson } from "./order.service.js";
@@ -7,7 +8,7 @@ import { getPreferredLocalesMap } from "../i18n/userLocales.js";
 import { pickupCompletedBuyerCopy } from "../i18n/notificationCopy.js";
 
 /** pickup verified → order `completed`. Funds stay in platform escrow until seller confirms delivery and admin releases. */
-export async function verifyPickupQr(sellerId: string, token: string): Promise<OrderJson> {
+export async function verifyPickupQr(userId: string, role: Role, token: string): Promise<OrderJson> {
   const order = await prisma.order.findUnique({
     where: { qrToken: token },
     include: { product: { select: { id: true, title: true, price: true } } },
@@ -17,8 +18,16 @@ export async function verifyPickupQr(sellerId: string, token: string): Promise<O
     throw new AppError(404, "NOT_FOUND", "Invalid or unknown pickup code");
   }
 
-  if (order.sellerId !== sellerId) {
-    throw new AppError(403, "FORBIDDEN", "This order belongs to another seller");
+  if (role === "seller") {
+    if (order.sellerId !== userId) {
+      throw new AppError(403, "FORBIDDEN", "This order belongs to another seller");
+    }
+  } else if (role === "delivery") {
+    if (order.deliveryAgentId !== userId) {
+      throw new AppError(403, "FORBIDDEN", "You are not assigned to this order");
+    }
+  } else {
+    throw new AppError(403, "FORBIDDEN", "Insufficient permissions");
   }
 
   if (order.qrConsumedAt) {
@@ -53,5 +62,5 @@ export async function verifyPickupQr(sellerId: string, token: string): Promise<O
     },
   ]);
 
-  return toOrderJson(updated, { userId: sellerId, role: "seller" });
+  return toOrderJson(updated, { userId, role });
 }

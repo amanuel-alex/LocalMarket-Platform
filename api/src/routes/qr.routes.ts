@@ -5,6 +5,6 @@ import { requireRoles } from "../middlewares/role.middleware.js";
 
 const router = Router();
 
-router.post("/verify", requireAuth, requireRoles("seller"), qrController.verify);
+router.post("/verify", requireAuth, requireRoles("seller", "delivery"), qrController.verify);
 
 export default router;

@@ -104,6 +104,7 @@ model User {
   products            Product[]
   ordersAsBuyer       Order[]         @relation("BuyerOrders")
   ordersAsSeller      Order[]         @relation("SellerOrders")
+  assignedDeliveryOrders Order[]      @relation("DeliveryAssignments")
   refreshTokens       RefreshToken[]
   wallet              Wallet?
   payouts             Payout[]
@@ -334,6 +335,12 @@ model Order {
   adminOverriddenAt   DateTime?
   buyer               User           @relation("BuyerOrders", fields: [buyerId], references: [id], onDelete: Restrict)
   seller              User           @relation("SellerOrders", fields: [sellerId], references: [id], onDelete: Restrict)
+  /**
+   * Optional logistics agent assigned by admin (last-mile / handoff).
+   */
+  deliveryAgentId     String?
+  deliveryStartedAt   DateTime?
+  deliveryAgent       User?          @relation("DeliveryAssignments", fields: [deliveryAgentId], references: [id], onDelete: SetNull)
   product             Product        @relation(fields: [productId], references: [id], onDelete: Restrict)
   payments            Payment[]
   disputes            Dispute[]
@@ -344,6 +351,7 @@ model Order {
 
   @@index([sellerId])
   @@index([productId])
+  @@index([deliveryAgentId])
   /**
    * Buyer order history: `WHERE buyerId = ? ORDER BY createdAt DESC` (replaces single-column buyerId index).
    */

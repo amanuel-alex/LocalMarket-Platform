@@ -131,7 +131,9 @@ export async function listOrdersForUser(userId: string, role: Role): Promise<Ord
       ? {}
       : role === "seller"
         ? { sellerId: userId }
-        : { buyerId: userId };
+        : role === "delivery"
+          ? { deliveryAgentId: userId }
+          : { buyerId: userId };
 
   const rows = await orderRepo.findOrdersWithProductForList(where);
 
@@ -151,7 +153,10 @@ export async function getOrderByIdForUser(
     throw new AppError(404, "NOT_FOUND", "Order not found");
   }
   const allowed =
-    role === "admin" || row.buyerId === userId || row.sellerId === userId;
+    role === "admin" ||
+    row.buyerId === userId ||
+    row.sellerId === userId ||
+    (role === "delivery" && row.deliveryAgentId === userId);
   if (!allowed) {
     throw new AppError(403, "FORBIDDEN", "You cannot access this order");
   }
@@ -249,6 +254,7 @@ export async function adminOverrideOrder(
     status?: OrderStatus;
     clearPickupQr?: boolean;
     adminNote?: string;
+    deliveryAgentId?: string | null;
   },
 ): Promise<OrderJson> {
   const row = await prisma.order.findUnique({
@@ -271,6 +277,10 @@ export async function adminOverrideOrder(
   if (input.clearPickupQr) {
     data.qrToken = null;
   }
+  if (input.deliveryAgentId !== undefined) {
+    data.deliveryAgentId = input.deliveryAgentId;
+    data.deliveryStartedAt = null;
+  }
 
   const updated = await prisma.order.update({
     where: { id: orderId },
@@ -287,6 +297,7 @@ export async function adminOverrideOrder(
     meta: {
       status: input.status ?? null,
       clearPickupQr: input.clearPickupQr ?? false,
+      deliveryAgentId: input.deliveryAgentId ?? undefined,
     },
   });
 
