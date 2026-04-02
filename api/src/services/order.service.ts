@@ -278,7 +278,11 @@ export async function adminOverrideOrder(
     data.qrToken = null;
   }
   if (input.deliveryAgentId !== undefined) {
-    data.deliveryAgentId = input.deliveryAgentId;
+    if (input.deliveryAgentId === null) {
+      data.deliveryAgent = { disconnect: true };
+    } else {
+      data.deliveryAgent = { connect: { id: input.deliveryAgentId } };
+    }
     data.deliveryStartedAt = null;
   }
 
