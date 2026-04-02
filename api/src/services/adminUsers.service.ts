@@ -11,6 +11,9 @@ export type AdminUserRow = {
   role: Role;
   status: UserStatus;
   isVerified: boolean;
+  sellerApproved: boolean;
+  deliveryAgentApproved: boolean;
+  deliveryAgentActive: boolean;
   bannedAt: Date | null;
   banReason: string | null;
   createdAt: Date;
@@ -122,6 +125,9 @@ export async function listUsersForAdmin(
         role: true,
         status: true,
         isVerified: true,
+        sellerApproved: true,
+        deliveryAgentApproved: true,
+        deliveryAgentActive: true,
         bannedAt: true,
         banReason: true,
         createdAt: true,
@@ -138,7 +144,7 @@ export async function listUsersForAdmin(
 export async function patchUserByAdmin(
   adminId: string,
   targetUserId: string,
-  body: { role?: Role; active?: boolean },
+  body: { role?: Role; active?: boolean; sellerApproved?: boolean },
 ): Promise<AdminUserRow> {
   if (adminId === targetUserId) {
     if (body.role !== undefined && body.role !== "admin") {
@@ -146,7 +152,7 @@ export async function patchUserByAdmin(
     }
   }
 
-  const target = await prisma.user.findUnique({ where: { id: targetUserId } });
+  let target = await prisma.user.findUnique({ where: { id: targetUserId } });
   if (!target) {
     throw new AppError(404, "NOT_FOUND", "User not found");
   }
@@ -166,9 +172,17 @@ export async function patchUserByAdmin(
         throw new AppError(400, "INVALID_OPERATION", "Cannot remove the last admin role");
       }
     }
+    const data: Prisma.UserUpdateInput = { role: body.role };
+    if (body.role === "seller") {
+      if (target.role !== "seller") {
+        data.sellerApproved = true;
+      }
+    } else {
+      data.sellerApproved = false;
+    }
     await prisma.user.update({
       where: { id: targetUserId },
-      data: { role: body.role },
+      data,
     });
     await auditService.recordAudit({
       actorId: adminId,
@@ -176,6 +190,25 @@ export async function patchUserByAdmin(
       targetType: "User",
       targetId: targetUserId,
       meta: { role: body.role },
+    });
+    target = await prisma.user.findUniqueOrThrow({ where: { id: targetUserId } });
+  }
+
+  if (body.sellerApproved !== undefined) {
+    const cur = await prisma.user.findUnique({ where: { id: targetUserId } });
+    if (!cur || cur.role !== "seller") {
+      throw new AppError(400, "INVALID_OPERATION", "sellerApproved applies only to seller accounts");
+    }
+    await prisma.user.update({
+      where: { id: targetUserId },
+      data: { sellerApproved: body.sellerApproved },
+    });
+    await auditService.recordAudit({
+      actorId: adminId,
+      action: "user.seller_approve",
+      targetType: "User",
+      targetId: targetUserId,
+      meta: { sellerApproved: body.sellerApproved },
     });
   }
 
@@ -188,6 +221,9 @@ export async function patchUserByAdmin(
       role: true,
       status: true,
       isVerified: true,
+      sellerApproved: true,
+      deliveryAgentApproved: true,
+      deliveryAgentActive: true,
       bannedAt: true,
       banReason: true,
       createdAt: true,
@@ -260,6 +296,9 @@ export async function patchUserStatusByAdmin(
       role: true,
       status: true,
       isVerified: true,
+      sellerApproved: true,
+      deliveryAgentApproved: true,
+      deliveryAgentActive: true,
       bannedAt: true,
       banReason: true,
       createdAt: true,

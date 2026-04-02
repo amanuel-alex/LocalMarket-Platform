@@ -1,7 +1,7 @@
 import axios from "axios";
 
 import { apiClient } from "@/lib/axios-instance";
-import type { StoredUser } from "@/lib/auth-storage";
+import { parsePreferredLocale, type StoredUser } from "@/lib/auth-storage";
 
 export type AuthResponse = {
   user: StoredUser & Record<string, unknown>;
@@ -31,10 +31,26 @@ export async function loginRequest(phone: string, password: string): Promise<Aut
   return data;
 }
 
+export function mapAuthUserToStored(raw: Record<string, unknown>): StoredUser {
+  const preferredLocale = parsePreferredLocale(raw.preferredLocale);
+  return {
+    id: String(raw.id),
+    name: String(raw.name),
+    phone: String(raw.phone),
+    role: String(raw.role),
+    ...(typeof raw.sellerApproved === "boolean" ? { sellerApproved: raw.sellerApproved } : {}),
+    ...(typeof raw.deliveryAgentApproved === "boolean"
+      ? { deliveryAgentApproved: raw.deliveryAgentApproved }
+      : {}),
+    ...(preferredLocale ? { preferredLocale } : {}),
+  };
+}
+
 export async function registerRequest(body: {
   name: string;
   phone: string;
   password: string;
+  accountType?: "buyer" | "seller" | "delivery";
 }): Promise<AuthResponse> {
   const { data } = await apiClient.post<AuthResponse>("/auth/register", body);
   return data;

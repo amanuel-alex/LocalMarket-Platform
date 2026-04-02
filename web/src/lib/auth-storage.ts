@@ -11,6 +11,10 @@ export type StoredUser = {
   phone: string;
   role: string;
   preferredLocale?: PreferredLocale;
+  /** Present for sellers — false until an admin approves self-registration. */
+  sellerApproved?: boolean;
+  /** Present for delivery staff — false until an admin approves. */
+  deliveryAgentApproved?: boolean;
 };
 
 export function parsePreferredLocale(raw: unknown): PreferredLocale | undefined {

@@ -80,12 +80,18 @@ export const adminUserPatchBodySchema = z
     role: z.nativeEnum(Role).optional(),
     /** `true` = active (unban), `false` = suspended (ban). */
     active: z.boolean().optional(),
+    /** Approve a self-registered seller (role must already be `seller`). */
+    sellerApproved: z.boolean().optional(),
   })
   .superRefine((data, ctx) => {
-    if (data.role === undefined && data.active === undefined) {
+    if (
+      data.role === undefined &&
+      data.active === undefined &&
+      data.sellerApproved === undefined
+    ) {
       ctx.addIssue({
         code: z.ZodIssueCode.custom,
-        message: "Provide at least one of: role, active",
+        message: "Provide at least one of: role, active, sellerApproved",
       });
     }
   });

@@ -24,12 +24,14 @@ import {
   FormMessage,
 } from "@/components/ui/form";
 import { Input } from "@/components/ui/input";
-import { parseApiError, registerRequest } from "@/lib/auth-api";
-import { parsePreferredLocale, setSession } from "@/lib/auth-storage";
-import { getPostLoginPath } from "@/lib/roles";
+import { mapAuthUserToStored, parseApiError, registerRequest } from "@/lib/auth-api";
+import { setSession } from "@/lib/auth-storage";
+import { getPostAuthRedirect } from "@/lib/roles";
 import { registerFormSchema, type RegisterFormValues } from "@/lib/validations/auth";
 
-export function RegisterForm() {
+export type RegisterAccountType = "buyer" | "seller" | "delivery";
+
+export function RegisterForm({ accountType = "buyer" }: { accountType?: RegisterAccountType }) {
   const router = useRouter();
   const [serverError, setServerError] = useState<string | null>(null);
 
@@ -50,20 +52,15 @@ export function RegisterForm() {
         name: values.name,
         phone: values.phone,
         password: values.password,
+        accountType,
       });
-      const preferredLocale = parsePreferredLocale(data.user.preferredLocale);
+      const user = mapAuthUserToStored(data.user as Record<string, unknown>);
       setSession({
         accessToken: data.accessToken,
         refreshToken: data.refreshToken,
-        user: {
-          id: data.user.id,
-          name: data.user.name,
-          phone: data.user.phone,
-          role: String(data.user.role),
-          ...(preferredLocale ? { preferredLocale } : {}),
-        },
+        user,
       });
-      router.push(getPostLoginPath(String(data.user.role)));
+      router.push(getPostAuthRedirect(user));
       router.refresh();
     } catch (e) {
       setServerError(parseApiError(e));
@@ -74,7 +71,13 @@ export function RegisterForm() {
     <Card className="border-border/60 shadow-md">
       <CardHeader className="space-y-1">
         <CardTitle className="text-2xl font-semibold tracking-tight">Create account</CardTitle>
-        <CardDescription>Register to manage products, orders, and payments.</CardDescription>
+        <CardDescription>
+          {accountType === "buyer"
+            ? "Shop local products, track orders, and pay securely."
+            : accountType === "seller"
+              ? "Apply to sell on EthioLocal. You can sign in, but listing products requires admin approval."
+              : "Apply as a delivery partner. Dashboard and assignments unlock after admin approval."}
+        </CardDescription>
       </CardHeader>
       <CardContent>
         <Form {...form}>

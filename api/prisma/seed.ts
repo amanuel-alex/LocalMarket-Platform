@@ -35,6 +35,7 @@ async function main() {
           status: "active",
           failedLoginAttempts: 0,
           lockedUntil: null,
+          ...(u.role === "seller" ? { sellerApproved: true } : {}),
           ...(u.role === "delivery"
             ? { deliveryAgentApproved: true, deliveryAgentActive: true }
             : {}),
@@ -47,6 +48,7 @@ async function main() {
           name: u.name,
           role: u.role,
           passwordHash,
+          ...(u.role === "seller" ? { sellerApproved: true } : {}),
           ...(u.role === "delivery"
             ? { deliveryAgentApproved: true, deliveryAgentActive: true }
             : {}),

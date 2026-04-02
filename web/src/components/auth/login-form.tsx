@@ -24,9 +24,9 @@ import {
   FormMessage,
 } from "@/components/ui/form";
 import { Input } from "@/components/ui/input";
-import { loginRequest, parseApiError } from "@/lib/auth-api";
-import { parsePreferredLocale, setSession } from "@/lib/auth-storage";
-import { getPostLoginPath } from "@/lib/roles";
+import { loginRequest, mapAuthUserToStored, parseApiError } from "@/lib/auth-api";
+import { setSession } from "@/lib/auth-storage";
+import { getPostAuthRedirect } from "@/lib/roles";
 import { loginFormSchema, type LoginFormValues } from "@/lib/validations/auth";
 
 function safeInternalPath(next: string | null): string | null {
@@ -51,20 +51,14 @@ export function LoginForm() {
     setServerError(null);
     try {
       const data = await loginRequest(values.phone, values.password);
-      const preferredLocale = parsePreferredLocale(data.user.preferredLocale);
+      const user = mapAuthUserToStored(data.user as Record<string, unknown>);
       setSession({
         accessToken: data.accessToken,
         refreshToken: data.refreshToken,
-        user: {
-          id: data.user.id,
-          name: data.user.name,
-          phone: data.user.phone,
-          role: String(data.user.role),
-          ...(preferredLocale ? { preferredLocale } : {}),
-        },
+        user,
       });
       const next = safeInternalPath(searchParams.get("next"));
-      router.push(next ?? getPostLoginPath(String(data.user.role)));
+      router.push(next ?? getPostAuthRedirect(user));
       router.refresh();
     } catch (e) {
       setServerError(parseApiError(e));
