@@ -2,6 +2,10 @@ import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
 
+import '../../core/api/api_exception.dart';
+import '../../core/config/api_config.dart';
+import '../../core/providers/api_providers.dart';
+import '../../core/providers/auth_session_provider.dart';
 import '../../core/providers/cart_provider.dart';
 import '../../core/providers/catalog_provider.dart';
 import '../../core/widgets/empty_state.dart';
@@ -31,11 +35,72 @@ class HomeScreen extends ConsumerStatefulWidget {
 }
 
 class _HomeScreenState extends ConsumerState<HomeScreen> {
-  static const _userName = 'Amanuel';
+  final _searchCtrl = TextEditingController();
+
+  @override
+  void dispose() {
+    _searchCtrl.dispose();
+    super.dispose();
+  }
 
   Future<void> _refresh() async {
     ref.invalidate(productsProvider);
     await ref.read(productsProvider.future);
+  }
+
+  Future<void> _searchCatalog(String raw) async {
+    final q = raw.trim();
+    if (q.isEmpty) return;
+    FocusScope.of(context).unfocus();
+    try {
+      final api = ref.read(localMarketApiProvider);
+      final list = await api.searchProducts(q: q, limit: 40);
+      if (!mounted) return;
+      await showModalBottomSheet<void>(
+        context: context,
+        isScrollControlled: true,
+        showDragHandle: true,
+        builder: (ctx) {
+          return DraggableScrollableSheet(
+            expand: false,
+            initialChildSize: 0.55,
+            minChildSize: 0.35,
+            maxChildSize: 0.92,
+            builder: (_, scrollController) {
+              if (list.isEmpty) {
+                return Center(
+                  child: Padding(
+                    padding: const EdgeInsets.all(24),
+                    child: Text('No results for “$q”', textAlign: TextAlign.center),
+                  ),
+                );
+              }
+              return ListView.builder(
+                controller: scrollController,
+                padding: const EdgeInsets.fromLTRB(16, 8, 16, 24),
+                itemCount: list.length,
+                itemBuilder: (_, i) {
+                  final p = list[i];
+                  return ListTile(
+                    contentPadding: const EdgeInsets.symmetric(vertical: 6),
+                    title: Text(p.title, maxLines: 2, overflow: TextOverflow.ellipsis),
+                    subtitle: Text('Br ${p.priceEtb.toStringAsFixed(0)}'),
+                    onTap: () {
+                      Navigator.pop(ctx);
+                      context.push('/home/product/${p.id}');
+                    },
+                  );
+                },
+              );
+            },
+          );
+        },
+      );
+    } on ApiException catch (e) {
+      if (mounted) {
+        ScaffoldMessenger.of(context).showSnackBar(SnackBar(content: Text(e.message)));
+      }
+    }
   }
 
   @override
@@ -44,6 +109,8 @@ class _HomeScreenState extends ConsumerState<HomeScreen> {
     final asyncProducts = ref.watch(productsProvider);
     final cart = ref.watch(cartProvider);
     final cartQty = cart.fold<int>(0, (s, l) => s + l.qty);
+    final auth = ref.watch(authSessionProvider);
+    final greet = auth?.userName.split(' ').first ?? 'there';
 
     return Scaffold(
       floatingActionButton: FloatingActionButton.extended(
@@ -72,7 +139,7 @@ class _HomeScreenState extends ConsumerState<HomeScreen> {
                               crossAxisAlignment: CrossAxisAlignment.start,
                               children: [
                                 Text(
-                                  'Hi, $_userName 👋',
+                                  'Hi, $greet 👋',
                                   style: Theme.of(context).textTheme.headlineSmall?.copyWith(fontWeight: FontWeight.w800),
                                 ),
                                 const SizedBox(height: 8),
@@ -82,7 +149,7 @@ class _HomeScreenState extends ConsumerState<HomeScreen> {
                                     const SizedBox(width: 4),
                                     Expanded(
                                       child: Text(
-                                        'Bole, Addis Ababa · GPS on',
+                                        'Ranked near ${ApiConfig.defaultLat.toStringAsFixed(2)}°, ${ApiConfig.defaultLng.toStringAsFixed(2)}° (API)',
                                         style: Theme.of(context).textTheme.bodyMedium?.copyWith(
                                               color: scheme.onSurface.withValues(alpha: 0.65),
                                             ),
@@ -105,15 +172,16 @@ class _HomeScreenState extends ConsumerState<HomeScreen> {
                       ),
                       const SizedBox(height: 20),
                       TextField(
-                        readOnly: true,
-                        onTap: () {
-                          ScaffoldMessenger.of(context).showSnackBar(
-                            const SnackBar(content: Text('Search connects to your catalog API')),
-                          );
-                        },
+                        controller: _searchCtrl,
+                        textInputAction: TextInputAction.search,
+                        onSubmitted: _searchCatalog,
                         decoration: InputDecoration(
-                          hintText: 'Search products, sellers, markets…',
+                          hintText: 'Search catalog (GET /products/search)',
                           prefixIcon: const Icon(Icons.search_rounded),
+                          suffixIcon: IconButton(
+                            icon: const Icon(Icons.arrow_forward_rounded),
+                            onPressed: () => _searchCatalog(_searchCtrl.text),
+                          ),
                           filled: true,
                           fillColor: scheme.surface,
                           contentPadding: const EdgeInsets.symmetric(vertical: 16),
@@ -130,7 +198,7 @@ class _HomeScreenState extends ConsumerState<HomeScreen> {
                     padding: const EdgeInsets.symmetric(horizontal: 20),
                     scrollDirection: Axis.horizontal,
                     itemCount: _categories.length,
-                    separatorBuilder: (_, __) => const SizedBox(width: 12),
+                    separatorBuilder: (_, unusedIndex) => const SizedBox(width: 12),
                     itemBuilder: (context, i) {
                       final c = _categories[i];
                       return TweenAnimationBuilder<double>(

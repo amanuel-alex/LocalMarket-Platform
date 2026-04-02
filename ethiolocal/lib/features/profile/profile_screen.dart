@@ -30,7 +30,7 @@ class ProfileScreen extends ConsumerWidget {
                   radius: 36,
                   backgroundColor: scheme.primary.withValues(alpha: 0.15),
                   child: Text(
-                    (auth?.userName.isNotEmpty == true) ? auth!.userName.characters.first.toUpperCase() : '?',
+                    (auth?.userName.isNotEmpty == true) ? auth!.userName[0].toUpperCase() : '?',
                     style: TextStyle(fontSize: 28, fontWeight: FontWeight.w800, color: scheme.primary),
                   ),
                 ),
@@ -102,7 +102,7 @@ class ProfileScreen extends ConsumerWidget {
           const SizedBox(height: 24),
           OutlinedButton.icon(
             onPressed: () async {
-              await ref.read(sessionProvider.notifier).signOut();
+              await ref.read(authSessionProvider.notifier).signOut();
               if (!context.mounted) return;
               context.go('/auth');
             },
