@@ -8,6 +8,7 @@ import '../../core/models/product.dart';
 import '../../core/providers/api_providers.dart';
 import '../../core/providers/assistant_provider.dart';
 import 'widgets/ai_chat_widgets.dart';
+import 'widgets/assistant_setup_banner.dart';
 
 sealed class _Msg {
   const _Msg();
@@ -36,6 +37,7 @@ class _AiAssistantScreenState extends ConsumerState<AiAssistantScreen> {
   final _input = TextEditingController();
   final _focus = FocusNode();
   var _typing = false;
+  var _setupBannerDismissed = false;
   final _messages = <_Msg>[
     const _TextMsg(
       text:
@@ -43,6 +45,15 @@ class _AiAssistantScreenState extends ConsumerState<AiAssistantScreen> {
       fromUser: false,
     ),
   ];
+
+  @override
+  void initState() {
+    super.initState();
+    WidgetsBinding.instance.addPostFrameCallback((_) {
+      if (!mounted) return;
+      ref.invalidate(assistantGeminiEnabledProvider);
+    });
+  }
 
   @override
   void dispose() {
@@ -193,10 +204,34 @@ class _AiAssistantScreenState extends ConsumerState<AiAssistantScreen> {
             Text(subtitle, style: Theme.of(context).textTheme.labelSmall?.copyWith(color: scheme.onSurface.withValues(alpha: 0.55))),
           ],
         ),
+        actions: [
+          IconButton(
+            tooltip: 'Refresh Gemini status',
+            onPressed: () {
+              setState(() => _setupBannerDismissed = false);
+              ref.invalidate(assistantGeminiEnabledProvider);
+            },
+            icon: const Icon(Icons.sync_rounded),
+          ),
+        ],
         leading: IconButton(icon: const Icon(Icons.arrow_back_rounded), onPressed: () => context.pop()),
       ),
       body: Column(
         children: [
+          if (!_setupBannerDismissed)
+            geminiAsync.maybeWhen(
+              data: (enabled) {
+                if (enabled) return const SizedBox.shrink();
+                return AssistantSetupBanner(
+                  onDismiss: () => setState(() => _setupBannerDismissed = true),
+                );
+              },
+              error: (error, stackTrace) => AssistantSetupBanner(
+                isReachabilityIssue: true,
+                onDismiss: () => setState(() => _setupBannerDismissed = true),
+              ),
+              orElse: () => const SizedBox.shrink(),
+            ),
           Expanded(
             child: ListView.builder(
               controller: _scroll,

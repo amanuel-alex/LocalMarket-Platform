@@ -71,9 +71,13 @@ function parseFunctionResponseContent(content: string): object {
   }
 }
 
+function resolvedGoogleAiKey(): string {
+  const e = getEnv();
+  return (e.GOOGLE_AI_API_KEY || e.GEMINI_API_KEY || "").trim();
+}
+
 export function isGeminiAssistantEnabled(): boolean {
-  const key = getEnv().GOOGLE_AI_API_KEY?.trim();
-  return Boolean(key && key.length > 0);
+  return resolvedGoogleAiKey().length > 0;
 }
 
 export type GeminiAssistantChatResult = {
@@ -90,80 +94,94 @@ export async function runGeminiAssistantChat(
     throw new AppError(
       503,
       "GEMINI_DISABLED",
-      "Google AI (Gemini) assistant is not configured (missing GOOGLE_AI_API_KEY from Google AI Studio).",
+      "Google AI (Gemini) assistant is not configured (set GOOGLE_AI_API_KEY or GEMINI_API_KEY in api/.env).",
     );
   }
 
   const env = getEnv();
-  const genAI = new GoogleGenerativeAI(env.GOOGLE_AI_API_KEY);
+  const apiKey = resolvedGoogleAiKey();
   const modelName = env.GEMINI_MODEL;
 
-  const model = genAI.getGenerativeModel({
-    model: modelName,
-    tools: geminiTools,
-    toolConfig: {
-      functionCallingConfig: { mode: FunctionCallingMode.AUTO },
-    },
-    systemInstruction: buildSystemPrompt(),
-  });
+  try {
+    const genAI = new GoogleGenerativeAI(apiKey);
 
-  const geo = { lat: input.lat, lng: input.lng };
-  let lastCatalogProducts: AssistantProductJson[] = [];
+    const model = genAI.getGenerativeModel({
+      model: modelName,
+      tools: geminiTools,
+      toolConfig: {
+        functionCallingConfig: { mode: FunctionCallingMode.AUTO },
+      },
+      systemInstruction: buildSystemPrompt(),
+    });
 
-  const history = input.history.map((t) => ({
-    role: t.role === "user" ? ("user" as const) : ("model" as const),
-    parts: [{ text: t.content }],
-  }));
+    const geo = { lat: input.lat, lng: input.lng };
+    let lastCatalogProducts: AssistantProductJson[] = [];
 
-  const chat = model.startChat({ history });
+    const history = input.history.map((t) => ({
+      role: t.role === "user" ? ("user" as const) : ("model" as const),
+      parts: [{ text: t.content }],
+    }));
 
-  let result = await chat.sendMessage(input.message);
-  let lastUsage: GeminiAssistantChatResult["usage"];
-  let rounds = 0;
+    const chat = model.startChat({ history });
 
-  while (rounds < MAX_TOOL_ROUNDS) {
-    rounds += 1;
-    const response = result.response;
-    const um = response.usageMetadata;
-    if (um) {
-      lastUsage = {
-        prompt_tokens: um.promptTokenCount,
-        completion_tokens: um.candidatesTokenCount,
-        total_tokens: um.totalTokenCount,
-      };
-    }
+    let result = await chat.sendMessage(input.message);
+    let lastUsage: GeminiAssistantChatResult["usage"];
+    let rounds = 0;
 
-    const calls = response.functionCalls();
-    if (!calls?.length) {
-      const text = response.text()?.trim();
-      if (!text) {
-        throw new AppError(502, "GEMINI_EMPTY", "Assistant returned an empty response.");
+    while (rounds < MAX_TOOL_ROUNDS) {
+      rounds += 1;
+      const response = result.response;
+      const um = response.usageMetadata;
+      if (um) {
+        lastUsage = {
+          prompt_tokens: um.promptTokenCount,
+          completion_tokens: um.candidatesTokenCount,
+          total_tokens: um.totalTokenCount,
+        };
       }
-      return {
-        reply: text,
-        model: modelName,
-        products: lastCatalogProducts.slice(0, 8),
-        usage: lastUsage,
-      };
-    }
 
-    const responseParts: { functionResponse: { name: string; response: object } }[] = [];
-    for (const call of calls) {
-      const rawArgs = JSON.stringify(call.args ?? {});
-      const { content, catalogProducts } = await runAssistantTool(call.name, rawArgs, geo);
-      if (catalogProducts?.length) {
-        lastCatalogProducts = catalogProducts;
+      const calls = response.functionCalls();
+      if (!calls?.length) {
+        const text = response.text()?.trim();
+        if (!text) {
+          throw new AppError(502, "GEMINI_EMPTY", "Assistant returned an empty response.");
+        }
+        return {
+          reply: text,
+          model: modelName,
+          products: lastCatalogProducts.slice(0, 8),
+          usage: lastUsage,
+        };
       }
-      responseParts.push({
-        functionResponse: {
-          name: call.name,
-          response: parseFunctionResponseContent(content),
-        },
-      });
+
+      const responseParts: { functionResponse: { name: string; response: object } }[] = [];
+      for (const call of calls) {
+        const rawArgs = JSON.stringify(call.args ?? {});
+        const { content, catalogProducts } = await runAssistantTool(call.name, rawArgs, geo);
+        if (catalogProducts?.length) {
+          lastCatalogProducts = catalogProducts;
+        }
+        responseParts.push({
+          functionResponse: {
+            name: call.name,
+            response: parseFunctionResponseContent(content),
+          },
+        });
+      }
+
+      result = await chat.sendMessage(responseParts);
     }
 
-    result = await chat.sendMessage(responseParts);
+    throw new AppError(502, "GEMINI_TOOL_LOOP", "Assistant exceeded maximum tool rounds.");
+  } catch (e: unknown) {
+    const msg = e instanceof Error ? e.message : String(e);
+    if (/404|not found/i.test(msg) && /models\//i.test(msg)) {
+      throw new AppError(
+        502,
+        "GEMINI_MODEL_NOT_FOUND",
+        `Gemini model "${modelName}" is not available on the Generative Language API. Set GEMINI_MODEL in api/.env — try gemini-2.0-flash or gemini-1.5-flash-002.`,
+      );
+    }
+    throw e;
   }
-
-  throw new AppError(502, "GEMINI_TOOL_LOOP", "Assistant exceeded maximum tool rounds.");
 }

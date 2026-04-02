@@ -3,10 +3,17 @@ import { getEnv } from "./config/env.js";
 import { app } from "./app.js";
 import { startWorkers, stopWorkers } from "./queues/workers.js";
 
-const { PORT } = getEnv();
+const env = getEnv();
+const { PORT } = env;
 
 const server = app.listen(PORT, () => {
   console.log(`API listening on http://localhost:${PORT}`);
+  const geminiOn = Boolean((env.GOOGLE_AI_API_KEY || env.GEMINI_API_KEY || "").trim());
+  console.log(
+    geminiOn
+      ? "Assistant: Google Gemini enabled (API key set on this server)."
+      : "Assistant: rules-only — set GOOGLE_AI_API_KEY or GEMINI_API_KEY in api/.env and restart for Gemini.",
+  );
   void startWorkers();
 });
 

@@ -36,8 +36,10 @@ const schema = z.object({
   OPENAI_MODEL: z.string().optional().default("gpt-4o-mini"),
   /** Google AI Studio / Gemini API key for POST /assistant/gemini/chat (function calling + catalog tools). */
   GOOGLE_AI_API_KEY: z.string().optional().default(""),
-  /** Gemini model id (e.g. gemini-2.0-flash, gemini-1.5-flash). */
-  GEMINI_MODEL: z.string().optional().default("gemini-1.5-flash"),
+  /** Same as GOOGLE_AI_API_KEY if you prefer this name in .env (either one works). */
+  GEMINI_API_KEY: z.string().optional().default(""),
+  /** Gemini model id for generateContent (AI Studio). Unversioned 1.5 ids often 404 on v1beta — use e.g. gemini-2.0-flash or gemini-1.5-flash-002. */
+  GEMINI_MODEL: z.string().optional().default("gemini-2.0-flash"),
 });
 
 export type Env = z.infer<typeof schema>;

@@ -18,8 +18,13 @@ import '../providers/app_state_provider.dart';
 import '../providers/auth_session_provider.dart';
 import 'go_router_refresh.dart';
 
-/// [state.pageKey] can collide across [StatefulShellRoute] branches / nested stacks; Navigator requires unique keys.
-LocalKey _pageKeyFor(GoRouterState state) => ValueKey<String>('${state.matchedLocation}|${state.uri}');
+/// Navigator requires globally unique [Page] keys within each stack. Using only
+/// `matchedLocation` + `uri` breaks for repeated `push()` to the same URL (same
+/// path + query), which duplicates keys and triggers `_debugCheckDuplicatedPageKeys`.
+/// [GoRouterState.pageKey] stays unique for imperative routes; we still append
+/// [Uri] so restorations and deep links stay stable when the location changes.
+LocalKey _pageKeyFor(GoRouterState state) =>
+    ValueKey<String>('${state.pageKey.value}|${state.uri}');
 
 CustomTransitionPage<void> _fadeSlide(Widget child, LocalKey key) {
   return CustomTransitionPage<void>(
