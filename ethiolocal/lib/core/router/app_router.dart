@@ -15,6 +15,7 @@ import '../../features/profile/profile_screen.dart';
 import '../../features/qr/qr_delivery_screen.dart';
 import '../../features/shell/main_shell.dart';
 import '../providers/app_state_provider.dart';
+import '../providers/auth_session_provider.dart';
 
 CustomTransitionPage<void> _fadeSlide(Widget child, LocalKey key) {
   return CustomTransitionPage<void>(
@@ -35,13 +36,13 @@ CustomTransitionPage<void> _fadeSlide(Widget child, LocalKey key) {
 
 final appRouterProvider = Provider<GoRouter>((ref) {
   ref.watch(onboardingCompleteProvider);
-  ref.watch(sessionProvider);
+  ref.watch(authSessionProvider);
 
   return GoRouter(
     initialLocation: '/splash',
     redirect: (context, state) {
       final onboarding = ref.read(onboardingCompleteProvider);
-      final session = ref.read(sessionProvider);
+      final authed = ref.read(authSessionProvider) != null;
       final loc = state.matchedLocation;
 
       if (loc == '/splash') return null;
@@ -49,10 +50,10 @@ final appRouterProvider = Provider<GoRouter>((ref) {
       if (!onboarding && loc != '/onboarding') {
         return '/onboarding';
       }
-      if (onboarding && !session && loc != '/auth' && loc != '/onboarding') {
+      if (onboarding && !authed && loc != '/auth' && loc != '/onboarding') {
         return '/auth';
       }
-      if (session && (loc == '/onboarding' || loc == '/auth')) {
+      if (authed && (loc == '/onboarding' || loc == '/auth')) {
         return '/home';
       }
       return null;
@@ -160,14 +161,14 @@ class _SplashGateState extends ConsumerState<_SplashGate> {
     await Future<void>.delayed(const Duration(milliseconds: 400));
     if (!mounted) return;
     await ref.read(onboardingCompleteProvider.notifier).ensureLoaded();
-    await ref.read(sessionProvider.notifier).ensureLoaded();
+    await ref.read(authSessionProvider.notifier).ensureLoaded();
     if (!mounted) return;
     final onboarding = ref.read(onboardingCompleteProvider);
-    final session = ref.read(sessionProvider);
+    final authed = ref.read(authSessionProvider) != null;
     final router = GoRouter.of(context);
     if (!onboarding) {
       router.go('/onboarding');
-    } else if (!session) {
+    } else if (!authed) {
       router.go('/auth');
     } else {
       router.go('/home');

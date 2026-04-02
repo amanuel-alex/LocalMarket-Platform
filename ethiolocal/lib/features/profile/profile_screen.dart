@@ -3,6 +3,7 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
 
 import '../../core/providers/app_state_provider.dart';
+import '../../core/providers/auth_session_provider.dart';
 import '../../core/providers/theme_mode_provider.dart';
 import '../../core/widgets/glass_card.dart';
 
@@ -14,6 +15,7 @@ class ProfileScreen extends ConsumerWidget {
     final scheme = Theme.of(context).colorScheme;
     final themeMode = ref.watch(themeModeProvider);
     final locale = ref.watch(localeProvider);
+    final auth = ref.watch(authSessionProvider);
 
     return Scaffold(
       appBar: AppBar(title: const Text('Profile')),
@@ -28,7 +30,7 @@ class ProfileScreen extends ConsumerWidget {
                   radius: 36,
                   backgroundColor: scheme.primary.withValues(alpha: 0.15),
                   child: Text(
-                    'A',
+                    (auth?.userName.isNotEmpty == true) ? auth!.userName.characters.first.toUpperCase() : '?',
                     style: TextStyle(fontSize: 28, fontWeight: FontWeight.w800, color: scheme.primary),
                   ),
                 ),
@@ -37,10 +39,13 @@ class ProfileScreen extends ConsumerWidget {
                   child: Column(
                     crossAxisAlignment: CrossAxisAlignment.start,
                     children: [
-                      Text('Amanuel', style: Theme.of(context).textTheme.titleLarge?.copyWith(fontWeight: FontWeight.w800)),
+                      Text(
+                        auth?.userName ?? 'Guest',
+                        style: Theme.of(context).textTheme.titleLarge?.copyWith(fontWeight: FontWeight.w800),
+                      ),
                       const SizedBox(height: 4),
                       Text(
-                        '+251 9•• ••• •••',
+                        auth?.phone ?? '—',
                         style: Theme.of(context).textTheme.bodyMedium?.copyWith(color: scheme.onSurface.withValues(alpha: 0.55)),
                       ),
                     ],

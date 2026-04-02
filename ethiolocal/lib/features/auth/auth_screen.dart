@@ -1,24 +1,60 @@
 import 'package:flutter/material.dart';
-import 'package:flutter/services.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
 
-import '../../core/providers/app_state_provider.dart';
+import '../../core/api/api_exception.dart';
+import '../../core/providers/auth_session_provider.dart';
 import '../../core/theme/app_colors.dart';
 import '../../core/widgets/glass_card.dart';
 import '../../core/widgets/gradient_cta.dart';
 
-final _otpStepProvider = StateProvider<bool>((ref) => false);
-final _phoneProvider = StateProvider<String>((ref) => '');
-
-class AuthScreen extends ConsumerWidget {
+class AuthScreen extends ConsumerStatefulWidget {
   const AuthScreen({super.key});
 
   @override
-  Widget build(BuildContext context, WidgetRef ref) {
+  ConsumerState<AuthScreen> createState() => _AuthScreenState();
+}
+
+class _AuthScreenState extends ConsumerState<AuthScreen> {
+  final _phone = TextEditingController(text: '+251900000003');
+  final _password = TextEditingController();
+  var _loading = false;
+  String? _error;
+
+  @override
+  void dispose() {
+    _phone.dispose();
+    _password.dispose();
+    super.dispose();
+  }
+
+  Future<void> _submit() async {
+    final phone = _phone.text.trim();
+    final password = _password.text;
+    if (phone.length < 5 || password.length < 8) {
+      setState(() => _error = 'Enter phone and password (min 8 chars).');
+      return;
+    }
+    setState(() {
+      _loading = true;
+      _error = null;
+    });
+    try {
+      await ref.read(authSessionProvider.notifier).loginWithPassword(phone: phone, password: password);
+      if (!mounted) return;
+      context.go('/home');
+    } on ApiException catch (e) {
+      setState(() => _error = e.message);
+    } catch (e) {
+      setState(() => _error = e.toString());
+    } finally {
+      if (mounted) setState(() => _loading = false);
+    }
+  }
+
+  @override
+  Widget build(BuildContext context) {
     final scheme = Theme.of(context).colorScheme;
-    final otpStep = ref.watch(_otpStepProvider);
-    final phone = ref.watch(_phoneProvider);
 
     return Scaffold(
       body: Stack(
@@ -44,148 +80,66 @@ class AuthScreen extends ConsumerWidget {
                 children: [
                   const SizedBox(height: 12),
                   Text(
-                    'Welcome in',
+                    'Sign in',
                     style: Theme.of(context).textTheme.headlineMedium?.copyWith(fontWeight: FontWeight.w800),
                   ),
                   const SizedBox(height: 8),
                   Text(
-                    otpStep ? 'Enter the code we sent you' : 'Sign in with your phone to continue',
+                    'Use your LocalMarket account (phone + password). Buyer test user: +251900000003',
                     style: Theme.of(context).textTheme.bodyLarge?.copyWith(
                           color: scheme.onSurface.withValues(alpha: 0.65),
                         ),
                   ),
-                  const SizedBox(height: 32),
+                  const SizedBox(height: 28),
                   GlassCard(
-                    child: AnimatedSwitcher(
-                      duration: const Duration(milliseconds: 320),
-                      switchInCurve: Curves.easeOut,
-                      switchOutCurve: Curves.easeIn,
-                      child: otpStep ? _OtpPanel(phone: phone) : const _PhonePanel(),
+                    child: Column(
+                      crossAxisAlignment: CrossAxisAlignment.stretch,
+                      children: [
+                        Text('Phone', style: Theme.of(context).textTheme.labelLarge),
+                        const SizedBox(height: 8),
+                        TextField(
+                          controller: _phone,
+                          keyboardType: TextInputType.phone,
+                          autocorrect: false,
+                          decoration: const InputDecoration(
+                            hintText: '+251…',
+                            prefixIcon: Icon(Icons.phone_android_rounded),
+                          ),
+                        ),
+                        const SizedBox(height: 18),
+                        Text('Password', style: Theme.of(context).textTheme.labelLarge),
+                        const SizedBox(height: 8),
+                        TextField(
+                          controller: _password,
+                          obscureText: true,
+                          decoration: const InputDecoration(
+                            hintText: '••••••••',
+                            prefixIcon: Icon(Icons.lock_outline_rounded),
+                          ),
+                          onSubmitted: (_) => _submit(),
+                        ),
+                        if (_error != null) ...[
+                          const SizedBox(height: 14),
+                          Text(
+                            _error!,
+                            style: Theme.of(context).textTheme.bodySmall?.copyWith(color: scheme.error),
+                          ),
+                        ],
+                        const SizedBox(height: 22),
+                        GradientCta(
+                          label: _loading ? 'Signing in…' : 'Continue',
+                          icon: Icons.login_rounded,
+                          onPressed: _loading ? null : _submit,
+                        ),
+                      ],
                     ),
                   ),
-                  const SizedBox(height: 24),
-                  if (otpStep)
-                    TextButton(
-                      onPressed: () => ref.read(_otpStepProvider.notifier).state = false,
-                      child: const Text('Edit phone number'),
-                    ),
                 ],
               ),
             ),
           ),
         ],
       ),
-    );
-  }
-}
-
-class _PhonePanel extends ConsumerStatefulWidget {
-  const _PhonePanel();
-
-  @override
-  ConsumerState<_PhonePanel> createState() => _PhonePanelState();
-}
-
-class _PhonePanelState extends ConsumerState<_PhonePanel> {
-  late final TextEditingController _phoneCtrl = TextEditingController(text: ref.read(_phoneProvider));
-
-  @override
-  void dispose() {
-    _phoneCtrl.dispose();
-    super.dispose();
-  }
-
-  @override
-  Widget build(BuildContext context) {
-    return Column(
-      key: const ValueKey('phone'),
-      crossAxisAlignment: CrossAxisAlignment.stretch,
-      children: [
-        Text('Phone number', style: Theme.of(context).textTheme.labelLarge),
-        const SizedBox(height: 10),
-        TextField(
-          controller: _phoneCtrl,
-          keyboardType: TextInputType.phone,
-          inputFormatters: [FilteringTextInputFormatter.digitsOnly],
-          onChanged: (v) => ref.read(_phoneProvider.notifier).state = v,
-          decoration: const InputDecoration(
-            hintText: '9xx xxx xxx',
-            prefixIcon: Icon(Icons.phone_android_rounded),
-            prefixText: '+251 ',
-          ),
-        ),
-        const SizedBox(height: 8),
-        Text(
-          'We will send a one-time code via SMS.',
-          style: Theme.of(context).textTheme.bodySmall?.copyWith(
-                color: Theme.of(context).colorScheme.onSurface.withValues(alpha: 0.55),
-              ),
-        ),
-        const SizedBox(height: 24),
-        GradientCta(
-          label: 'Continue',
-          icon: Icons.sms_rounded,
-          onPressed: () {
-            if (_phoneCtrl.text.length < 9) {
-              ScaffoldMessenger.of(context).showSnackBar(
-                const SnackBar(content: Text('Enter a valid mobile number')),
-              );
-              return;
-            }
-            ref.read(_phoneProvider.notifier).state = _phoneCtrl.text;
-            ref.read(_otpStepProvider.notifier).state = true;
-          },
-        ),
-      ],
-    );
-  }
-}
-
-class _OtpPanel extends ConsumerWidget {
-  const _OtpPanel({required this.phone});
-
-  final String phone;
-
-  @override
-  Widget build(BuildContext context, WidgetRef ref) {
-    return Column(
-      key: const ValueKey('otp'),
-      crossAxisAlignment: CrossAxisAlignment.stretch,
-      children: [
-        Text('Code sent to +251 $phone', style: Theme.of(context).textTheme.bodyMedium),
-        const SizedBox(height: 20),
-        Row(
-          mainAxisAlignment: MainAxisAlignment.spaceBetween,
-          children: List.generate(
-            4,
-            (i) => SizedBox(
-              width: 64,
-              child: TextField(
-                textAlign: TextAlign.center,
-                maxLength: 1,
-                keyboardType: TextInputType.number,
-                decoration: const InputDecoration(counterText: ''),
-                style: Theme.of(context).textTheme.titleLarge,
-                onChanged: (v) {
-                  if (v.isNotEmpty && i < 3) {
-                    FocusScope.of(context).nextFocus();
-                  }
-                },
-              ),
-            ),
-          ),
-        ),
-        const SizedBox(height: 24),
-        GradientCta(
-          label: 'Verify & continue',
-          icon: Icons.verified_rounded,
-          onPressed: () async {
-            await ref.read(sessionProvider.notifier).signIn();
-            if (!context.mounted) return;
-            context.go('/home');
-          },
-        ),
-      ],
     );
   }
 }
