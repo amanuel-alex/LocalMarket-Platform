@@ -13,6 +13,17 @@ import { TooltipProvider } from "@/components/ui/tooltip";
 
 export function DashboardShell({ children }: { children: ReactNode }) {
   const pathname = usePathname();
+  const isStaffPendingPage =
+    pathname === "/seller/pending-approval" || pathname === "/delivery/pending-approval";
+
+  if (isStaffPendingPage) {
+    return (
+      <TooltipProvider delayDuration={0}>
+        {children}
+      </TooltipProvider>
+    );
+  }
+
   const isAdminShell = pathname.startsWith("/admin");
   const isSellerShell = pathname.startsWith("/seller");
   const isDeliveryShell = pathname.startsWith("/delivery");
