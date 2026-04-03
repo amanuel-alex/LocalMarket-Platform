@@ -23,6 +23,62 @@ In development, **`web/next.config.ts`** rewrites `/api/*` → `http://localhost
 
 ---
 
+## Screenshots
+
+<p align="center">
+  <b>Landing &amp; marketing</b><br/>
+  <img src="docs/screenshots/01-landing-hero.png" alt="EthioLocal landing — search, categories, Get started" width="780" />
+</p>
+
+<p align="center">
+  <b>Shop — browse by category</b><br/>
+  <img src="docs/screenshots/07-shop-categories.png" alt="EthioLocal shop categories" width="780" />
+</p>
+
+<p align="center">
+  <b>How it works</b><br/>
+  <img src="docs/screenshots/03-how-it-works.png" alt="How it works — browse, compare, pay, QR verify" width="780" />
+</p>
+
+<p align="center">
+  <b>Features</b><br/>
+  <img src="docs/screenshots/04-features.png" alt="Features — comparison, GPS, QR, AI assistant" width="780" />
+</p>
+
+<p align="center">
+  <b>Seller — apply</b><br/>
+  <img src="docs/screenshots/05-apply-seller.png" alt="Apply as a seller registration" width="780" />
+</p>
+
+<p align="center">
+  <b>Seller — pending approval</b><br/>
+  <img src="docs/screenshots/02-seller-pending-workspace.png" alt="Seller application pending in workspace" width="780" />
+</p>
+
+<p align="center">
+  <b>Seller — dashboard</b><br/>
+  <img src="docs/screenshots/06-seller-dashboard.png" alt="Seller organizer dashboard" width="780" />
+</p>
+
+<p align="center">
+  <b>Admin dashboard</b><br/>
+  <img src="docs/screenshots/08-admin-dashboard.png" alt="Admin dashboard — KPIs and sales trend" width="780" />
+</p>
+
+<p align="center">
+  <b>Delivery dashboard</b><br/>
+  <img src="docs/screenshots/09-delivery-dashboard.png" alt="Delivery agent dashboard" width="780" />
+</p>
+
+<p align="center">
+  <b>AI assistant (web)</b><br/>
+  <img src="docs/screenshots/10-ai-assistant-gemini.png" alt="EthioLocal AI chat with Gemini + catalog" width="520" />
+</p>
+
+*Configure `GOOGLE_AI_API_KEY` / `GEMINI_MODEL` in `api/.env` if the assistant shows a model error — see [Google AI Studio](https://aistudio.google.com/).*
+
+---
+
 ## Prerequisites
 
 - **Node.js** (LTS recommended)
