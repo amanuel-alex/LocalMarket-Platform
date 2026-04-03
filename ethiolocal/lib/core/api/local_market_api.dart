@@ -10,7 +10,7 @@ class LocalMarketApi {
   final LocalMarketClient _client;
 
   Future<AuthSession> login({required String phone, required String password}) async {
-    final json = await _client.postJson('/auth/login', {'phone': phone, 'password': password});
+    final json = await _client.postJson('/auth/login', {'identifier': phone, 'password': password});
     return AuthSession.fromLoginJson(json);
   }
 

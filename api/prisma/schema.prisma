@@ -147,6 +147,7 @@ model User {
   ordersAsSeller      Order[]         @relation("SellerOrders")
   assignedDeliveryOrders Order[]      @relation("DeliveryAssignments")
   refreshTokens       RefreshToken[]
+  passwordResetTokens PasswordResetToken[]
   wallet              Wallet?
   payouts             Payout[]
   notifications       Notification[]
@@ -154,6 +155,17 @@ model User {
   reviewsAsBuyer      ProductReview[] @relation("BuyerProductReviews")
 
   @@index([bannedAt])
+}
+
+model PasswordResetToken {
+  id        String   @id @default(cuid())
+  userId    String
+  user      User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+  tokenHash String   @unique
+  expiresAt DateTime
+  createdAt DateTime @default(now())
+
+  @@index([userId])
 }
 
 /// Singleton financial config (fixed `id = 1`). Commission applied on escrow release to seller.

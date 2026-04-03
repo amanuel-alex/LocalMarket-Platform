@@ -18,6 +18,7 @@ export async function resetDb(): Promise<void> {
   await prisma.productGroup.deleteMany();
   await prisma.platformSettings.deleteMany();
   await prisma.refreshToken.deleteMany();
+  await prisma.passwordResetToken.deleteMany();
   await prisma.wallet.deleteMany();
   await prisma.user.deleteMany();
   await prisma.platformSettings.create({
@@ -32,14 +33,15 @@ export async function registerUser(
   phone: string,
   password = "password12345",
 ): Promise<request.Response> {
-  return api().post("/auth/register").send({ name, phone, password });
+  const email = `u${phone.replace(/\D/g, "")}.${Date.now()}@test.local`;
+  return api().post("/auth/register").send({ name, phone, password, email });
 }
 
 export async function loginUser(
-  phone: string,
+  identifier: string,
   password = "password12345",
 ): Promise<request.Response> {
-  return api().post("/auth/login").send({ phone, password });
+  return api().post("/auth/login").send({ identifier, password });
 }
 
 export async function seedSeller(

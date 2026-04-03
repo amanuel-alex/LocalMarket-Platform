@@ -13,7 +13,7 @@ describe("API security headers", () => {
 describe("API rate limits", () => {
   it("login route is still reachable (auth limiter relaxed in test)", async () => {
     const res = await api().post("/auth/login").send({
-      phone: "nonexistent-rate-limit-check",
+      identifier: "nonexistent-rate-limit-check",
       password: "x",
     });
     expect([400, 401, 422]).toContain(res.status);

@@ -1,3 +1,5 @@
+import path from "node:path";
+
 import express from "express";
 import compression from "compression";
 import cors from "cors";
@@ -34,6 +36,10 @@ app.use(sanitizeQueryMiddleware);
 app.use(sanitizeBodyMiddleware);
 app.use(localeMiddleware);
 app.use(requestLogMiddleware);
+app.use(
+  "/local-uploads",
+  express.static(path.join(process.cwd(), "data", "local-uploads"), { index: false }),
+);
 app.use("/api/v1", v1Router);
 app.use("/api/v2", v2Router);
 /** Legacy base path — same as `/api/v1` (deprecate clients gradually). */

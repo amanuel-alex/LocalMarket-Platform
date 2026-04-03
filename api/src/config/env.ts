@@ -20,6 +20,25 @@ const schema = z.object({
     .optional()
     .default("0")
     .transform((v) => v === "1"),
+  /** Public API origin for links and locally stored proposal URLs (no trailing slash). */
+  API_PUBLIC_URL: z.string().url().optional().default("http://localhost:4000"),
+  /**
+   * When Cloudinary is unset, allow storing partner proposal files on disk (dev/test by default in code paths).
+   * Set to "1" to allow in production if you serve `/local-uploads` from this API.
+   */
+  ALLOW_LOCAL_PARTNER_PROPOSAL_UPLOAD: z
+    .enum(["0", "1"])
+    .optional()
+    .default("0")
+    .transform((v) => v === "1"),
+  /** If "1", POST /auth/forgot-password includes `resetToken` in JSON (dev/QA only — never enable in public prod). */
+  PASSWORD_RESET_RETURN_TOKEN: z
+    .enum(["0", "1"])
+    .optional()
+    .default("0")
+    .transform((v) => v === "1"),
+  /** Time window for password reset links. */
+  PASSWORD_RESET_TOKEN_EXPIRES_MINUTES: z.coerce.number().int().min(5).max(1440).default(60),
   /** Product image uploads (Cloudinary). Leave empty to disable POST /uploads/product-image. */
   CLOUDINARY_CLOUD_NAME: z.string().optional().default(""),
   CLOUDINARY_API_KEY: z.string().optional().default(""),

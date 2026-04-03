@@ -1,4 +1,9 @@
-import { getCloudinary, getUploadFolder } from "../config/cloudinary.js";
+import { randomUUID } from "node:crypto";
+import fs from "node:fs/promises";
+import path from "node:path";
+
+import { getCloudinary, getUploadFolder, isCloudinaryConfigured } from "../config/cloudinary.js";
+import { getEnv } from "../config/env.js";
 import { AppError } from "../utils/errors.js";
 
 const ALLOWED_MIME = new Set([
@@ -78,8 +83,32 @@ export function assertPartnerProposalFile(
   }
 }
 
+function partnerProposalExt(mimetype: string): string {
+  if (mimetype === "application/pdf") return "pdf";
+  if (mimetype === "image/jpeg") return "jpg";
+  if (mimetype === "image/png") return "png";
+  if (mimetype === "image/webp") return "webp";
+  return "bin";
+}
+
+/** Dev/test (or explicit env): store under `data/local-uploads` and expose via `GET /local-uploads/...`. */
+export function canStorePartnerProposalLocally(): boolean {
+  if (isCloudinaryConfigured()) return false;
+  const e = getEnv();
+  return e.NODE_ENV === "development" || e.NODE_ENV === "test" || e.ALLOW_LOCAL_PARTNER_PROPOSAL_UPLOAD;
+}
+
+async function savePartnerProposalLocally(buffer: Buffer, mimetype: string): Promise<string> {
+  const dir = path.join(process.cwd(), "data", "local-uploads", "partner-proposals");
+  await fs.mkdir(dir, { recursive: true });
+  const filename = `${randomUUID()}.${partnerProposalExt(mimetype)}`;
+  await fs.writeFile(path.join(dir, filename), buffer);
+  const base = getEnv().API_PUBLIC_URL.replace(/\/+$/, "");
+  return `${base}/local-uploads/partner-proposals/${filename}`;
+}
+
 /** PDFs use `raw`; images use `image` resource type. */
-export async function uploadPartnerProposalBuffer(buffer: Buffer, mimetype: string): Promise<string> {
+async function uploadPartnerProposalToCloudinary(buffer: Buffer, mimetype: string): Promise<string> {
   const cloudinary = getCloudinary();
   const base = getUploadFolder().replace(/\/+$/, "");
   const folder = `${base}/partner-proposals`;
@@ -100,4 +129,18 @@ export async function uploadPartnerProposalBuffer(buffer: Buffer, mimetype: stri
     });
     stream.end(buffer);
   });
+}
+
+export async function uploadPartnerProposalBuffer(buffer: Buffer, mimetype: string): Promise<string> {
+  if (isCloudinaryConfigured()) {
+    return uploadPartnerProposalToCloudinary(buffer, mimetype);
+  }
+  if (canStorePartnerProposalLocally()) {
+    return savePartnerProposalLocally(buffer, mimetype);
+  }
+  throw new AppError(
+    503,
+    "UPLOAD_DISABLED",
+    "Proposal uploads need Cloudinary (set CLOUDINARY_CLOUD_NAME, CLOUDINARY_API_KEY, CLOUDINARY_API_SECRET) or local file mode (automatic in development/test, or set ALLOW_LOCAL_PARTNER_PROPOSAL_UPLOAD=1 and serve /local-uploads from the API).",
+  );
 }

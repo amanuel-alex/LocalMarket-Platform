@@ -24,6 +24,7 @@ export default defineConfig({
       JWT_SECRET: "test-jwt-secret-key-minimum-32-characters!",
       NODE_ENV: "test",
       MPESA_CALLBACK_SECRET: "",
+      PASSWORD_RESET_RETURN_TOKEN: "1",
     },
   },
 });

@@ -26,8 +26,8 @@ export function parseApiError(error: unknown): string {
   return "Something went wrong. Please try again.";
 }
 
-export async function loginRequest(phone: string, password: string): Promise<AuthResponse> {
-  const { data } = await apiClient.post<AuthResponse>("/auth/login", { phone, password });
+export async function loginRequest(identifier: string, password: string): Promise<AuthResponse> {
+  const { data } = await apiClient.post<AuthResponse>("/auth/login", { identifier, password });
   return data;
 }
 
@@ -53,10 +53,24 @@ export function mapAuthUserToStored(raw: Record<string, unknown>): StoredUser {
 export async function registerRequest(body: {
   name: string;
   phone: string;
+  email: string;
   password: string;
 }): Promise<AuthResponse> {
   const { data } = await apiClient.post<AuthResponse>("/auth/register", body);
   return data;
+}
+
+export type ForgotPasswordResponse = { ok: true; resetToken?: string };
+
+export async function forgotPasswordRequest(identifier: string): Promise<ForgotPasswordResponse> {
+  const { data } = await apiClient.post<ForgotPasswordResponse>("/auth/forgot-password", {
+    identifier,
+  });
+  return data;
+}
+
+export async function resetPasswordRequest(token: string, password: string): Promise<void> {
+  await apiClient.post("/auth/reset-password", { token, password });
 }
 
 export async function registerPartnerRequest(formData: FormData): Promise<AuthResponse> {

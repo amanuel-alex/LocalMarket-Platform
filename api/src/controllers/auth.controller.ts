@@ -1,10 +1,11 @@
 import type { RequestHandler } from "express";
-import { isCloudinaryConfigured } from "../config/cloudinary.js";
 import {
+  forgotPasswordSchema,
   loginSchema,
   partnerRegisterFieldsSchema,
   refreshTokenBodySchema,
   registerSchema,
+  resetPasswordSchema,
   updatePreferredLocaleBodySchema,
 } from "../schemas/auth.schemas.js";
 import * as authService from "../services/auth.service.js";
@@ -24,13 +25,6 @@ export const register: RequestHandler = asyncHandler(async (req, res, next) => {
 });
 
 export const registerPartner: RequestHandler = asyncHandler(async (req, res, next) => {
-  if (!isCloudinaryConfigured()) {
-    throw new AppError(
-      503,
-      "UPLOAD_DISABLED",
-      "Proposal uploads require Cloudinary. Set CLOUDINARY_CLOUD_NAME, CLOUDINARY_API_KEY, and CLOUDINARY_API_SECRET.",
-    );
-  }
   const raw = {
     name: req.body?.name,
     phone: req.body?.phone,
@@ -62,8 +56,28 @@ export const login: RequestHandler = asyncHandler(async (req, res, next) => {
     next(parsed.error);
     return;
   }
-  const result = await authService.login(parsed.data.phone, parsed.data.password);
+  const result = await authService.login(parsed.data.identifier, parsed.data.password);
   res.json(result);
+});
+
+export const forgotPassword: RequestHandler = asyncHandler(async (req, res, next) => {
+  const parsed = forgotPasswordSchema.safeParse(req.body);
+  if (!parsed.success) {
+    next(parsed.error);
+    return;
+  }
+  const result = await authService.requestPasswordReset(parsed.data.identifier);
+  res.json(result);
+});
+
+export const resetPassword: RequestHandler = asyncHandler(async (req, res, next) => {
+  const parsed = resetPasswordSchema.safeParse(req.body);
+  if (!parsed.success) {
+    next(parsed.error);
+    return;
+  }
+  await authService.resetPasswordWithToken(parsed.data.token, parsed.data.password);
+  res.status(204).send();
 });
 
 export const refresh: RequestHandler = asyncHandler(async (req, res, next) => {

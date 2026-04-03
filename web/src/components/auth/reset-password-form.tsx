@@ -3,7 +3,7 @@
 import { zodResolver } from "@hookform/resolvers/zod";
 import Link from "next/link";
 import { useRouter, useSearchParams } from "next/navigation";
-import { useState } from "react";
+import { useMemo, useState } from "react";
 import { useForm } from "react-hook-form";
 
 import { Button } from "@/components/ui/button";
@@ -24,52 +24,58 @@ import {
   FormMessage,
 } from "@/components/ui/form";
 import { Input } from "@/components/ui/input";
-import { loginRequest, mapAuthUserToStored, parseApiError } from "@/lib/auth-api";
-import { setSession } from "@/lib/auth-storage";
-import { getPostAuthRedirect } from "@/lib/roles";
-import { loginFormSchema, type LoginFormValues } from "@/lib/validations/auth";
+import { parseApiError, resetPasswordRequest } from "@/lib/auth-api";
+import { resetPasswordFormSchema, type ResetPasswordFormValues } from "@/lib/validations/auth";
 
-function safeInternalPath(next: string | null): string | null {
-  if (!next) return null;
-  const t = next.trim();
-  if (!t.startsWith("/") || t.startsWith("//")) return null;
-  if (t.includes("://")) return null;
-  return t;
-}
-
-export function LoginForm() {
+export function ResetPasswordForm() {
   const router = useRouter();
   const searchParams = useSearchParams();
+  const token = useMemo(() => searchParams.get("token")?.trim() ?? "", [searchParams]);
   const [serverError, setServerError] = useState<string | null>(null);
 
-  const form = useForm<LoginFormValues>({
-    resolver: zodResolver(loginFormSchema),
-    defaultValues: { identifier: "", password: "" },
+  const form = useForm<ResetPasswordFormValues>({
+    resolver: zodResolver(resetPasswordFormSchema),
+    defaultValues: { password: "", confirmPassword: "" },
   });
 
-  async function onSubmit(values: LoginFormValues) {
+  async function onSubmit(values: ResetPasswordFormValues) {
     setServerError(null);
+    if (!token) {
+      setServerError("Missing reset token. Open the link from your reset email or the forgot-password page.");
+      return;
+    }
     try {
-      const data = await loginRequest(values.identifier, values.password);
-      const user = mapAuthUserToStored(data.user as Record<string, unknown>);
-      setSession({
-        accessToken: data.accessToken,
-        refreshToken: data.refreshToken,
-        user,
-      });
-      const next = safeInternalPath(searchParams.get("next"));
-      router.push(next ?? getPostAuthRedirect(user));
+      await resetPasswordRequest(token, values.password);
+      router.push("/login");
       router.refresh();
     } catch (e) {
       setServerError(parseApiError(e));
     }
   }
 
+  if (!token) {
+    return (
+      <Card className="border-border/60 shadow-md">
+        <CardHeader>
+          <CardTitle className="text-2xl font-semibold tracking-tight">Invalid link</CardTitle>
+          <CardDescription>
+            This page needs a valid reset token in the URL. Request a new reset from forgot password.
+          </CardDescription>
+        </CardHeader>
+        <CardFooter>
+          <Button asChild variant="secondary" className="rounded-xl">
+            <Link href="/forgot-password">Forgot password</Link>
+          </Button>
+        </CardFooter>
+      </Card>
+    );
+  }
+
   return (
     <Card className="border-border/60 shadow-md">
       <CardHeader className="space-y-1">
-        <CardTitle className="text-2xl font-semibold tracking-tight">Sign in</CardTitle>
-        <CardDescription>Sign in with the phone number or email you used to register.</CardDescription>
+        <CardTitle className="text-2xl font-semibold tracking-tight">Choose a new password</CardTitle>
+        <CardDescription>Use at least 8 characters.</CardDescription>
       </CardHeader>
       <CardContent>
         <Form {...form}>
@@ -85,14 +91,14 @@ export function LoginForm() {
 
             <FormField
               control={form.control}
-              name="identifier"
+              name="password"
               render={({ field }) => (
                 <FormItem>
-                  <FormLabel>Phone or email</FormLabel>
+                  <FormLabel>New password</FormLabel>
                   <FormControl>
                     <Input
-                      autoComplete="username"
-                      placeholder="+251… or you@example.com"
+                      type="password"
+                      autoComplete="new-password"
                       className="rounded-xl"
                       {...field}
                     />
@@ -104,22 +110,14 @@ export function LoginForm() {
 
             <FormField
               control={form.control}
-              name="password"
+              name="confirmPassword"
               render={({ field }) => (
                 <FormItem>
-                  <div className="flex items-center justify-between gap-2">
-                    <FormLabel>Password</FormLabel>
-                    <Link
-                      href="/forgot-password"
-                      className="text-xs font-medium text-primary underline-offset-4 hover:underline"
-                    >
-                      Forgot password?
-                    </Link>
-                  </div>
+                  <FormLabel>Confirm password</FormLabel>
                   <FormControl>
                     <Input
                       type="password"
-                      autoComplete="current-password"
+                      autoComplete="new-password"
                       className="rounded-xl"
                       {...field}
                     />
@@ -134,25 +132,15 @@ export function LoginForm() {
               className="w-full rounded-xl"
               disabled={form.formState.isSubmitting}
             >
-              {form.formState.isSubmitting ? "Signing in…" : "Sign in"}
+              {form.formState.isSubmitting ? "Updating…" : "Update password"}
             </Button>
           </form>
         </Form>
       </CardContent>
       <CardFooter className="flex justify-center border-t border-border/60 pt-6">
-        <p className="text-sm text-muted-foreground">
-          No account?{" "}
-          <Link
-            href={
-              searchParams.get("next")
-                ? `/register/buyer?next=${encodeURIComponent(searchParams.get("next")!)}`
-                : "/register/buyer"
-            }
-            className="font-medium text-primary underline-offset-4 hover:underline"
-          >
-            Create one
-          </Link>
-        </p>
+        <Link href="/login" className="text-sm font-medium text-primary underline-offset-4 hover:underline">
+          Back to sign in
+        </Link>
       </CardFooter>
     </Card>
   );

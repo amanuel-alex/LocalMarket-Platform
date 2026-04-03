@@ -38,6 +38,7 @@ export function RegisterForm() {
     resolver: zodResolver(registerFormSchema),
     defaultValues: {
       name: "",
+      email: "",
       phone: "",
       password: "",
       confirmPassword: "",
@@ -50,6 +51,7 @@ export function RegisterForm() {
       const data = await registerRequest({
         name: values.name,
         phone: values.phone,
+        email: values.email,
         password: values.password,
       });
       const user = mapAuthUserToStored(data.user as Record<string, unknown>);
@@ -91,6 +93,26 @@ export function RegisterForm() {
                   <FormLabel>Full name</FormLabel>
                   <FormControl>
                     <Input autoComplete="name" placeholder="Your name" className="rounded-xl" {...field} />
+                  </FormControl>
+                  <FormMessage />
+                </FormItem>
+              )}
+            />
+
+            <FormField
+              control={form.control}
+              name="email"
+              render={({ field }) => (
+                <FormItem>
+                  <FormLabel>Email</FormLabel>
+                  <FormControl>
+                    <Input
+                      type="email"
+                      autoComplete="email"
+                      placeholder="you@example.com"
+                      className="rounded-xl"
+                      {...field}
+                    />
                   </FormControl>
                   <FormMessage />
                 </FormItem>

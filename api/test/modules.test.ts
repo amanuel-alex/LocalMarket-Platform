@@ -45,6 +45,7 @@ describe("Auth", () => {
     const reg = await api().post("/auth/register").send({
       name: "Auth User",
       phone,
+      email: `auth.${phone.replace(/\D/g, "")}@test.local`,
       password: "password12345",
     });
     expect(reg.status).toBe(201);
@@ -65,7 +66,7 @@ describe("Auth", () => {
     expect(refresh.body.accessToken).toBeTruthy();
     expect(refresh.body.refreshToken).toBeTruthy();
 
-    const login = await api().post("/auth/login").send({ phone, password: "password12345" });
+    const login = await api().post("/auth/login").send({ identifier: phone, password: "password12345" });
     expect(login.status).toBe(200);
     expect(login.body.accessToken).toBeTruthy();
   });
@@ -75,17 +76,18 @@ describe("Auth", () => {
     await api().post("/auth/register").send({
       name: "Lock User",
       phone,
+      email: `lock.${phone.replace(/\D/g, "")}@test.local`,
       password: "password12345",
     });
     for (let i = 0; i < 5; i += 1) {
       const res = await api()
         .post("/auth/login")
-        .send({ phone, password: "wrong-password" });
+        .send({ identifier: phone, password: "wrong-password" });
       expect(res.status).toBe(401);
     }
     const blocked = await api()
       .post("/auth/login")
-      .send({ phone, password: "password12345" });
+      .send({ identifier: phone, password: "password12345" });
     expect(blocked.status).toBe(423);
     expect(blocked.body.error.code).toBe("ACCOUNT_LOCKED");
   });
@@ -93,8 +95,53 @@ describe("Auth", () => {
   it("rejects invalid credentials", async () => {
     const res = await api()
       .post("/auth/login")
-      .send({ phone: "nope", password: "bad" });
+      .send({ identifier: "nope", password: "bad" });
     expect(res.status).toBe(401);
+  });
+
+  it("logs in with email", async () => {
+    const phone = uniquePhone("em");
+    const email = `buyer.${Date.now()}@test.local`;
+    const reg = await api().post("/auth/register").send({
+      name: "Email Login",
+      phone,
+      email,
+      password: "password12345",
+    });
+    expect(reg.status).toBe(201);
+    const login = await api()
+      .post("/auth/login")
+      .send({ identifier: email, password: "password12345" });
+    expect(login.status).toBe(200);
+    expect(login.body.user.phone).toBe(phone);
+  });
+
+  it("resets password with token from forgot-password (test token exposure)", async () => {
+    const phone = uniquePhone("rp");
+    const email = `reset.${Date.now()}@test.local`;
+    await api().post("/auth/register").send({
+      name: "Reset User",
+      phone,
+      email,
+      password: "password12345",
+    });
+    const forgot = await api().post("/auth/forgot-password").send({ identifier: email });
+    expect(forgot.status).toBe(200);
+    expect(forgot.body.ok).toBe(true);
+    expect(typeof forgot.body.resetToken).toBe("string");
+    const reset = await api().post("/auth/reset-password").send({
+      token: forgot.body.resetToken,
+      password: "newpassword12345",
+    });
+    expect(reset.status).toBe(204);
+    const oldLogin = await api()
+      .post("/auth/login")
+      .send({ identifier: phone, password: "password12345" });
+    expect(oldLogin.status).toBe(401);
+    const newLogin = await api()
+      .post("/auth/login")
+      .send({ identifier: email, password: "newpassword12345" });
+    expect(newLogin.status).toBe(200);
   });
 });
 

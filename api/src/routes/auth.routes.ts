@@ -6,6 +6,8 @@ import {
   loginRateLimiter,
   otpSendRateLimiter,
   otpVerifyRateLimiter,
+  passwordResetConfirmRateLimiter,
+  passwordResetRequestRateLimiter,
   refreshRateLimiter,
   registerRateLimiter,
 } from "../middlewares/rateLimit.middleware.js";
@@ -34,6 +36,16 @@ router.post(
   authController.registerPartner,
 );
 router.post("/login", loginRateLimiter, authController.login);
+router.post(
+  "/forgot-password",
+  passwordResetRequestRateLimiter,
+  authController.forgotPassword,
+);
+router.post(
+  "/reset-password",
+  passwordResetConfirmRateLimiter,
+  authController.resetPassword,
+);
 router.post("/refresh", refreshRateLimiter, authController.refresh);
 router.post("/logout", refreshRateLimiter, authController.logout);
 router.post("/otp/send", otpSendRateLimiter, authController.otpNotImplemented);

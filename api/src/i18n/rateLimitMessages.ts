@@ -6,6 +6,7 @@ export type RateLimitReason =
   | "refresh"
   | "otp_send"
   | "otp_verify"
+  | "password_reset"
   | "global"
   | "payment_callback";
 
@@ -34,6 +35,11 @@ const BY_REASON: Record<RateLimitReason, Record<Locale, string>> = {
     en: "Too many OTP verification attempts. Try again later.",
     am: "በጣም ብዙ የOTP ማረጋገጫ ሙከራዎች። በኋላ ይሞክሩ።",
     om: "Yaaliwwan mirkaneessaa OTP hedduu. Booda irra deebi’aa yaalaa.",
+  },
+  password_reset: {
+    en: "Too many password reset requests. Try again later.",
+    am: "በጣም ብዙ የይለፍ ቃል ዳግም ማስጀመሪያ ጥያቄዎች። በኋላ ይሞክሩ።",
+    om: "Gaaffii deebisii jecha darbii hedduu. Booda irra deebi’aa yaalaa.",
   },
   global: {
     en: "Too many requests. Try again later.",

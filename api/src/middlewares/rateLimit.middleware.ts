@@ -62,6 +62,22 @@ export const otpVerifyRateLimiter = rateLimit({
   handler: i18nRateLimitHandler("otp_verify"),
 });
 
+/** Forgot-password / token issuance (abuse + enumeration cooling). */
+export const passwordResetRequestRateLimiter = rateLimit({
+  ...limiterBase,
+  windowMs: 60 * 60 * 1000,
+  max: isTest ? 10_000 : 8,
+  handler: i18nRateLimitHandler("password_reset"),
+});
+
+/** Reset-password attempts with a token. */
+export const passwordResetConfirmRateLimiter = rateLimit({
+  ...limiterBase,
+  windowMs: 15 * 60 * 1000,
+  max: isTest ? 10_000 : 30,
+  handler: i18nRateLimitHandler("password_reset"),
+});
+
 /** OpenAI assistant (cost control). */
 export const assistantOpenAiRateLimiter = rateLimit({
   ...limiterBase,
