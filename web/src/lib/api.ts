@@ -45,7 +45,13 @@ export type AdminUser = {
   id: string;
   name: string;
   phone: string;
+  email: string | null;
   role: string;
+  sellerApproved: boolean;
+  deliveryAgentApproved: boolean;
+  deliveryAgentActive: boolean;
+  applicationAbout: string | null;
+  applicationProposalUrl: string | null;
   bannedAt: string | null;
   banReason: string | null;
   createdAt: string;
@@ -68,7 +74,10 @@ export async function fetchAdminUsers(params?: {
   return data;
 }
 
-export async function patchAdminUser(id: string, body: { role?: string; active?: boolean }) {
+export async function patchAdminUser(
+  id: string,
+  body: { role?: string; active?: boolean; sellerApproved?: boolean },
+) {
   const { data } = await apiClient.patch<{ user: AdminUser }>(`/admin/users/${id}`, body);
   return data.user;
 }

@@ -29,9 +29,8 @@ import { setSession } from "@/lib/auth-storage";
 import { getPostAuthRedirect } from "@/lib/roles";
 import { registerFormSchema, type RegisterFormValues } from "@/lib/validations/auth";
 
-export type RegisterAccountType = "buyer" | "seller" | "delivery";
-
-export function RegisterForm({ accountType = "buyer" }: { accountType?: RegisterAccountType }) {
+/** Buyer-only signup (JSON). Seller and delivery use `PartnerRegisterForm`. */
+export function RegisterForm() {
   const router = useRouter();
   const [serverError, setServerError] = useState<string | null>(null);
 
@@ -52,7 +51,6 @@ export function RegisterForm({ accountType = "buyer" }: { accountType?: Register
         name: values.name,
         phone: values.phone,
         password: values.password,
-        accountType,
       });
       const user = mapAuthUserToStored(data.user as Record<string, unknown>);
       setSession({
@@ -71,13 +69,7 @@ export function RegisterForm({ accountType = "buyer" }: { accountType?: Register
     <Card className="border-border/60 shadow-md">
       <CardHeader className="space-y-1">
         <CardTitle className="text-2xl font-semibold tracking-tight">Create account</CardTitle>
-        <CardDescription>
-          {accountType === "buyer"
-            ? "Shop local products, track orders, and pay securely."
-            : accountType === "seller"
-              ? "Apply to sell on EthioLocal. You can sign in, but listing products requires admin approval."
-              : "Apply as a delivery partner. Dashboard and assignments unlock after admin approval."}
-        </CardDescription>
+        <CardDescription>Shop local products, track orders, and pay securely.</CardDescription>
       </CardHeader>
       <CardContent>
         <Form {...form}>
@@ -167,7 +159,16 @@ export function RegisterForm({ accountType = "buyer" }: { accountType?: Register
           </form>
         </Form>
       </CardContent>
-      <CardFooter className="flex justify-center border-t border-border/60 pt-6">
+      <CardFooter className="flex flex-col items-center gap-2 border-t border-border/60 pt-6">
+        <p className="text-center text-sm text-muted-foreground">
+          <Link href="/register/seller" className="font-medium text-foreground underline-offset-4 hover:underline">
+            Apply as a seller
+          </Link>
+          <span className="mx-1.5 text-border">·</span>
+          <Link href="/register/delivery" className="font-medium text-foreground underline-offset-4 hover:underline">
+            Apply as delivery
+          </Link>
+        </p>
         <p className="text-sm text-muted-foreground">
           Already have an account?{" "}
           <Link href="/login" className="font-medium text-primary underline-offset-4 hover:underline">

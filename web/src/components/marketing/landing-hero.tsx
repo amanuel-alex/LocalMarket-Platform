@@ -121,7 +121,7 @@ export function LandingHero() {
               asChild
               className="h-11 rounded-xl bg-gradient-to-r from-amber-500 to-orange-600 px-7 text-base font-semibold text-white shadow-lg shadow-amber-600/25 transition hover:opacity-95"
             >
-              <Link href="/register">
+              <Link href="/register/buyer">
                 {h.ctaPrimary}
                 <ArrowRight className="ml-2 size-4" />
               </Link>

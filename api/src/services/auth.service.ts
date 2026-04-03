@@ -5,7 +5,7 @@ import { AppError } from "../utils/errors.js";
 import { hashPassword, verifyPassword } from "../utils/password.js";
 import { signAccessToken } from "../utils/jwt.js";
 import * as refreshTokenService from "./refreshToken.service.js";
-import type { RegisterInput } from "../schemas/auth.schemas.js";
+import type { PartnerRegisterFieldsInput, RegisterInput } from "../schemas/auth.schemas.js";
 import { isAccountSuspended } from "./userAccess.service.js";
 import * as suspiciousActivity from "./suspiciousActivity.service.js";
 
@@ -35,7 +35,6 @@ async function buildAuthResponse(user: User): Promise<AuthTokenPair> {
 
 export async function register(input: RegisterInput): Promise<AuthTokenPair> {
   const passwordHash = await hashPassword(input.password);
-  const accountType = input.accountType ?? "buyer";
 
   const walletCreate = {
     wallet: {
@@ -49,22 +48,53 @@ export async function register(input: RegisterInput): Promise<AuthTokenPair> {
 
   const localeData = input.locale != null ? { preferredLocale: input.locale } : {};
 
-  if (accountType === "buyer") {
-    const user = await prisma.user.create({
-      data: {
-        name: input.name,
-        phone: input.phone,
-        passwordHash,
-        role: "buyer",
-        sellerApproved: false,
-        ...localeData,
-        ...walletCreate,
-      },
-    });
-    return buildAuthResponse(user);
+  const user = await prisma.user.create({
+    data: {
+      name: input.name,
+      phone: input.phone,
+      passwordHash,
+      role: "buyer",
+      sellerApproved: false,
+      ...localeData,
+      ...walletCreate,
+    },
+  });
+  return buildAuthResponse(user);
+}
+
+export async function registerPartner(
+  input: PartnerRegisterFieldsInput,
+  proposalUrl: string,
+): Promise<AuthTokenPair> {
+  const passwordHash = await hashPassword(input.password);
+  const localeData = input.locale != null ? { preferredLocale: input.locale } : {};
+
+  const existingPhone = await prisma.user.findUnique({ where: { phone: input.phone } });
+  if (existingPhone) {
+    throw new AppError(409, "PHONE_IN_USE", "This phone number is already registered");
+  }
+  const existingEmail = await prisma.user.findUnique({ where: { email: input.email } });
+  if (existingEmail) {
+    throw new AppError(409, "EMAIL_IN_USE", "This email is already registered");
   }
 
-  if (accountType === "seller") {
+  const walletCreate = {
+    wallet: {
+      create: {
+        isPlatform: false,
+        availableBalance: 0,
+        pendingBalance: 0,
+      },
+    },
+  } as const;
+
+  const application = {
+    email: input.email,
+    applicationAbout: input.about,
+    applicationProposalUrl: proposalUrl,
+  };
+
+  if (input.accountType === "seller") {
     const user = await prisma.user.create({
       data: {
         name: input.name,
@@ -72,6 +102,7 @@ export async function register(input: RegisterInput): Promise<AuthTokenPair> {
         passwordHash,
         role: "seller",
         sellerApproved: false,
+        ...application,
         ...localeData,
         ...walletCreate,
       },
@@ -88,6 +119,7 @@ export async function register(input: RegisterInput): Promise<AuthTokenPair> {
       deliveryAgentApproved: false,
       deliveryAgentActive: false,
       sellerApproved: false,
+      ...application,
       ...localeData,
       ...walletCreate,
     },

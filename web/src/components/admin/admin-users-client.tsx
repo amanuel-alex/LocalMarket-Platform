@@ -95,6 +95,16 @@ export function AdminUsersManagementClient() {
     }
   }
 
+  async function approveSellerAccount(id: string) {
+    try {
+      const u = await patchAdminUser(id, { sellerApproved: true });
+      setUsers((prev) => prev.map((x) => (x.id === id ? { ...x, ...u } : x)));
+      toast.success("Seller approved");
+    } catch (e) {
+      toast.error(toastApiError(e));
+    }
+  }
+
   async function applySuspend(u: AdminUser) {
     try {
       await postAdminBanUser(u.id, banReason ? { reason: banReason } : undefined);
@@ -166,7 +176,9 @@ export function AdminUsersManagementClient() {
             <TableRow>
               <TableHead>Name</TableHead>
               <TableHead>Phone</TableHead>
+              <TableHead>Email &amp; application</TableHead>
               <TableHead>Role</TableHead>
+              <TableHead>Staff approval</TableHead>
               <TableHead>Status</TableHead>
               <TableHead className="text-right">Actions</TableHead>
             </TableRow>
@@ -174,8 +186,8 @@ export function AdminUsersManagementClient() {
           <TableBody>
             {loading
               ? Array.from({ length: 6 }).map((_, i) => (
-                  <TableRow key={i}>
-                    <TableCell colSpan={5}>
+                    <TableRow key={i}>
+                    <TableCell colSpan={7}>
                       <Skeleton className="h-10 w-full rounded-lg" />
                     </TableCell>
                   </TableRow>
@@ -186,6 +198,25 @@ export function AdminUsersManagementClient() {
                     <TableRow key={u.id} className="transition-colors hover:bg-muted/40">
                       <TableCell className="font-medium">{u.name}</TableCell>
                       <TableCell className="font-mono text-xs">{u.phone}</TableCell>
+                      <TableCell className="max-w-[220px] align-top text-xs">
+                        {u.email ? <div className="break-all font-medium">{u.email}</div> : null}
+                        {u.applicationAbout ? (
+                          <p className="mt-1 line-clamp-2 text-muted-foreground">{u.applicationAbout}</p>
+                        ) : null}
+                        {u.applicationProposalUrl ? (
+                          <a
+                            href={u.applicationProposalUrl}
+                            target="_blank"
+                            rel="noopener noreferrer"
+                            className="mt-1 inline-block font-medium text-primary underline-offset-2 hover:underline"
+                          >
+                            View proposal
+                          </a>
+                        ) : null}
+                        {!u.email && !u.applicationAbout && !u.applicationProposalUrl ? (
+                          <span className="text-muted-foreground">—</span>
+                        ) : null}
+                      </TableCell>
                       <TableCell>
                         <Select
                           value={u.role}
@@ -202,6 +233,33 @@ export function AdminUsersManagementClient() {
                             ))}
                           </SelectContent>
                         </Select>
+                      </TableCell>
+                      <TableCell className="max-w-[200px]">
+                        {u.role === "seller" ? (
+                          u.sellerApproved ? (
+                            <span className="text-xs font-medium text-emerald-700 dark:text-emerald-300">Seller OK</span>
+                          ) : (
+                            <div className="flex flex-col gap-2">
+                              <span className="text-xs font-medium text-amber-800 dark:text-amber-200">Pending</span>
+                              <Button
+                                type="button"
+                                size="sm"
+                                variant="secondary"
+                                className="h-8 rounded-lg text-xs"
+                                onClick={() => void approveSellerAccount(u.id)}
+                              >
+                                Approve seller
+                              </Button>
+                            </div>
+                          )
+                        ) : u.role === "delivery" || u.role === "delivery_agent" ? (
+                          <span className="text-xs text-muted-foreground">
+                            {u.deliveryAgentApproved ? "Delivery OK" : "Delivery pending"} ·{" "}
+                            {u.deliveryAgentActive ? "active" : "inactive"}
+                          </span>
+                        ) : (
+                          <span className="text-xs text-muted-foreground">—</span>
+                        )}
                       </TableCell>
                       <TableCell>
                         <span

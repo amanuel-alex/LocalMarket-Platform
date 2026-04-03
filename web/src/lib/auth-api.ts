@@ -38,9 +38,13 @@ export function mapAuthUserToStored(raw: Record<string, unknown>): StoredUser {
     name: String(raw.name),
     phone: String(raw.phone),
     role: String(raw.role),
+    ...(typeof raw.email === "string" && raw.email.length > 0 ? { email: raw.email } : {}),
     ...(typeof raw.sellerApproved === "boolean" ? { sellerApproved: raw.sellerApproved } : {}),
     ...(typeof raw.deliveryAgentApproved === "boolean"
       ? { deliveryAgentApproved: raw.deliveryAgentApproved }
+      : {}),
+    ...(typeof raw.deliveryAgentActive === "boolean"
+      ? { deliveryAgentActive: raw.deliveryAgentActive }
       : {}),
     ...(preferredLocale ? { preferredLocale } : {}),
   };
@@ -50,8 +54,12 @@ export async function registerRequest(body: {
   name: string;
   phone: string;
   password: string;
-  accountType?: "buyer" | "seller" | "delivery";
 }): Promise<AuthResponse> {
   const { data } = await apiClient.post<AuthResponse>("/auth/register", body);
+  return data;
+}
+
+export async function registerPartnerRequest(formData: FormData): Promise<AuthResponse> {
+  const { data } = await apiClient.post<AuthResponse>("/auth/register-partner", formData);
   return data;
 }

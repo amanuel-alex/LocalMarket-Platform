@@ -4,7 +4,7 @@ import { useEffect } from "react";
 import { useRouter } from "next/navigation";
 
 import { getStoredUser } from "@/lib/auth-storage";
-import { getPostLoginPath, normalizeRole } from "@/lib/roles";
+import { getPostAuthRedirect, getPostLoginPath, normalizeRole } from "@/lib/roles";
 
 function Redirecting() {
   return <p className="text-sm text-muted-foreground">Redirecting…</p>;
@@ -14,7 +14,7 @@ export function DashboardEntryRedirect() {
   const router = useRouter();
   useEffect(() => {
     const u = getStoredUser();
-    router.replace(u ? getPostLoginPath(u.role) : "/login");
+    router.replace(u ? getPostAuthRedirect(u) : "/login");
   }, [router]);
   return <Redirecting />;
 }

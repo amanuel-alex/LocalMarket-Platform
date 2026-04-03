@@ -24,10 +24,10 @@ import {
   clearSession,
   getStoredUser,
   mergeStoredUser,
-  parsePreferredLocale,
   type PreferredLocale,
 } from "@/lib/auth-storage";
 import { fetchMe, patchMeLocale, toastApiError } from "@/lib/api";
+import { mapAuthUserToStored } from "@/lib/auth-api";
 import { normalizeRole } from "@/lib/roles";
 import { Bell, LogOut, Monitor, Moon, Palette, Sun, Users } from "lucide-react";
 
@@ -81,12 +81,7 @@ export function SettingsPageClient() {
       try {
         const me = await fetchMe();
         if (cancelled) return;
-        const pl = parsePreferredLocale(me.preferredLocale);
-        mergeStoredUser({
-          name: String(me.name),
-          phone: String(me.phone),
-          ...(pl ? { preferredLocale: pl } : {}),
-        });
+        mergeStoredUser(mapAuthUserToStored(me as Record<string, unknown>));
         refreshUser();
       } catch {
         /* offline or expired token — keep cached user */

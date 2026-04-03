@@ -40,7 +40,10 @@ export function getPostAuthRedirect(user: StoredUser): string {
   if (r === "seller" && user.sellerApproved === false) {
     return "/seller/pending-approval";
   }
-  if (r === "delivery" && user.deliveryAgentApproved === false) {
+  if (
+    r === "delivery" &&
+    !(user.deliveryAgentApproved === true && user.deliveryAgentActive === true)
+  ) {
     return "/delivery/pending-approval";
   }
 

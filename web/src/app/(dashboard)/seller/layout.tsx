@@ -3,6 +3,7 @@
 import type { ReactNode } from "react";
 
 import { RoleGate } from "@/components/auth/role-gate";
+import { StaffWorkspaceApprovalGate } from "@/components/auth/staff-workspace-approval-gate";
 
 export default function SellerWorkspaceLayout({ children }: { children: ReactNode }) {
   return (
@@ -11,7 +12,7 @@ export default function SellerWorkspaceLayout({ children }: { children: ReactNod
       title="Seller workspace"
       description="This area is for seller accounts. Contact an admin if you need the seller role."
     >
-      {children}
+      <StaffWorkspaceApprovalGate kind="seller">{children}</StaffWorkspaceApprovalGate>
     </RoleGate>
   );
 }

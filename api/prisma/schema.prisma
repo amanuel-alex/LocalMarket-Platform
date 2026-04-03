@@ -98,6 +98,10 @@ model User {
   id                  String          @id @default(cuid())
   name                String
   phone               String          @unique
+  /**
+   * Optional for buyers; required for self-serve seller / delivery signup (unique when set).
+   */
+  email               String?         @unique
   passwordHash        String
   role                Role            @default(buyer)
   failedLoginAttempts Int             @default(0)
@@ -128,6 +132,14 @@ model User {
    */
   sellerLat           Float?
   sellerLng           Float?
+  /**
+   * Seller / delivery application: short bio or business description (reviewed by admin).
+   */
+  applicationAbout    String?         @db.Text
+  /**
+   * Uploaded proposal (PDF or image) — Cloudinary or CDN URL.
+   */
+  applicationProposalUrl String?
   createdAt           DateTime        @default(now())
   updatedAt           DateTime        @updatedAt
   products            Product[]

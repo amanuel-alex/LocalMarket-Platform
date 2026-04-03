@@ -31,3 +31,15 @@ export const registerFormSchema = z
   });
 
 export type RegisterFormValues = z.infer<typeof registerFormSchema>;
+
+/** Seller / delivery multipart registration (plus proposal file in UI). */
+export const partnerRegisterFormSchema = registerFormSchema.extend({
+  email: z.string().trim().email("Enter a valid email").max(254, "Email is too long"),
+  about: z
+    .string()
+    .trim()
+    .min(20, "Tell us at least a few sentences (20+ characters)")
+    .max(8000, "About is too long"),
+});
+
+export type PartnerRegisterFormValues = z.infer<typeof partnerRegisterFormSchema>;

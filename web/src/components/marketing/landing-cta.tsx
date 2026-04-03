@@ -48,7 +48,7 @@ export function LandingCta() {
               asChild
               className="h-14 rounded-2xl border-0 bg-white px-10 text-base font-semibold text-violet-700 shadow-lg transition hover:scale-[1.02] hover:bg-zinc-50 active:scale-[0.98] dark:text-violet-800"
             >
-              <Link href="/register">
+              <Link href="/register/buyer">
                 {c.button}
                 <ArrowRight className="ml-2 size-4" />
               </Link>

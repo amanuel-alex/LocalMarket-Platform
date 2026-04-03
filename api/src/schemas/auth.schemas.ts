@@ -2,16 +2,33 @@ import { z } from "zod";
 
 export const preferredLocaleSchema = z.enum(["en", "am", "om"]);
 
-/** Buyer: immediate shop access. Seller / delivery: pending admin approval before staff APIs. */
-export const registerAccountTypeSchema = z.enum(["buyer", "seller", "delivery"]);
+/** JSON `POST /auth/register` — buyers only. Sellers and delivery use multipart `POST /auth/register-partner`. */
+export const registerSchema = z
+  .object({
+    name: z.string().trim().min(1).max(120),
+    phone: z.string().trim().min(3).max(32),
+    password: z.string().min(8).max(128),
+    /** Preferred language for notifications and translated API errors (`en` default if omitted). */
+    locale: preferredLocaleSchema.optional(),
+  })
+  .strict();
 
-export const registerSchema = z.object({
+export const partnerRegisterAccountTypeSchema = z.enum(["seller", "delivery"]);
+
+/** Multipart text fields for `POST /auth/register-partner` (plus file field `proposal`). */
+export const partnerRegisterFieldsSchema = z.object({
   name: z.string().trim().min(1).max(120),
   phone: z.string().trim().min(3).max(32),
   password: z.string().min(8).max(128),
-  /** Preferred language for notifications and translated API errors (`en` default if omitted). */
+  email: z
+    .string()
+    .trim()
+    .email()
+    .max(254)
+    .transform((v) => v.toLowerCase()),
+  about: z.string().trim().min(20).max(8000),
+  accountType: partnerRegisterAccountTypeSchema,
   locale: preferredLocaleSchema.optional(),
-  accountType: registerAccountTypeSchema.optional().default("buyer"),
 });
 
 export const updatePreferredLocaleBodySchema = z.object({
@@ -30,5 +47,6 @@ export const refreshTokenBodySchema = z.object({
 export type RefreshTokenBody = z.infer<typeof refreshTokenBodySchema>;
 
 export type RegisterInput = z.infer<typeof registerSchema>;
+export type PartnerRegisterFieldsInput = z.infer<typeof partnerRegisterFieldsSchema>;
 export type LoginInput = z.infer<typeof loginSchema>;
 export type UpdatePreferredLocaleBody = z.infer<typeof updatePreferredLocaleBodySchema>;

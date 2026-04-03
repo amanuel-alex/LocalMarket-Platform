@@ -8,12 +8,15 @@ export type AdminUserRow = {
   id: string;
   name: string;
   phone: string;
+  email: string | null;
   role: Role;
   status: UserStatus;
   isVerified: boolean;
   sellerApproved: boolean;
   deliveryAgentApproved: boolean;
   deliveryAgentActive: boolean;
+  applicationAbout: string | null;
+  applicationProposalUrl: string | null;
   bannedAt: Date | null;
   banReason: string | null;
   createdAt: Date;
@@ -122,12 +125,15 @@ export async function listUsersForAdmin(
         id: true,
         name: true,
         phone: true,
+        email: true,
         role: true,
         status: true,
         isVerified: true,
         sellerApproved: true,
         deliveryAgentApproved: true,
         deliveryAgentActive: true,
+        applicationAbout: true,
+        applicationProposalUrl: true,
         bannedAt: true,
         banReason: true,
         createdAt: true,
@@ -218,12 +224,15 @@ export async function patchUserByAdmin(
       id: true,
       name: true,
       phone: true,
+      email: true,
       role: true,
       status: true,
       isVerified: true,
       sellerApproved: true,
       deliveryAgentApproved: true,
       deliveryAgentActive: true,
+      applicationAbout: true,
+      applicationProposalUrl: true,
       bannedAt: true,
       banReason: true,
       createdAt: true,
@@ -293,12 +302,15 @@ export async function patchUserStatusByAdmin(
       id: true,
       name: true,
       phone: true,
+      email: true,
       role: true,
       status: true,
       isVerified: true,
       sellerApproved: true,
       deliveryAgentApproved: true,
       deliveryAgentActive: true,
+      applicationAbout: true,
+      applicationProposalUrl: true,
       bannedAt: true,
       banReason: true,
       createdAt: true,

@@ -132,7 +132,7 @@ export function LandingHeader() {
               asChild
               className="rounded-lg bg-gradient-to-r from-amber-500 to-orange-600 px-3 text-white shadow-sm hover:opacity-95"
             >
-              <Link href="/register">{messages.header.getStarted}</Link>
+              <Link href="/register/buyer">{messages.header.getStarted}</Link>
             </Button>
           </div>
 
@@ -186,10 +186,10 @@ export function LandingHeader() {
               {messages.nav.trust}
             </a>
             <span className="mx-1 hidden h-4 w-px bg-zinc-200 dark:bg-zinc-700 sm:inline-block" aria-hidden />
-            <Link href="/register" className={ctaClass}>
+            <Link href="/register/seller" className={ctaClass}>
               {messages.nav.becomeSeller}
             </Link>
-            <Link href="/register" className={ctaClass}>
+            <Link href="/register/delivery" className={ctaClass}>
               {messages.nav.becomeDelivery}
             </Link>
           </nav>
@@ -230,10 +230,10 @@ export function LandingHeader() {
             <a href="#trust" className="rounded-lg px-3 py-2 text-sm" onClick={() => setOpen(false)}>
               {messages.nav.trust}
             </a>
-            <Link href="/register" className="rounded-lg px-3 py-2 text-sm font-semibold text-amber-700 dark:text-amber-400" onClick={() => setOpen(false)}>
+            <Link href="/register/seller" className="rounded-lg px-3 py-2 text-sm font-semibold text-amber-700 dark:text-amber-400" onClick={() => setOpen(false)}>
               {messages.nav.becomeSeller}
             </Link>
-            <Link href="/register" className="rounded-lg px-3 py-2 text-sm font-semibold text-amber-700 dark:text-amber-400" onClick={() => setOpen(false)}>
+            <Link href="/register/delivery" className="rounded-lg px-3 py-2 text-sm font-semibold text-amber-700 dark:text-amber-400" onClick={() => setOpen(false)}>
               {messages.nav.becomeDelivery}
             </Link>
             <hr className="my-2 border-zinc-200 dark:border-zinc-800" />
@@ -261,7 +261,7 @@ export function LandingHeader() {
               {messages.header.signIn}
             </Link>
             <Link
-              href="/register"
+              href="/register/buyer"
               className="mt-1 rounded-lg bg-gradient-to-r from-amber-500 to-orange-600 py-3 text-center text-sm font-semibold text-white"
               onClick={() => setOpen(false)}
             >

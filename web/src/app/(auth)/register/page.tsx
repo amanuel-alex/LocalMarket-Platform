@@ -1,12 +1,6 @@
-import type { Metadata } from "next";
+import { redirect } from "next/navigation";
 
-import { RegisterForm } from "@/components/auth/register-form";
-
-export const metadata: Metadata = {
-  title: "Register — EthioLocal",
-  description: "Create an EthioLocal dashboard account",
-};
-
+/** Generic `/register` goes straight to shopper signup; seller and delivery use their own routes. */
 export default function RegisterPage() {
-  return <RegisterForm />;
+  redirect("/register/buyer");
 }

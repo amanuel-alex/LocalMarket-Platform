@@ -137,8 +137,8 @@ export function LoginForm() {
           <Link
             href={
               searchParams.get("next")
-                ? `/register?next=${encodeURIComponent(searchParams.get("next")!)}`
-                : "/register"
+                ? `/register/buyer?next=${encodeURIComponent(searchParams.get("next")!)}`
+                : "/register/buyer"
             }
             className="font-medium text-primary underline-offset-4 hover:underline"
           >
