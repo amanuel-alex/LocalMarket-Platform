@@ -2,6 +2,16 @@
 
 Monorepo for **EthioLocal**: a local-marketplace stack with buyers, sellers, delivery partners, and admins. The **API** is Express + Prisma (PostgreSQL). The **web** app is **Next.js 15** (App Router) with the public marketing site, storefront, auth flows, and role-based dashboards (shadcn/ui).
 
+### GitHub “About” (set on github.com — not stored in git)
+
+On the repo home page, click the **⚙️** beside *About*, then paste:
+
+| Field | Suggested value |
+|--------|------------------|
+| **Description** | `EthioLocal — local marketplace: Next.js 15 shop & dashboards, Express + Prisma API, Flutter client, Telegram bot. Ranking, QR pickup, escrow-style orders.` |
+| **Website** | Your production URL, docs site, or `https://github.com/YOUR_USER/LocalMarket-Platform` until you ship. |
+| **Topics** | `marketplace`, `ecommerce`, `nextjs`, `react`, `typescript`, `express`, `prisma`, `postgresql`, `telegram-bot`, `flutter`, `monorepo`, `ethiopia`, `local-commerce`, `nodejs` |
+
 | Package | Role | Default URL / how to run |
 |--------|------|---------------------------|
 | **`api/`** | REST API (`/api/v1`, also mounted at `/` for legacy paths) | [http://localhost:4000](http://localhost:4000) |
