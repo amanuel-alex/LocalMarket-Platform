@@ -7,6 +7,7 @@ Monorepo for **EthioLocal**: a local-marketplace stack with buyers, sellers, del
 | **`api/`** | REST API (`/api/v1`, also mounted at `/` for legacy paths) | [http://localhost:4000](http://localhost:4000) |
 | **`web/`** | Next.js UI (marketing, shop, dashboards) | [http://localhost:3000](http://localhost:3000) |
 | **`ethiolocal/`** | **Flutter** mobile client — talks to the API only (not the Next server) | API base defaults to `http://localhost:4000/api/v1` via `ApiConfig` (`ethiolocal/lib/core/config/api_config.dart`). On a **physical device** or **Android emulator**, use a reachable host (e.g. `flutter run --dart-define=API_BASE_URL=http://10.0.2.2:4000/api/v1` for emulator → your PC). **iOS Simulator** can use `http://localhost:4000/api/v1`. Run: `cd ethiolocal && flutter run`. |
+| **`bot/`** | **Telegram** bot (`node-telegram-bot-api`) — shop, search, AI assistant, orders (after `/link`), seller/delivery links | See [bot/README.md](bot/README.md). Needs `TELEGRAM_BOT_TOKEN` and the same API running. Run: `cd bot && npm run dev`. |
 
 In development, **`web/next.config.ts`** rewrites `/api/*` → `http://localhost:4000/api/*`, so the browser calls same-origin `/api/v1/...` without CORS setup. The **mobile app** does not use that rewrite; it must point **`API_BASE_URL`** at the machine where the API is listening.
 
